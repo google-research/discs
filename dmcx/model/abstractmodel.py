@@ -1,17 +1,24 @@
-"""TODO(kgoshvadi): DO NOT SUBMIT without one-line documentation for abstractmodel.
-
-TODO(kgoshvadi): DO NOT SUBMIT without a detailed description of abstractmodel.
-"""
-
-from collections.abc import Sequence
-
-from absl import app
+import abc
+import ml_collections
 
 
-def main(argv: Sequence[str]) -> None:
-  if len(argv) > 1:
-    raise app.UsageError('Too many command-line arguments.')
+class AbstractModel(abs.ABC):
+  """Based Model Class."""
 
+  def __init__(self, config: ml_collections.ConfigDict):
+    pass
 
-if __name__ == '__main__':
-  app.run(main)
+  @abc.abstractmethod
+  def make_init_params(self, rnd):
+    pass
+
+  @abc.abstractmethod
+  def get_init_samples(self, param, sz):
+    pass
+
+  @abc.abstractmethod
+  def forward(self, params, x):
+    pass
+
+  def get_value_grad(self, params, x):
+    pass
