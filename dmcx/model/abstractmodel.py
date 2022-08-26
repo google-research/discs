@@ -1,19 +1,19 @@
-import abc
+from abc import ABC, abstractmethod
 import ml_collections
 
 
-class AbstractModel(abs.ABC):
+class AbstractModel(ABC):
   """Based Model Class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     pass
 
-  @abc.abstractmethod
+  @abstractmethod
   def make_init_params(self, rnd):
     pass
 
-  @abc.abstractmethod
-  def get_init_samples(self, param, sz):
+  @abstractmethod
+  def get_init_samples(self, params, sz):
     """Get initial samples.
     
     Args:
@@ -25,10 +25,11 @@ class AbstractModel(abs.ABC):
     """
     pass
 
-  @abc.abstractmethods
+  @abstractmethod
   def forward(self, params, x):
     pass
 
-  @abc.classmethod
+  @classmethod
   def get_value_grad(self, params, x):
+    """Get Model Val and Grad."""
     pass
