@@ -10,6 +10,4 @@ class AbstractSampler(abs.ABC):
 
   @abc.abstractmethod
   def step(self, x, model, model_param, s, rnd):
-    n_x = None
-    n_s = None
-    return n_x, n_s
+    pass
