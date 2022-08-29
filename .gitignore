@@ -1,1 +1,2 @@
-dmcx/model/__pycache__/
+__pycache__/
+*.egg-info/

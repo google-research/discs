@@ -1,35 +1,36 @@
-from abc import ABC, abstractmethod
+"""Abstract Model Class."""
+
+import abc
 import ml_collections
 
 
-class AbstractModel(ABC):
+class AbstractModel(abc.ABC):
   """Based Model Class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     pass
 
-  @abstractmethod
+  @abc.abstractmethod
   def make_init_params(self, rnd):
     pass
 
-  @abstractmethod
-  def get_init_samples(self, params, sz):
+  @abc.abstractmethod
+  def get_init_samples(self, rnd, num_samples):
     """Get initial samples.
-    
+
     Args:
-      param:model parameters.
-      sz:sample size.
+      rnd: jax random seed
+      num_samples: sample size.
 
     Returns:
-      Initial samples with batch size of sz
+      Initial samples with batch size of num_samples
     """
     pass
 
-  @abstractmethod
+  @abc.abstractmethod
   def forward(self, params, x):
     pass
 
-  @classmethod
-  def get_value_grad(self, params, x):
+  def get_value_and_grad(self, params, x):
     """Get Model Val and Grad."""
-    pass
+    raise NotImplementedError
