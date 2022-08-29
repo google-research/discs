@@ -1,23 +1,38 @@
-from abstractmodel import AbstractModel
+"""Bernouli Factorized Energy Function."""
+
+from dmcx.model import abstractmodel
+import jax
+import jax.numpy as jnp
 import ml_collections
-import numpy as np
 
 
-class Bernouli(AbstractModel):
+class Bernouli(abstractmodel.AbstractModel):
   """Bernouli Distribution."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    self.config = config
+    self.dimension = config.dimension
+    self.init_sigma = config.init_sigma
 
   def make_init_params(self, rnd):
-    np.random.seed(rnd)
-    return np.random.uniform(0, 1)
+    params = jax.random.normal(rnd, shape=(self.dimension,)) * self.init_sigma
+    return params
 
-  def get_init_samples(self, params, sz):
-    assert params is not None
-    assert sz >= 1
-    return np.random.binomial(size=sz, p=params, n=1)
+  def get_init_samples(self, rnd, num_samples: int):
+    x0 = jax.random.randint(rnd, shape=(num_samples, self.dimension),
+                            minval=0, maxval=2, dtype=jnp.int32)
+    return x0
 
   def forward(self, params, x):
-    return np.array(x == 1) * params + np.array(x == 0) * (1-params)
-  
+    params = jnp.reshape(params, (1, -1))
+    energy = jnp.sum(x * params, axis=-1)
+    return energy
+
+  def get_value_and_grad(self, params, x):
+    x = x.astype(jnp.float32)  # int tensor is not differentiable
+
+    def fun(z):
+      energy = self.forward(params, z)
+      return jnp.sum(energy), energy
+
+    (_, energy), grad = jax.value_and_grad(fun, has_aux=True)(x)
+    return energy, grad
