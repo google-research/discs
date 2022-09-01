@@ -64,7 +64,8 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
     rnd_uniform, rnd_new_sample, rnd_acceptance = random.split(rnd, num=3)
     del rnd
-    num_flips = get_num_flips(rnd_uniform, state)
+    num_flips = jnp.where(self.adaptive, get_num_flips(rnd_uniform, state),
+                          jnp.floor(state).astype(int))
     y = get_new_sample(rnd_new_sample, x, num_flips)
     accept_ratio = get_accept_ratio(model_param, x, y)
     accepted = is_accepted(rnd_acceptance, accept_ratio)
