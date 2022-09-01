@@ -23,7 +23,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
           jnp.floor(expected_flips).astype(int),
           jnp.ceil(expected_flips).astype(int))
 
-    def get_new_sample(rnd_new_sample, rnd_uniform, x):
+    def get_new_sample(rnd_new_sample x, num_flips):
       """Get new sample.
 
       Args:
@@ -34,7 +34,6 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       Returns:
         New sample.
       """
-      num_flips = 3  #get_num_flips(rnd_uniform, state)
       index_axis0 = jnp.repeat(jnp.arange(x.shape[0]), num_flips)
       aranged_index_batch = jnp.tile(jnp.arange(x.shape[-1]), [x.shape[0], 1])
       index_axis1 = random.permutation(
@@ -65,13 +64,8 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
     rnd_uniform, rnd_new_sample, rnd_acceptance = random.split(rnd, num=3)
     del rnd
-
-    # if x.shape[-1] < num_flips:
-    #   raise Exception(
-    #       "Determined state should be smaller than dimension of the samples."
-    #   )
-
-    y = get_new_sample(rnd_new_sample, rnd_uniform, x)
+    num_flips = get_num_flips(rnd_uniform, state)
+    y = get_new_sample(rnd_new_sample, x, num_flips)
     accept_ratio = get_accept_ratio(model_param, x, y)
     accepted = is_accepted(rnd_acceptance, accept_ratio)
     new_x = accepted * y + (1 - accepted) * x
