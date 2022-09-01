@@ -23,7 +23,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
           jnp.floor(expected_flips).astype(int),
           jnp.ceil(expected_flips).astype(int))
 
-    def get_new_sample(rnd_new_sample x, num_flips):
+    def get_new_sample(rnd_new_sample, x, num_flips):
       """Get new sample.
 
       Args:
