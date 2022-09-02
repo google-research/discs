@@ -14,18 +14,26 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     self.adaptive = config.adaptive
     self.target_accept_ratio = config.target_accept_ratio
-    self.num_flips = config.num_flips
+    self.sample_dimension = config.sample_dimension
 
-  def step(self, rnd, x, model, model_param, state):
+  def make_init_state(self, rnd):
+    return random.randint(
+        rnd,
+        shape=(1, 1),
+        minval=0,
+        maxval=self.sample_dimension,
+        dtype=jnp.int32).at[0, 0].get()
 
-    # def get_num_flips(rnd_uniform, expected_flips):
-    #   return jnp.where(
-    #       random.uniform(rnd_uniform, minval=0.0, maxval=1.0) <
-    #       expected_flips - jnp.floor(expected_flips),
-    #       jnp.floor(expected_flips).astype(int),
-    #       jnp.ceil(expected_flips).astype(int))
+  def step(self, model, rnd, x, model_param, state):
 
-    def get_new_sample(rnd_new_sample, x):
+    def get_num_flips(rnd_uniform, expected_flips):
+      return jnp.where(
+          random.uniform(rnd_uniform, minval=0.0, maxval=1.0) <
+          expected_flips - jnp.floor(expected_flips),
+          jnp.floor(expected_flips).astype(int),
+          jnp.ceil(expected_flips).astype(int))
+
+    def get_new_sample(rnd_new_sample, x, num_flips):
       """Get new sample.
 
       Args:
@@ -36,15 +44,11 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       Returns:
         New sample.
       """
-      index_axis0 = jnp.repeat(jnp.arange(x.shape[0]), self.num_flips)
-      aranged_index_batch = jnp.tile(jnp.arange(x.shape[-1]), [x.shape[0], 1])
-      index_axis1 = jax.lax.dynamic_slice(
-          random.permutation(
-              rnd_new_sample, aranged_index_batch, axis=-1, independent=True),
-          (0, 0), (x.shape[0], self.num_flips)).reshape(1, -1)
-      zeros = jnp.zeros(x.shape)
-      flipped = zeros.at[index_axis0, index_axis1].set(1)
-      return jnp.where(x + flipped == 2, 0, x + flipped)
+      flipped = random.bernoulli(
+          rnd_new_sample,
+          p=(num_flips / x.shape[-1]),
+          shape=[x.shape[0], x.shape[-1]])
+      return jnp.where(flipped, 1 - x, x)
 
     def get_accept_ratio(model_param, x, y):
       e_x = model.forward(model_param, x)
@@ -67,9 +71,9 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
     rnd_uniform, rnd_new_sample, rnd_acceptance = random.split(rnd, num=3)
     del rnd
-    # num_flips = jnp.where(self.adaptive, get_num_flips(rnd_uniform, state),
-    #                       jnp.floor(state).astype(int))
-    y = get_new_sample(rnd_new_sample, x)
+    num_flips = jnp.where(self.adaptive, get_num_flips(rnd_uniform, state),
+                          jnp.floor(state).astype(int))
+    y = get_new_sample(rnd_new_sample, x, num_flips)
     accept_ratio = get_accept_ratio(model_param, x, y)
     accepted = is_accepted(rnd_acceptance, accept_ratio)
     new_x = accepted * y + (1 - accepted) * x

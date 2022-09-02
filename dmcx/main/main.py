@@ -18,15 +18,16 @@ def load_configs():
           model='ber',
           sampler='RW',
           num_samples=100,
-          chain_lenght=50,
+          chain_lenght=1000,
           sampler_state=3))
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(dimension=10, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
-          adaptive=False, target_accept_ratio=0.234, num_flips=3))
+          adaptive=False, target_accept_ratio=0.234, sample_dimension=10))
 
   return config_main, config_model, config_sampler
+
 
 def get_model(config_main, config_model):
   if config_main.model == 'ber':
@@ -40,36 +41,29 @@ def get_sampler(config_main, config_sampler):
   raise Exception('Please provide a correct sampler name.')
 
 
-@jax.jit
-def generate_chains(rnd):
-  """Generates chain of samples."""
-
-  config_main, config_model, config_sampler = load_configs()
-  model = get_model(config_main, config_model)
-  sampler = get_sampler(config_main, config_sampler)
-
-  state = config_main.sampler_state
-  rng_param, rng_x0, rng_sampler = random.split(rnd, num=3)
-  del rnd
-  params = model.make_init_params(rng_param)
-  x = model.get_init_samples(rng_x0, config_main.num_samples)
-  chain = jnp.expand_dims(x, axis=1)
-  print('initial sample shape \n', x.shape)
-  for _ in range(config_main.chain_lenght - 1):
-    x, state = sampler.step(rng_sampler, x, model, params, state)
-    rng_sampler, _ = random.split(rng_sampler)
-    chain = jnp.concatenate((chain, jnp.expand_dims(x, axis=1)), axis=1)
-  return chain
-
-
-
-
-
 def main(argv: Sequence[str]) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
-  chain = generate_chains(random.PRNGKey(0))
+  rnd = random.PRNGKey(0)
+  config_main, config_model, config_sampler = load_configs()
+  model = get_model(config_main, config_model)
+  sampler = get_sampler(config_main, config_sampler)
+
+  rng_param, rng_x0, rng_sampler, rng_sampler_step = jax.random.split(
+      rnd, num=4)
+  del rnd
+  params = model.make_init_params(rng_param)
+  x = model.get_init_samples(rng_x0, config_main.num_samples)
+  state = sampler.make_init_state(rng_sampler)
+  step_jit = jax.jit(sampler.step, static_argnums=0)
+  chain = []
+  chain.append(x)
+  for _ in range(config_main.chain_lenght - 1):
+    x, state = step_jit(model, rng_sampler_step, x, params, state)
+    rng_sampler_step, _ = random.split(rng_sampler_step)
+    chain.append(x)
+  chain = jnp.swapaxes(jnp.array(chain), axis1=0, axis2=1)
   print(jnp.shape(chain))
 
 
