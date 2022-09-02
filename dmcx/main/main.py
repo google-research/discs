@@ -15,17 +15,15 @@ def load_configs():
 
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
-          model='ber',
-          sampler='RW',
-          num_samples=100,
-          chain_lenght=1000,
-          sampler_state=3))
+          model='ber', sampler='RW', num_samples=5, chain_lenght=2))
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(dimension=10, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
-          adaptive=False, target_accept_ratio=0.234, sample_dimension=10))
-
+          adaptive=False,
+          target_accept_ratio=0.234,
+          sample_dimension=10,
+          num_categ=2))
   return config_main, config_model, config_sampler
 
 
