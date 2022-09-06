@@ -5,7 +5,6 @@ from absl import app
 import dmcx.model.bernouli as bernouli_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
 import os
-
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=1'
 import jax
 from jax import random
@@ -23,7 +22,7 @@ def load_configs():
           sampler='RW',
           num_samples=100,
           chain_lenght=5000,
-          chain_burn_in=4500))
+          chain_burn_in_len=4500))
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(dimension=5, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
@@ -61,13 +60,13 @@ def get_sample_variance(samples):
   return mean_var_over_batch
 
 
-def compute_chain(model, chain_lenght, chain_burn_in, step_jit, state, params,
-                  rng_sampler_step, x):
+def compute_chain(model, chain_lenght, chain_burn_in_len, step_jit, state,
+                  params, rng_sampler_step, x):
   chain = []
   for i in range(chain_lenght - 1):
     x, state = step_jit(model, rng_sampler_step, x, params, state)
     rng_sampler_step, _ = random.split(rng_sampler_step)
-    if chain_burn_in <= i+1:
+    if chain_burn_in_len <= i + 1:
       chain.append(x)
   chain = jnp.swapaxes(jnp.array(chain), axis1=0, axis2=1)
   return chain
@@ -98,8 +97,8 @@ def main(argv: Sequence[str]) -> None:
 
   if not config_main.parallel:
     chain = compute_chain(model, config_main.chain_lenght,
-                          config_main.chain_burn_in, step_jit, state, params,
-                          rng_sampler_step, x)
+                          config_main.chain_burn_in_len, step_jit, state,
+                          params, rng_sampler_step, x)
   else:
     params = jnp.stack([params] * n_devices)
     rng_sampler_step = jax.random.split(rng_sampler_step, num=n_devices)
@@ -109,8 +108,8 @@ def main(argv: Sequence[str]) -> None:
     compute_chain_p = jax.pmap(
         compute_chain, static_broadcasted_argnums=[0, 1, 2, 3, 4])
     chain = compute_chain_p(model, config_main.chain_lenght,
-                            config_main.chain_burn_in, step_jit, state, params,
-                            rng_sampler_step, x)
+                            config_main.chain_burn_in_len, step_jit, state,
+                            params, rng_sampler_step, x)
     chain = chain.reshape(x.shape[0], -1, x.shape[-1])
   print('Samples Shape=', jnp.shape(chain))
   mean = get_sample_mean(chain)

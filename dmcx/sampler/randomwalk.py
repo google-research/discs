@@ -11,7 +11,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.adaptive = config.adaptive
-    self.target_accept_ratio = config.target_accept_ratio
+    self.ber_target_accept_rate = config.ber_target_accept_rate
     self.sample_dimension = config.sample_dimension
     self.num_categ = config.num_categ
 
@@ -58,7 +58,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       return jnp.minimum(
           jnp.maximum(
               1, expected_flips +
-              (jnp.mean(clipped_accept_ratio) - self.target_accept_ratio)),
+              (jnp.mean(clipped_accept_ratio) - self.ber_target_accept_rate)),
           x.shape[-1])
 
     rnd_new_sample, rnd_acceptance = random.split(rnd)
