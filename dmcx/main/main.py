@@ -18,7 +18,7 @@ def load_configs():
 
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
-          parallel=True,
+          parallel=False,
           model='ber',
           sampler='RW',
           num_samples=100,
@@ -64,11 +64,10 @@ def get_sample_variance(samples):
 def compute_chain(model, chain_lenght, chain_burn_in, step_jit, state, params,
                   rng_sampler_step, x):
   chain = []
-  chain.append(x)
   for i in range(chain_lenght - 1):
     x, state = step_jit(model, rng_sampler_step, x, params, state)
     rng_sampler_step, _ = random.split(rng_sampler_step)
-    if chain_burn_in <= i:
+    if chain_burn_in <= i+1:
       chain.append(x)
   chain = jnp.swapaxes(jnp.array(chain), axis1=0, axis2=1)
   return chain
