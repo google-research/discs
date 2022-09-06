@@ -20,13 +20,19 @@ class RandomWalkSamplerTest(parameterized.TestCase):
     # non-adaptive sampler
     self.config_sampler_nonadaprive = config_dict.ConfigDict(
         initial_dictionary=dict(
-            adaptive=False, target_accept_ratio=0.234, sample_dimension=10))
+            adaptive=False,
+            ber_target_accept_rate=0.234,
+            sample_dimension=10,
+            num_categ=2))
     self.sampler_nonadaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_nonadaprive)
     # adaptive sampler
     self.config_sampler_adaptive = config_dict.ConfigDict(
         initial_dictionary=dict(
-            adaptive=True, target_accept_ratio=0.234, sample_dimension=10))
+            adaptive=True,
+            ber_target_accept_rate=0.234,
+            sample_dimension=10,
+            num_categ=2))
     self.sampler_adaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_adaptive)
 
