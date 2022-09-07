@@ -28,7 +28,7 @@ def load_configs():
       initial_dictionary=dict(dimension=5, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
-          adaptive=True,
+          adaptive=False,
           ber_target_accept_rate=0.234,
           sample_dimension=5,
           num_categ=2))
