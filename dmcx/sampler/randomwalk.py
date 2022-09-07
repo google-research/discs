@@ -17,7 +17,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
   def make_init_state(self, rnd):
     """Returns expected number of flips."""
-    return 1  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=10).at[0, 0].get()
+    return 1  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_dimension).at[0, 0].get()
 
   def step(self, model, rnd, x, model_param, state):
 
