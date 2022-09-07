@@ -49,25 +49,8 @@ def get_sampler(config_main, config_sampler):
   raise Exception('Please provide a correct sampler name.')
 
 
-def get_sample_mean(samples):
-  mean_over_samples = jnp.mean(samples, axis=1)
-  mean_over_batch = jnp.mean(mean_over_samples, axis=0)
-  return mean_over_batch
-
-
-def get_sample_variance_biased(samples):
-  var_over_samples = jnp.var(samples, axis=1)
-  mean_var_over_batch = jnp.mean(var_over_samples, axis=0)
-  return mean_var_over_batch
-
-
-def get_sample_variance_unbiased(samples):
-  sample_mean = jnp.mean(samples, axis=1, keepdims=True)
-  var_over_samples = jnp.sum(
-      (samples - sample_mean)**2, axis=1) / (
-          samples.shape[1] - 1)
-  mean_var_over_batch = jnp.mean(var_over_samples, axis=0)
-  return mean_var_over_batch
+def split(arr, n_devices):
+  return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
 
 
 def compute_chain(model, chain_lenght, chain_burnin_len, step_jit, state,
@@ -82,8 +65,33 @@ def compute_chain(model, chain_lenght, chain_burnin_len, step_jit, state,
   return chain
 
 
-def split(arr, n_devices):
-  return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
+def get_sample_mean(samples):
+  mean_over_samples = jnp.mean(samples, axis=1)
+  return mean_over_samples
+
+
+def get_sample_variance_unbiased(samples):
+  sample_mean = jnp.mean(samples, axis=1, keepdims=True)
+  var_over_samples = jnp.sum(
+      (samples - sample_mean)**2, axis=1) / (
+          samples.shape[1] - 1)
+  return var_over_samples
+
+
+def compute_error(model, params, samples):
+
+  mean_s_batch = get_sample_mean(samples)
+  mean_p = model.get_expected_val(params)
+  mean_mean_error = jnp.mean((mean_s_batch - mean_p)**2)
+  max_mean_error = jnp.max((mean_s_batch - mean_p)**2)
+  print('Mean of mean error over all chains: ', mean_mean_error)
+  print('Max of mean error over all chains: ', max_mean_error)
+  var_unbiased_s = get_sample_variance_unbiased(samples)
+  var_p = model.get_var(params)
+  mean_var_error = jnp.mean((var_p - var_unbiased_s)**2)
+  max_var_error = jnp.max((var_p - var_unbiased_s)**2)
+  print('Mean of var error over all chains: ', mean_var_error)
+  print('Max of var error over all chains: ', max_var_error)
 
 
 def main(argv: Sequence[str]) -> None:
@@ -121,20 +129,7 @@ def main(argv: Sequence[str]) -> None:
                             params, rng_sampler_step, x)
     chain = chain.reshape(x.shape[0], -1, x.shape[-1])
   print('Samples Shape=', jnp.shape(chain))
-  mean_s = get_sample_mean(chain)
-  mean_p = model.get_expected_val(params)
-  var_biased_s = get_sample_variance_biased(chain)
-  var_unbiased_s = get_sample_variance_unbiased(chain)
-  var_p = model.get_var(params)
-  print('Sample Mean: ', mean_s)
-  print('Population Mean: ', mean_p)
-  print('Biased sample Var: ', var_biased_s)
-  print('Unbiased sample Var: ', var_unbiased_s)
-  print('Population Var: ', var_p)
-  print('Average error on Mean: ', jnp.mean((mean_p - mean_s)**2))
-  print('Average error on var(biased): ', jnp.mean((var_p - var_biased_s)**2))
-  print('Average error on var(unbiased): ', jnp.mean(
-      (var_p - var_unbiased_s)**2))
+  compute_error(model, params, chain)
 
 
 if __name__ == '__main__':
