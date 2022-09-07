@@ -42,7 +42,11 @@ class Bernouli(abstractmodel.AbstractModel):
     return energy, grad
 
   def get_expected_val(self, params):
-    return jnp.exp(-params) / (jnp.exp(-params) + jnp.ones(params.shape[-1]))
+    # for clarity x0 and x1 are defined!
+    x1 = jnp.ones(params.shape[-1])
+    x0 = jnp.zeros(params.shape[-1])
+    return jnp.exp(-params * x1) / (
+        jnp.exp(-params * x1) + jnp.exp(-params * x0))
 
   def get_var(self, params):
     p = self.get_expected_val(params)

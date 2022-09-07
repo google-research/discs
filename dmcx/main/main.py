@@ -5,11 +5,12 @@ from absl import app
 import dmcx.model.bernouli as bernouli_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
 import os
+
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=1'
-import jax
 from jax import random
-import jax.numpy as jnp
 from ml_collections import config_dict
+import jax.numpy as jnp
+import jax
 
 
 def load_configs():
@@ -22,13 +23,13 @@ def load_configs():
           sampler='RW',
           num_samples=100,
           chain_lenght=5000,
-          chain_burn_in_len=4500))
+          chain_burnin_len=4500))
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(dimension=5, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
-          adaptive=False,
-          target_accept_ratio=0.234,
+          adaptive=True,
+          ber_target_accept_rate=0.234,
           sample_dimension=5,
           num_categ=2))
   if config_model.dimension != config_sampler.sample_dimension:
@@ -54,26 +55,34 @@ def get_sample_mean(samples):
   return mean_over_batch
 
 
-def get_sample_variance(samples):
+def get_sample_variance_biased(samples):
   var_over_samples = jnp.var(samples, axis=1)
   mean_var_over_batch = jnp.mean(var_over_samples, axis=0)
   return mean_var_over_batch
 
 
-def compute_chain(model, chain_lenght, chain_burn_in_len, step_jit, state,
+def get_sample_variance_unbiased(samples):
+  sample_mean = jnp.mean(samples, axis=1, keepdims=True)
+  var_over_samples = jnp.sum(
+      (samples - sample_mean)**2, axis=1) / (
+          samples.shape[1] - 1)
+  mean_var_over_batch = jnp.mean(var_over_samples, axis=0)
+  return mean_var_over_batch
+
+
+def compute_chain(model, chain_lenght, chain_burnin_len, step_jit, state,
                   params, rng_sampler_step, x):
   chain = []
   for i in range(chain_lenght - 1):
     x, state = step_jit(model, rng_sampler_step, x, params, state)
     rng_sampler_step, _ = random.split(rng_sampler_step)
-    if chain_burn_in_len <= i + 1:
+    if chain_burnin_len <= i + 1:
       chain.append(x)
   chain = jnp.swapaxes(jnp.array(chain), axis1=0, axis2=1)
   return chain
 
 
 def split(arr, n_devices):
-  """Splits the first axis of `arr` evenly across the number of devices."""
   return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
 
 
@@ -97,8 +106,8 @@ def main(argv: Sequence[str]) -> None:
 
   if not config_main.parallel:
     chain = compute_chain(model, config_main.chain_lenght,
-                          config_main.chain_burn_in_len, step_jit, state,
-                          params, rng_sampler_step, x)
+                          config_main.chain_burnin_len, step_jit, state, params,
+                          rng_sampler_step, x)
   else:
     params = jnp.stack([params] * n_devices)
     rng_sampler_step = jax.random.split(rng_sampler_step, num=n_devices)
@@ -108,16 +117,24 @@ def main(argv: Sequence[str]) -> None:
     compute_chain_p = jax.pmap(
         compute_chain, static_broadcasted_argnums=[0, 1, 2, 3, 4])
     chain = compute_chain_p(model, config_main.chain_lenght,
-                            config_main.chain_burn_in_len, step_jit, state,
+                            config_main.chain_burnin_len, step_jit, state,
                             params, rng_sampler_step, x)
     chain = chain.reshape(x.shape[0], -1, x.shape[-1])
   print('Samples Shape=', jnp.shape(chain))
-  mean = get_sample_mean(chain)
-  var = get_sample_variance(chain)
-  print('Sample Mean: ', mean)
-  print('Population Mean: ', model.get_expected_val(params))
-  print('Sample Var: ', var)
-  print('Population Var: ', model.get_var(params))
+  mean_s = get_sample_mean(chain)
+  mean_p = model.get_expected_val(params)
+  var_biased_s = get_sample_variance_biased(chain)
+  var_unbiased_s = get_sample_variance_unbiased(chain)
+  var_p = model.get_var(params)
+  print('Sample Mean: ', mean_s)
+  print('Population Mean: ', mean_p)
+  print('Biased sample Var: ', var_biased_s)
+  print('Unbiased sample Var: ', var_unbiased_s)
+  print('Population Var: ', var_p)
+  print('Average error on Mean: ', jnp.mean((mean_p - mean_s)**2))
+  print('Average error on var(biased): ', jnp.mean((var_p - var_biased_s)**2))
+  print('Average error on var(unbiased): ', jnp.mean(
+      (var_p - var_unbiased_s)**2))
 
 
 if __name__ == '__main__':
