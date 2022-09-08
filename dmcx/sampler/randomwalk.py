@@ -11,18 +11,32 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.adaptive = config.adaptive
-    self.ber_target_accept_rate = config.ber_target_accept_rate
+    self.target_acceptance_rate = config.target_acceptance_rate
     self.sample_dimension = config.sample_dimension
-    self.num_categ = config.num_categ
+    self.num_categories = config.num_categories
 
   def make_init_state(self, rnd):
     """Returns expected number of flips."""
     return 1  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_dimension).at[0, 0].get()
 
   def step(self, model, rnd, x, model_param, state):
+    """Given the current sample, returns the next sample of the chain.
+
+    Args:
+      model: target distribution.
+      rnd: random key generator for JAX.
+      x: current sample.
+      model_param: target distribution parameters used for loglikelihood
+        calulation.
+      state: the state of the sampler (changes in adaptive case to tune the
+        proposal distribution).
+
+    Returns:
+      New sample.
+    """
 
     def get_new_sample(rnd_new_sample, x, expected_num_flips):
-      """Get new sample.
+      """Proposal distribution to sample the next state.
 
       Args:
         rnd_new_sample: key for binary mask and random flip.
@@ -39,13 +53,13 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
               rnd_new_sample_randint,
               shape=x.shape,
               minval=1,
-              maxval=self.num_categ)
-      return (flipped + x) % self.num_categ
+              maxval=self.num_categories)
+      return (flipped + x) % self.num_categories
 
     def get_accept_ratio(model, model_param, x, y):
-      e_x = model.forward(model_param, x)
-      e_y = model.forward(model_param, y)
-      return jnp.exp(-e_y + e_x)
+      loglikelihood_x = model.forward(model_param, x)
+      loglikelihood_y = model.forward(model_param, y)
+      return jnp.exp(loglikelihood_y - loglikelihood_x)
 
     def is_accepted(rnd_acceptance, accept_ratio):
       random_uniform_val = random.uniform(
@@ -58,7 +72,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       return jnp.minimum(
           jnp.maximum(
               1, expected_flips +
-              (jnp.mean(clipped_accept_ratio) - self.ber_target_accept_rate)),
+              (jnp.mean(clipped_accept_ratio) - self.target_acceptance_rate)),
           x.shape[-1])
 
     rnd_new_sample, rnd_acceptance = random.split(rnd)

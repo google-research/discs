@@ -1,4 +1,4 @@
-"""Tests for bernouli."""
+"""Tests for Random Walk Sampler."""
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -21,18 +21,18 @@ class RandomWalkSamplerTest(parameterized.TestCase):
     self.config_sampler_nonadaprive = config_dict.ConfigDict(
         initial_dictionary=dict(
             adaptive=False,
-            ber_target_accept_rate=0.234,
+            target_acceptance_rate=0.234,
             sample_dimension=10,
-            num_categ=2))
+            num_categories=2))
     self.sampler_nonadaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_nonadaprive)
     # adaptive sampler
     self.config_sampler_adaptive = config_dict.ConfigDict(
         initial_dictionary=dict(
             adaptive=True,
-            ber_target_accept_rate=0.234,
+            target_acceptance_rate=0.234,
             sample_dimension=10,
-            num_categ=2))
+            num_categories=2))
     self.sampler_adaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_adaptive)
 

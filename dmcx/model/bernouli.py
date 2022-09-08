@@ -28,25 +28,22 @@ class Bernouli(abstractmodel.AbstractModel):
 
   def forward(self, params, x):
     params = jnp.reshape(params, (1, -1))
-    energy = jnp.sum(x * params, axis=-1)
-    return energy
+    loglikelihood = jnp.sum(x * params, axis=-1)
+    return loglikelihood
 
   def get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):
-      energy = self.forward(params, z)
-      return jnp.sum(energy), energy
+      loglikelihood = self.forward(params, z)
+      return jnp.sum(loglikelihood), loglikelihood
 
-    (_, energy), grad = jax.value_and_grad(fun, has_aux=True)(x)
-    return energy, grad
+    (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
+    return loglikelihood, grad
 
   def get_expected_val(self, params):
-    # for clarity x0 and x1 are defined!
-    x1 = jnp.ones(params.shape[-1])
-    x0 = jnp.zeros(params.shape[-1])
-    return jnp.exp(-params * x1) / (
-        jnp.exp(-params * x1) + jnp.exp(-params * x0))
+    return jnp.exp(params) / (
+        jnp.exp(params) + jnp.ones(params.shape[-1]))
 
   def get_var(self, params):
     p = self.get_expected_val(params)
