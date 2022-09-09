@@ -13,10 +13,8 @@ class BernouliTest(parameterized.TestCase):
   def setUp(self):
     """This method will be run before each of the test methods in the class."""
     super().setUp()
-    self.config = config_dict.ConfigDict(initial_dictionary=dict(
-        dimension=100,
-        init_sigma=1.0
-    ))
+    self.config = config_dict.ConfigDict(
+        initial_dictionary=dict(dimension=100, init_sigma=1.0))
     self.bernouli_model = bernouli_model.Bernouli(self.config)
     self.rng = jax.random.PRNGKey(0)
 
