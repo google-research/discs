@@ -4,6 +4,8 @@ from collections.abc import Sequence
 from absl import app
 import dmcx.model.bernouli as bernouli_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
+import dmcx.sampler.blockgibbs as blockgibbs_sampler
+
 import os
 
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=4'
@@ -20,18 +22,20 @@ def load_configs():
       initial_dictionary=dict(
           parallel=False,
           model='bernouli',
-          sampler='random_walk',
+          sampler='gibbs',
           num_samples=100,
-          chain_length=5000,
-          chain_burnin_length=4500))
+          chain_length=100000,
+          chain_burnin_length=95000))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(dimension=10, init_sigma=1.0))
+      initial_dictionary=dict(dimension=4, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_dimension=10,
-          num_categories=2))
+          sample_dimension=4,
+          num_categories=2,
+          random_order=False,
+          block_size=2))
   if config_model.dimension != config_sampler.sample_dimension:
     config_model.dimension = config_sampler.sample_dimension
   return config_main, config_model, config_sampler
@@ -46,6 +50,8 @@ def get_model(config_main, config_model):
 def get_sampler(config_main, config_sampler):
   if config_main.sampler == 'random_walk':
     return randomwalk_sampler.RandomWalkSampler(config_sampler)
+  elif config_main.sampler == 'gibbs':
+    return blockgibbs_sampler.BlockGibbsSampler(config_sampler)
   raise Exception('Please provide a correct sampler name.')
 
 
