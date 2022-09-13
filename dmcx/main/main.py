@@ -24,18 +24,18 @@ def load_configs():
           model='bernouli',
           sampler='gibbs',
           num_samples=100,
-          chain_length=100000,
-          chain_burnin_length=95000))
+          chain_length=5000,
+          chain_burnin_length=4500))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(dimension=4, init_sigma=1.0))
+      initial_dictionary=dict(dimension=10, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_dimension=4,
+          sample_dimension=10,
           num_categories=2,
           random_order=False,
-          block_size=2))
+          block_size=4))
   if config_model.dimension != config_sampler.sample_dimension:
     config_model.dimension = config_sampler.sample_dimension
   return config_main, config_model, config_sampler
@@ -169,6 +169,7 @@ def main(argv: Sequence[str]) -> None:
                           state_pmap, params_pmap, rng_sampler_step, x_pmap,
                           n_devices)
     chain = chain.reshape(chain.shape[0], -1, chain.shape[-1])
+  print('Chain Length: ', config_main.chain_length)
   print('Samples Shape [Num of Samples, Num of Batch, Sample Dimension]: ',
         jnp.shape(chain))
   compute_error_across_chain_and_batch(model, params, chain)

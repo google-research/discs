@@ -15,14 +15,14 @@ class GibbsSamplerTest(parameterized.TestCase):
     super().setUp()
     self.rng = jax.random.PRNGKey(0)
     self.config_model = config_dict.ConfigDict(
-        initial_dictionary=dict(dimension=4, init_sigma=1.0))
+        initial_dictionary=dict(dimension=10, init_sigma=1.0))
     self.bernouli_model = bernouli_model.Bernouli(self.config_model)
     self.config_sampler = config_dict.ConfigDict(
         initial_dictionary=dict(
-            sample_dimension=4,
-            num_categories=3,
+            sample_dimension=10,
+            num_categories=2,
             random_order=False,
-            block_size=1))
+            block_size=3))
     self.sampler = blockgibbs_sampler.BlockGibbsSampler(self.config_sampler)
 
   @parameterized.named_parameters(('Random Walk Step Non Adaptive', 4))
