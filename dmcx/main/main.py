@@ -4,6 +4,8 @@ from collections.abc import Sequence
 from absl import app
 import dmcx.model.bernouli as bernouli_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
+import dmcx.sampler.blockgibbs as blockgibbs_sampler
+
 import os
 
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=4'
@@ -20,7 +22,7 @@ def load_configs():
       initial_dictionary=dict(
           parallel=False,
           model='bernouli',
-          sampler='random_walk',
+          sampler='gibbs',
           num_samples=100,
           chain_length=5000,
           chain_burnin_length=4500))
@@ -31,7 +33,9 @@ def load_configs():
           adaptive=False,
           target_acceptance_rate=0.234,
           sample_dimension=10,
-          num_categories=2))
+          num_categories=2,
+          random_order=False,
+          block_size=4))
   if config_model.dimension != config_sampler.sample_dimension:
     config_model.dimension = config_sampler.sample_dimension
   return config_main, config_model, config_sampler
@@ -46,6 +50,8 @@ def get_model(config_main, config_model):
 def get_sampler(config_main, config_sampler):
   if config_main.sampler == 'random_walk':
     return randomwalk_sampler.RandomWalkSampler(config_sampler)
+  elif config_main.sampler == 'gibbs':
+    return blockgibbs_sampler.BlockGibbsSampler(config_sampler)
   raise Exception('Please provide a correct sampler name.')
 
 
@@ -163,6 +169,7 @@ def main(argv: Sequence[str]) -> None:
                           state_pmap, params_pmap, rng_sampler_step, x_pmap,
                           n_devices)
     chain = chain.reshape(chain.shape[0], -1, chain.shape[-1])
+  print('Chain Length: ', config_main.chain_length)
   print('Samples Shape [Num of Samples, Num of Batch, Sample Dimension]: ',
         jnp.shape(chain))
   compute_error_across_chain_and_batch(model, params, chain)
