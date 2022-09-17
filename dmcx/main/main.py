@@ -14,6 +14,7 @@ from ml_collections import config_dict
 import jax.numpy as jnp
 import jax
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 def load_configs():
@@ -23,19 +24,19 @@ def load_configs():
       initial_dictionary=dict(
           parallel=False,
           model='bernouli',
-          sampler='random_walk',
+          sampler='locally_balanced',
           num_samples=100,
-          chain_length=10000,
-          chain_burnin_length=9500,
-          window_size=500,
-          window_stride=250))
+          chain_length=1000,
+          chain_burnin_length=500,
+          window_size=10,
+          window_stride=10))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(dimension=10, init_sigma=1.0))
+      initial_dictionary=dict(dimension=1000, init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_dimension=10,
+          sample_dimension=1000,
           num_categories=2,
           random_order=False,
           block_size=3,
@@ -69,7 +70,7 @@ def compute_chain(model, chain_length, chain_burnin_length, sampler_step, state,
                   params, rng_sampler_step, x, n_devices):
   chain = []
   chain.append(x)
-  for i in range(chain_length - 1):
+  for i in tqdm(range(chain_length - 1)):
     rng_sampler_step_p = jax.random.split(rng_sampler_step, num=n_devices)
     x, state = sampler_step(model, rng_sampler_step_p, x, params, state)
     del rng_sampler_step_p
