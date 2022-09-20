@@ -15,6 +15,7 @@ import jax.numpy as jnp
 import jax
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import pdb
 
 
 def load_configs():
@@ -24,25 +25,25 @@ def load_configs():
       initial_dictionary=dict(
           parallel=False,
           model='bernouli',
-          sampler='locally_balanced',
+          sampler='random_walk',
           num_samples=100,
-          chain_length=1000,
-          chain_burnin_length=500,
+          chain_length=5000,
+          chain_burnin_length=4500,
           window_size=10,
           window_stride=10))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(dimension=1000, init_sigma=1.0))
+      initial_dictionary=dict(shape=(10, 10, 5), init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_dimension=1000,
+          sample_shape=(10, 10, 5),
           num_categories=2,
           random_order=False,
           block_size=3,
           balancing_fn_type=1))
-  if config_model.dimension != config_sampler.sample_dimension:
-    config_model.dimension = config_sampler.sample_dimension
+  if config_model.shape != config_sampler.sample_shape:
+    config_model.shape = config_sampler.sample_shape
   return config_main, config_model, config_sampler
 
 
@@ -69,8 +70,7 @@ def split(arr, n_devices):
 def compute_chain(model, chain_length, chain_burnin_length, sampler_step, state,
                   params, rng_sampler_step, x, n_devices):
   chain = []
-  chain.append(x)
-  for i in tqdm(range(chain_length - 1)):
+  for i in tqdm(range(chain_length)):
     rng_sampler_step_p = jax.random.split(rng_sampler_step, num=n_devices)
     x, state = sampler_step(model, rng_sampler_step_p, x, params, state)
     del rng_sampler_step_p
@@ -107,7 +107,6 @@ def get_max_error(pred, target):
 
 
 def compute_error(model, params, samples):
-
   mean_p, var_p = get_population_mean_and_var(model, params)
   mean_s_batch = get_sample_mean(samples)
   avg_mean_error = get_mse(mean_s_batch, mean_p)
@@ -201,16 +200,20 @@ def main(argv: Sequence[str]) -> None:
                                    config_main.chain_burnin_length, step_pmap,
                                    state_pmap, params_pmap, rng_sampler_step,
                                    x_pmap, n_devices)
+
+    print('*******************= ', chain.shape)
     chain = chain.reshape(chain.shape[0], -1, chain.shape[-1])
     samples = samples.reshape(samples.shape[0], -1, samples.shape[-1])
 
-  print('Sampler: ', config_main.sampler, 'Chain Length: ',
-        config_main.chain_length)
-  print('Samples Shape [Num of Samples, Num of Batch, Sample Dimension]: ',
-        jnp.shape(samples))
+  print('Sampler: ', config_main.sampler, '! Chain Length: ',
+        config_main.chain_length, '! Burn-in Length: ',
+        config_main.chain_burnin_length)
+  print('Samples Shape [Num of Samples, Batch Size, Sample shape]: ',
+        samples.shape)
   compute_error_across_chain_and_batch(model, params, chain)
-  get_mixing_time_graph_over_chain(model, params, chain, config_main.window_size, config_main.window_stride,
-                                   config_main)
+  get_mixing_time_graph_over_chain(model, params, chain,
+                                   config_main.window_size,
+                                   config_main.window_stride, config_main)
 
 
 if __name__ == '__main__':

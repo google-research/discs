@@ -10,7 +10,10 @@ class Bernouli(abstractmodel.AbstractModel):
   """Bernouli Distribution."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    self.shape = config.shape
+    if isinstance(config.shape, int):
+      self.shape = (config.shape,)
+    else:
+      self.shape = config.shape
     self.init_sigma = config.init_sigma
 
   def make_init_params(self, rnd):
