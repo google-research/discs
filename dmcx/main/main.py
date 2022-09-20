@@ -23,7 +23,7 @@ def load_configs():
 
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
-          parallel=False,
+          parallel=True,
           model='bernouli',
           sampler='random_walk',
           num_samples=100,
@@ -200,10 +200,14 @@ def main(argv: Sequence[str]) -> None:
                                    config_main.chain_burnin_length, step_pmap,
                                    state_pmap, params_pmap, rng_sampler_step,
                                    x_pmap, n_devices)
-
-    print('*******************= ', chain.shape)
-    chain = chain.reshape(chain.shape[0], -1, chain.shape[-1])
-    samples = samples.reshape(samples.shape[0], -1, samples.shape[-1])
+    if isinstance(config_sampler.sample_shape, int):
+      sample_shape = (config_sampler.sample_shape,)
+    else:
+      sample_shape = config_sampler.sample_shape
+    chain = chain.reshape((config_main.chain_length, config_main.num_samples) +
+                          sample_shape)
+    samples = samples.reshape((samples.shape[0], config_main.num_samples) +
+                              sample_shape)
 
   print('Sampler: ', config_main.sampler, '! Chain Length: ',
         config_main.chain_length, '! Burn-in Length: ',
