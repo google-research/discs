@@ -71,7 +71,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     dim = math.prod(self.sample_shape)
     indices = jnp.arange(dim)
     if self.random_order:
-      indices = random.shuffle(rnd_shuffle, indices, axis=0)
+      indices = random.permutation(rnd_shuffle, indices, axis=0, independent=True)
     for flip_index_start in range(0, len(indices), self.block_size):
       indices_to_flip = indices[flip_index_start:flip_index_start +
                                 self.block_size]
