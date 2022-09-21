@@ -29,7 +29,7 @@ class GibbsSamplerTest(parameterized.TestCase):
     else:
       self.sample_shape = self.config_model.shape
 
-  @parameterized.named_parameters(('Random Walk Step Non Adaptive', 5))
+  @parameterized.named_parameters(('Block Gibbs Step', 5))
   def test_step(self, num_samples):
     rng_param, rng_x0, rng_sampler, rng_sampler_step = jax.random.split(
         self.rng, num=4)
