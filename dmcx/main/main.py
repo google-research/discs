@@ -23,21 +23,21 @@ def load_configs():
 
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
-          parallel=True,
+          parallel=False,
           model='bernouli',
-          sampler='random_walk',
+          sampler='gibbs',
           num_samples=100,
-          chain_length=5000,
-          chain_burnin_length=4500,
-          window_size=10,
-          window_stride=10))
+          chain_length=10,
+          chain_burnin_length=5,
+          window_size=2,
+          window_stride=2))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(shape=(10, 10, 5), init_sigma=1.0))
+      initial_dictionary=dict(shape=(100), init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_shape=(10, 10, 5),
+          sample_shape=(100),
           num_categories=2,
           random_order=False,
           block_size=3,
@@ -70,7 +70,7 @@ def split(arr, n_devices):
 def compute_chain(model, chain_length, chain_burnin_length, sampler_step, state,
                   params, rng_sampler_step, x, n_devices):
   chain = []
-  for i in tqdm(range(chain_length)):
+  for _ in tqdm(range(chain_length)):
     rng_sampler_step_p = jax.random.split(rng_sampler_step, num=n_devices)
     x, state = sampler_step(model, rng_sampler_step_p, x, params, state)
     del rng_sampler_step_p
@@ -128,6 +128,7 @@ def compute_error_across_chain_and_batch(model, params, samples):
   print('Max of var error over samples of chains: ', max_var_error)
 
   last_samples = samples[:, -1:, :]
+  print("Last Sample Shape: ", last_samples.shape)
   avg_mean_error_last_samples, max_mean_error_last_samples, avg_var_error_last_samples, max_var_error_last_samples = compute_error(
       model, params, last_samples)
   print('Average of mean error of last samples of chains: ',
@@ -185,7 +186,7 @@ def main(argv: Sequence[str]) -> None:
     n_devices = 2
     step_jit = jax.jit(sampler.step, static_argnums=0)
     chain, samples = compute_chain(model, config_main.chain_length,
-                                   config_main.chain_burnin_length, step_jit,
+                                   config_main.chain_burnin_length, sampler.step,
                                    state, params, rng_sampler_step, x,
                                    n_devices)
   else:
