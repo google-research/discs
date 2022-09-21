@@ -80,8 +80,8 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       elif self.balancing_fn_type == 4:
         return jnp.where(t > 1, t, 1)
       return jnp.sqrt(t)
-
-    rnd_categorical, rnd_new_sample = random.split(rnd)
+    
+    rnd_categorical, _ = random.split(rnd)
     del rnd
     y = generate_new_samples(x)
     new_x = select_new_samples(model, model_param, x, y, rnd_categorical)

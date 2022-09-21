@@ -26,18 +26,18 @@ def load_configs():
           parallel=False,
           model='bernouli',
           sampler='locally_balanced',
-          num_samples=100,
-          chain_length=100,
-          chain_burnin_length=50,
+          num_samples=50,
+          chain_length=1000,
+          chain_burnin_length=950,
           window_size=10,
           window_stride=10))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(shape=(10, 10), init_sigma=1.0))
+      initial_dictionary=dict(shape=(20, 10), init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_shape=(10, 10),
+          sample_shape=(20, 10),
           num_categories=2,
           random_order=False,
           block_size=3,
@@ -129,16 +129,10 @@ def compute_error_across_chain_and_batch(model, params, samples):
 
   last_samples = jnp.expand_dims(samples[-1], axis=1)
   print('Last Sample Shape: ', last_samples.shape)
-  avg_mean_error_last_samples, max_mean_error_last_samples, avg_var_error_last_samples, max_var_error_last_samples = compute_error(
+  avg_mean_error_last_samples, _, avg_var_error_last_samples, _ = compute_error(
       model, params, last_samples)
-  print('Average of mean error of last samples of chains: ',
-        avg_mean_error_last_samples)
-  print('Max of mean error of last samples of chains: ',
-        max_mean_error_last_samples)
-  print('Average of var error of last samples of chains: ',
-        avg_var_error_last_samples)
-  print('Max of var error of last samples of chains: ',
-        max_var_error_last_samples)
+  print('mean error of chain of last samples: ', avg_mean_error_last_samples)
+  print('var error of chain of last samples: ', avg_var_error_last_samples)
 
 
 def get_mixing_time_graph_over_chain(model, params, chain, window_size,
@@ -146,20 +140,22 @@ def get_mixing_time_graph_over_chain(model, params, chain, window_size,
 
   mean_errors = []
   max_mean_errors = []
-  for start in range(0, len(chain) - window_size, window_stride):
+  for start in range(0, len(chain), window_stride):
+    if (len(chain) - start) < window_size:
+      break
     samples = chain[start:start + window_size]
     # print(jnp.shape(samples))
     avg_mean_error, max_mean_error, _, _ = compute_error(model, params, samples)
     # print(avg_mean_error)
     mean_errors.append(avg_mean_error)
     max_mean_errors.append(max_mean_error)
-  plt.plot(mean_errors)
+  plt.plot(jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--bo')
   plt.xlabel('Iteration Step Over Chain')
   plt.ylabel('Avg Mean Error')
   plt.title('Avg Mean Error Over Chains for {}!'.format(config_main.sampler))
   plt.savefig('MixingTimeAvgMean_{}'.format(config_main.sampler))
   plt.clf()
-  plt.plot(max_mean_errors)
+  plt.plot(jnp.arange(1, 1 + len(max_mean_errors)), max_mean_errors, '--bo')
   plt.xlabel('Iteration Step Over Chain')
   plt.ylabel('Max Mean Error')
   plt.title('Max Mean Error Over Chains for {}!'.format(config_main.sampler))
@@ -186,9 +182,9 @@ def main(argv: Sequence[str]) -> None:
     n_devices = 2
     step_jit = jax.jit(sampler.step, static_argnums=0)
     chain, samples = compute_chain(model, config_main.chain_length,
-                                   config_main.chain_burnin_length,
-                                   sampler.step, state, params,
-                                   rng_sampler_step, x, n_devices)
+                                   config_main.chain_burnin_length, step_jit,
+                                   state, params, rng_sampler_step, x,
+                                   n_devices)
   else:
     n_devices = jax.local_device_count()
     step_pmap = jax.pmap(sampler.step, static_broadcasted_argnums=[0])

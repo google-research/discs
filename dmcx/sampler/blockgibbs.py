@@ -40,15 +40,13 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
       New sample.
     """
 
-    def generate_new_samples(indices, flip_index_start, x):
+    def generate_new_samples(indices_to_flip, x):
       x_flatten = x.reshape(x.shape[0], -1)
       y_flatten = jnp.repeat(
           x_flatten, self.num_categories**self.block_size, axis=0)
       categories_iter = jnp.array(
           list(product(range(self.num_categories), repeat=self.block_size)))
       category_iteration = jnp.vstack([categories_iter] * x.shape[0])
-      indices_to_flip = indices[flip_index_start:flip_index_start +
-                                self.block_size]
       category_iteration = jax.lax.dynamic_slice(
           category_iteration, (0, 0),
           (category_iteration.shape[0], indices_to_flip.shape[0]))
@@ -75,9 +73,11 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     if self.random_order:
       indices = random.shuffle(rnd_shuffle, indices, axis=0)
     for flip_index_start in range(0, len(indices), self.block_size):
-      y = generate_new_samples(indices, flip_index_start, x)
+      indices_to_flip = indices[flip_index_start:flip_index_start +
+                                self.block_size]
+      y = generate_new_samples(indices_to_flip, x)
       x = select_new_samples(model, model_param, x, y, rnd_categorical)
     new_x = x
     new_state = state
-    
+
     return new_x, new_state
