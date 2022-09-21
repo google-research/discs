@@ -25,19 +25,19 @@ def load_configs():
       initial_dictionary=dict(
           parallel=False,
           model='bernouli',
-          sampler='gibbs',
+          sampler='locally_balanced',
           num_samples=100,
-          chain_length=10,
-          chain_burnin_length=5,
-          window_size=2,
-          window_stride=2))
+          chain_length=100,
+          chain_burnin_length=50,
+          window_size=10,
+          window_stride=10))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(shape=(100), init_sigma=1.0))
+      initial_dictionary=dict(shape=(10, 10), init_sigma=1.0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_shape=(100),
+          sample_shape=(10, 10),
           num_categories=2,
           random_order=False,
           block_size=3,
@@ -127,8 +127,8 @@ def compute_error_across_chain_and_batch(model, params, samples):
   print('Average of var error over samples of chains: ', avg_var_error)
   print('Max of var error over samples of chains: ', max_var_error)
 
-  last_samples = samples[:, -1:, :]
-  print("Last Sample Shape: ", last_samples.shape)
+  last_samples = jnp.expand_dims(samples[-1], axis=1)
+  print('Last Sample Shape: ', last_samples.shape)
   avg_mean_error_last_samples, max_mean_error_last_samples, avg_var_error_last_samples, max_var_error_last_samples = compute_error(
       model, params, last_samples)
   print('Average of mean error of last samples of chains: ',
@@ -186,9 +186,9 @@ def main(argv: Sequence[str]) -> None:
     n_devices = 2
     step_jit = jax.jit(sampler.step, static_argnums=0)
     chain, samples = compute_chain(model, config_main.chain_length,
-                                   config_main.chain_burnin_length, sampler.step,
-                                   state, params, rng_sampler_step, x,
-                                   n_devices)
+                                   config_main.chain_burnin_length,
+                                   sampler.step, state, params,
+                                   rng_sampler_step, x, n_devices)
   else:
     n_devices = jax.local_device_count()
     step_pmap = jax.pmap(sampler.step, static_broadcasted_argnums=[0])
@@ -213,8 +213,9 @@ def main(argv: Sequence[str]) -> None:
   print('Sampler: ', config_main.sampler, '! Chain Length: ',
         config_main.chain_length, '! Burn-in Length: ',
         config_main.chain_burnin_length)
-  print('Samples Shape [Num of Samples, Batch Size, Sample shape]: ',
-        samples.shape)
+  print(
+      'Samples Shape [Num of samples in each chain, Batch Size, Sample shape]: ',
+      samples.shape)
   compute_error_across_chain_and_batch(model, params, chain)
   get_mixing_time_graph_over_chain(model, params, chain,
                                    config_main.window_size,
