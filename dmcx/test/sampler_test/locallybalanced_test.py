@@ -1,14 +1,14 @@
-"""Tests for Block Gibbs Sampler."""
+"""Tests for Locally Balanced Sampler."""
 
 from absl.testing import absltest
 from absl.testing import parameterized
 import dmcx.model.bernouli as bernouli_model
-import dmcx.sampler.blockgibbs as blockgibbs_sampler
+import dmcx.sampler.locallybalanced as locallybalanced_sampler
 import jax
 from ml_collections import config_dict
 
 
-class GibbsSamplerTest(parameterized.TestCase):
+class LocallyBalancedSamplerTest(parameterized.TestCase):
 
   def setUp(self):
     """This method will be run before each of the test methods in the class."""
@@ -21,9 +21,9 @@ class GibbsSamplerTest(parameterized.TestCase):
         initial_dictionary=dict(
             sample_shape=(3, 3),
             num_categories=2,
-            random_order=True,
-            block_size=3))
-    self.sampler = blockgibbs_sampler.BlockGibbsSampler(self.config_sampler)
+            balancing_fn_type=1))
+    self.sampler = locallybalanced_sampler.LocallyBalancedSampler(
+        self.config_sampler)
     if isinstance(self.config_model.shape, int):
       self.sample_shape = (self.config_model.shape,)
     else:
@@ -38,7 +38,7 @@ class GibbsSamplerTest(parameterized.TestCase):
     state = self.sampler.make_init_state(rng_sampler)
     n_x, _ = self.sampler.step(self.bernouli_model, rng_sampler_step, x0,
                                params, state)
-    self.assertEqual(n_x.shape, (num_samples,)+ self.sample_shape)
+    self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape)
 
 
 if __name__ == '__main__':
