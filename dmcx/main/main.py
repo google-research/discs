@@ -25,7 +25,7 @@ def load_configs():
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
           parallel=False,
-          model='bernouli',
+          model='ising',
           sampler='locally_balanced',
           num_samples=50,
           chain_length=1000,
@@ -33,12 +33,12 @@ def load_configs():
           window_size=10,
           window_stride=10))
   config_model = config_dict.ConfigDict(
-      initial_dictionary=dict(shape=(20, 10), init_sigma=1.0))
+      initial_dictionary=dict(shape=(5, 5), init_sigma=1.0, lamda=0.1))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_shape=(20, 10),
+          sample_shape=(5, 5),
           num_categories=2,
           random_order=False,
           block_size=3,

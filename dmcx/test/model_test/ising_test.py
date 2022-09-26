@@ -14,13 +14,13 @@ class IsingTest(parameterized.TestCase):
     """This method will be run before each of the test methods in the class."""
     super().setUp()
     self.config = config_dict.ConfigDict(
-        initial_dictionary=dict(sample_shape=3, init_sigma=1.0, lamda=0.1))
+        initial_dictionary=dict(shape=3, init_sigma=1.0, lamda=0.1))
     self.ising_model = ising_model.Ising(self.config)
     self.rng = jax.random.PRNGKey(0)
-    if isinstance(self.config.sample_shape, int):
-      self.shape = (self.config.sample_shape, self.config.sample_shape)
+    if isinstance(self.config.shape, int):
+      self.shape = (self.config.shape, self.config.shape)
     else:
-      self.shape = self.config.sample_shape
+      self.shape = self.config.shape
 
   def test_make_init_params(self):
     params = self.ising_model.make_init_params(self.rng)

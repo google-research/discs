@@ -15,10 +15,10 @@ class Ising(abstractmodel.AbstractModel):
   def __init__(self, config: ml_collections.ConfigDict):
     self.init_sigma = config.init_sigma
     self.lamda = config.lamda
-    if isinstance(config.sample_shape, int):
-      self.shape = (config.sample_shape, config.sample_shape)
+    if isinstance(config.shape, int):
+      self.shape = (config.shape, config.shape)
     else:
-      self.shape = config.sample_shape
+      self.shape = config.shape
 
     self.sampler_config = ml_collections.ConfigDict(
         initial_dictionary=dict(
@@ -101,7 +101,7 @@ class Ising(abstractmodel.AbstractModel):
   def compute_mean_and_var(self, rnd):
 
     num_samples = 100
-    chain_length = 1000
+    chain_length = 5000
     sample_length = 500
     chain = []
     rnd = jax.random.PRNGKey(0)
