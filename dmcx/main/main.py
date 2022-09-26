@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 from absl import app
 import dmcx.model.bernouli as bernouli_model
+import dmcx.model.ising as ising_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
 import dmcx.sampler.blockgibbs as blockgibbs_sampler
 import dmcx.sampler.locallybalanced as locallybalanced_sampler
@@ -50,6 +51,8 @@ def load_configs():
 def get_model(config_main, config_model):
   if config_main.model == 'bernouli':
     return bernouli_model.Bernouli(config_model)
+  elif config_main.model == 'ising':
+    return ising_model.Ising(config_model)
   raise Exception('Please provide a correct model name.')
 
 
