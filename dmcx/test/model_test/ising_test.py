@@ -14,7 +14,12 @@ class IsingTest(parameterized.TestCase):
     """This method will be run before each of the test methods in the class."""
     super().setUp()
     self.config = config_dict.ConfigDict(
-        initial_dictionary=dict(shape=3, init_sigma=1.0, lamda=0.1))
+        initial_dictionary=dict(
+            shape=3,
+            init_sigma=1.0,
+            lamda=0.1,
+            external_field_type=0,
+            parallel_sampling=True))
     self.ising_model = ising_model.Ising(self.config)
     self.rng = jax.random.PRNGKey(0)
     if isinstance(self.config.shape, int):
@@ -28,8 +33,8 @@ class IsingTest(parameterized.TestCase):
     w_h = params[1]
     w_v = params[2]
     self.assertEqual(w_b.shape, self.shape)
-    self.assertEqual(w_h.shape, (self.shape[0], self.shape[1] - 1))
-    self.assertEqual(w_v.shape, (self.shape[0] - 1, self.shape[1]))
+    self.assertEqual(w_h.shape, self.shape)
+    self.assertEqual(w_v.shape, self.shape)
 
   @parameterized.named_parameters(('Ising Initial Samples', 2))
   def test_get_init_samples(self, num_samples):
