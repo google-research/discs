@@ -111,7 +111,7 @@ class Ising(abstractmodel.AbstractModel):
 
     num_samples = 100
     chain_length = 10
-    sample_length = 1
+    sample_length = 2
 
     rng_x0, rng_sampler, rng_sampler_step = jax.random.split(rnd, num=3)
     del rnd
