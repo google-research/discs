@@ -36,7 +36,7 @@ def load_configs():
       initial_dictionary=dict(
           shape=(5, 5),
           init_sigma=1.0,
-          lamda=0.1,
+          lambdaa=0.1,
           external_field_type=0,
           parallel_sampling=False))
   config_sampler = config_dict.ConfigDict(

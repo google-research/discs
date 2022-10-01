@@ -17,7 +17,7 @@ class IsingTest(parameterized.TestCase):
         initial_dictionary=dict(
             shape=3,
             init_sigma=1.0,
-            lamda=0.1,
+            lambdaa=0.1,
             external_field_type=0,
             parallel_sampling=True))
     self.ising_model = ising_model.Ising(self.config)

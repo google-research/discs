@@ -2,7 +2,7 @@
 
 import os
 
-os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=4'
+os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=4"
 from dmcx.model import abstractmodel
 import jax
 import jax.numpy as jnp
@@ -10,6 +10,8 @@ import ml_collections
 from tqdm import tqdm
 import dmcx.sampler.blockgibbs as blockgibbs_sampler
 import pdb
+import pickle
+from os.path import exists
 
 
 class Ising(abstractmodel.AbstractModel):
@@ -21,11 +23,20 @@ class Ising(abstractmodel.AbstractModel):
       self.shape = (config.shape, config.shape)
     else:
       self.shape = config.shape
-    self.init_sigma = config.init_sigma
-    self.lamda = config.lamda
     self.external_field_type = config.external_field_type
-    self.expected_val = None
-    self.var = None
+    self.lambdaa = config.lambdaa
+    self.init_sigma = config.init_sigma
+    
+    self.file_to_mean_and_var = "mean_var_ising_with_shape_{}_lambda_{}_forcetype_{}.pkl".format(
+        self.shape[0], self.lambdaa, self.external_field_type)
+    if not exists(self.file_to_mean_and_var):
+      self.expected_val = None
+      self.var = None
+    else:
+      with open(self.file_to_mean_and_var, "rb") as f:
+        data = pickle.load(f)
+        self.expected_val = data["mean"]
+        self.var = data["var"]
     self.setup_sampler(config)
 
   def setup_sampler(self, config: ml_collections.ConfigDict):
@@ -41,8 +52,8 @@ class Ising(abstractmodel.AbstractModel):
 
   def make_init_params(self, rnd):
     # connectivity strength
-    params_weight_h = -self.lamda * jnp.ones(self.shape)
-    params_weight_v = -self.lamda * jnp.ones(self.shape)
+    params_weight_h = -self.lambdaa * jnp.ones(self.shape)
+    params_weight_v = -self.lambdaa * jnp.ones(self.shape)
     # external force
     if self.external_field_type == 1:
       params_b = jax.random.normal(rnd, shape=self.shape) * self.init_sigma
@@ -61,18 +72,21 @@ class Ising(abstractmodel.AbstractModel):
 
   def forward(self, params, x):
 
+    x = 2 * x - 1
     w_b = params[0]
     w_h = params[1][:, :-1]
     w_v = params[2][:-1, :]
+
+    ## TODO: sparse operation!!!
     sum_neighbors = jnp.zeros((x.shape[0],) + self.shape)
     sum_neighbors = sum_neighbors.at[:, :, :-1].set(
-        sum_neighbors[:, :, :-1] + x[:, :, :-1] * x[:, :, 1:] * w_h)  #right
+        sum_neighbors[:, :, :-1] + x[:, :, :-1] * x[:, :, 1:] * w_h)  # right
     sum_neighbors = sum_neighbors.at[:, :, 1:].set(
         sum_neighbors[:, :, 1:] + x[:, :, 1:] * x[:, :, :-1] * w_h)  # left
     sum_neighbors = sum_neighbors.at[:, :-1, :].set(
         sum_neighbors[:, :-1, :] + x[:, :-1, :] * x[:, 1:, :] * w_v)  # down
     sum_neighbors = sum_neighbors.at[:, 1:, :].set(
-        sum_neighbors[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v)  #up
+        sum_neighbors[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v)  # up
     biases = w_b * x
     energy_indeces = sum_neighbors + biases
     loglikelihood = jnp.sum((energy_indeces).reshape(x.shape[0], -1), axis=-1)
@@ -104,14 +118,26 @@ class Ising(abstractmodel.AbstractModel):
     samples = self.generate_chain_of_samples(rnd, params)
     self.expected_val = self.get_expected_val_from_samples(samples)
     self.var = self.get_var_from_samples(samples)
+    ising_model = {}
+    ising_model["mean"] = self.expected_val
+    ising_model["var"] = self.var
+    f = open(self.file_to_mean_and_var, "wb")
+    pickle.dump(ising_model, f)
+    f.close()
     return [self.expected_val, self.var]
 
   def generate_chain_of_samples(self, rnd, params):
     """Using Block Gibbs Sampler Generates Chain of Samples."""
 
+    # 10 * 10, chain length = 100
+    # 50 * 50, chain_length = 1000
+    #no external force, lambda = 0.4407, -0.4407
+
     num_samples = 100
     chain_length = 10
     sample_length = 2
+
+    ## while loop
 
     rng_x0, rng_sampler, rng_sampler_step = jax.random.split(rnd, num=3)
     del rnd
@@ -122,7 +148,7 @@ class Ising(abstractmodel.AbstractModel):
       sampler_step_fn = jax.pmap(
           self.sampler.step, static_broadcasted_argnums=[0])
       n_devices = jax.local_device_count()
-      
+
       params = jnp.stack([params] * n_devices)
       state = jnp.stack([state] * n_devices)
       x = self.split(x, n_devices)
@@ -135,7 +161,7 @@ class Ising(abstractmodel.AbstractModel):
     samples = self.compute_chains(rng_sampler_step, chain_length, sample_length,
                                   sampler_step_fn, params, state, x,
                                   rnd_split_num)
-        
+
     if self.parallel_sampling:
       samples = samples.reshape((samples.shape[0], num_samples) + self.shape)
 
