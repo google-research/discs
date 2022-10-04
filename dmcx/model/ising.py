@@ -26,8 +26,9 @@ class Ising(abstractmodel.AbstractModel):
     self.external_field_type = config.external_field_type
     self.lambdaa = config.lambdaa
     self.init_sigma = config.init_sigma
-    
-    self.file_to_mean_and_var = "mean_var_ising_with_shape_{}_lambda_{}_forcetype_{}.pkl".format(
+    path = os.getcwd()[:os.getcwd().find("discrete_mcmc"
+                                        )] + "discrete_mcmc/dmcx/model/"
+    self.file_to_mean_and_var = path + "mean_var_2D_ising_with_shape_{}_lambda_{}_forcetype_{}.pkl".format(
         self.shape[0], self.lambdaa, self.external_field_type)
     if not exists(self.file_to_mean_and_var):
       self.expected_val = None
