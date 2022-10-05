@@ -15,11 +15,12 @@ class IsingTest(parameterized.TestCase):
     super().setUp()
     self.config = config_dict.ConfigDict(
         initial_dictionary=dict(
-            shape=3,
+            shape=7,
             init_sigma=1.0,
-            lambdaa=0.1,
+            lambdaa=0.4407,
             external_field_type=0,
-            parallel_sampling=True))
+            parallel_sampling=True,
+            sampler_convergance_threshold = 0.01))
     self.ising_model = ising_model.Ising(self.config)
     self.rng = jax.random.PRNGKey(0)
     if isinstance(self.config.shape, int):
@@ -59,10 +60,6 @@ class IsingTest(parameterized.TestCase):
     self.assertEqual(loglikelihood.shape, (num_samples,))
     self.assertEqual(grad.shape,
                      (num_samples,)+self.shape)
-    # np_param = jax.device_get(params)
-    # np_grad = jax.device_get(grad)
-    # print(jax.numpy.shape(np_param), jax.numpy.shape(np_grad) )
-    # # self.assertTrue(np.allclose(np_grad, np.expand_shapes(np_param, axis=0)))
 
   def test_get_expected_val(self):
     rng_param, _ = jax.random.split(self.rng)

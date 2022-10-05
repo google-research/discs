@@ -1,17 +1,17 @@
 """Ising Energy Function."""
 
 import os
+from os.path import exists
 
 os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=4"
 from dmcx.model import abstractmodel
-import jax
-import jax.numpy as jnp
-import ml_collections
 from tqdm import tqdm
 import dmcx.sampler.blockgibbs as blockgibbs_sampler
 import pdb
+import jax
+import jax.numpy as jnp
+import ml_collections
 import pickle
-from os.path import exists
 
 
 class Ising(abstractmodel.AbstractModel):
@@ -23,8 +23,8 @@ class Ising(abstractmodel.AbstractModel):
       self.shape = (config.shape, config.shape)
     else:
       self.shape = config.shape
-    self.external_field_type = config.external_field_type
     self.lambdaa = config.lambdaa
+    self.external_field_type = config.external_field_type
     self.init_sigma = config.init_sigma
     path = os.getcwd()[:os.getcwd().find("discrete_mcmc"
                                         )] + "discrete_mcmc/dmcx/model/"
@@ -50,11 +50,13 @@ class Ising(abstractmodel.AbstractModel):
             block_size=3))
     self.sampler = blockgibbs_sampler.BlockGibbsSampler(self.sampler_config)
     self.parallel_sampling = config.parallel_sampling
+    self.sampler_convergance_threshold = config.sampler_convergance_threshold
 
   def make_init_params(self, rnd):
     # connectivity strength
-    params_weight_h = -self.lambdaa * jnp.ones(self.shape)
-    params_weight_v = -self.lambdaa * jnp.ones(self.shape)
+    params_weight_h = self.lambdaa * jnp.ones(self.shape)
+    params_weight_v = self.lambdaa * jnp.ones(self.shape)
+
     # external force
     if self.external_field_type == 1:
       params_b = jax.random.normal(rnd, shape=self.shape) * self.init_sigma
@@ -77,8 +79,6 @@ class Ising(abstractmodel.AbstractModel):
     w_b = params[0]
     w_h = params[1][:, :-1]
     w_v = params[2][:-1, :]
-
-    ## TODO: sparse operation!!!
     sum_neighbors = jnp.zeros((x.shape[0],) + self.shape)
     sum_neighbors = sum_neighbors.at[:, :, :-1].set(
         sum_neighbors[:, :, :-1] + x[:, :, :-1] * x[:, :, 1:] * w_h)  # right
@@ -89,8 +89,8 @@ class Ising(abstractmodel.AbstractModel):
     sum_neighbors = sum_neighbors.at[:, 1:, :].set(
         sum_neighbors[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v)  # up
     biases = w_b * x
-    energy_indeces = sum_neighbors + biases
-    loglikelihood = jnp.sum((energy_indeces).reshape(x.shape[0], -1), axis=-1)
+    loglikelihood = sum_neighbors + biases
+    loglikelihood = jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
@@ -130,72 +130,71 @@ class Ising(abstractmodel.AbstractModel):
   def generate_chain_of_samples(self, rnd, params):
     """Using Block Gibbs Sampler Generates Chain of Samples."""
 
-    # 10 * 10, chain length = 100
-    # 50 * 50, chain_length = 1000
-    #no external force, lambda = 0.4407, -0.4407
-
     num_samples = 100
-    chain_length = 10
-    sample_length = 2
-
-    ## while loop
-
+    chain_length = 1000
     rng_x0, rng_sampler, rng_sampler_step = jax.random.split(rnd, num=3)
     del rnd
     state = self.sampler.make_init_state(rng_sampler)
     x = self.get_init_samples(rng_x0, num_samples)
-
     if self.parallel_sampling:
       sampler_step_fn = jax.pmap(
           self.sampler.step, static_broadcasted_argnums=[0])
       n_devices = jax.local_device_count()
-
       params = jnp.stack([params] * n_devices)
       state = jnp.stack([state] * n_devices)
       x = self.split(x, n_devices)
       rnd_split_num = n_devices
     else:
       sampler_step_fn = jax.jit(self.sampler.step, static_argnums=0)
-      n_devices = 1
-      rnd_split_num = n_devices + 1
+      rnd_split_num = 2
 
-    samples = self.compute_chains(rng_sampler_step, chain_length, sample_length,
+    samples = self.compute_chains(rng_sampler_step, chain_length, num_samples,
                                   sampler_step_fn, params, state, x,
                                   rnd_split_num)
 
     if self.parallel_sampling:
-      samples = samples.reshape((samples.shape[0], num_samples) + self.shape)
+      samples = samples.reshape((num_samples,) + self.shape)
 
     return samples
 
-  def compute_chains(self, rng_sampler_step, chain_length, sample_length,
+  def compute_chains(self, rng_sampler_step, chain_length, num_samples,
                      sampler_step_fn, params, state, x, rnd_split_num):
-    chain = []
+    samples = None
     for i in tqdm(range(chain_length)):
       rng_sampler_step_p = jax.random.split(rng_sampler_step, num=rnd_split_num)
       x, state = sampler_step_fn(self, rng_sampler_step_p, x, params, state)
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
-      if i >= (chain_length - sample_length):
-        chain.append(x)
-    samples = jnp.array(chain)
+      if ((i + 1) % 5 == 0 and self.samples_converged(samples_prev, samples)):
+        break
+      samples_prev = samples
+      samples = x
+
     return samples
 
+  def samples_converged(self, samples1, samples2):
+
+    if self.parallel_sampling:
+      samples1 = samples1.reshape((samples1.shape[0] * samples1.shape[1],) +
+                                  self.shape)
+      samples2 = samples1.reshape((samples2.shape[0] * samples2.shape[1],) +
+                                  self.shape)
+    mean1 = self.get_expected_val_from_samples(samples1)
+    mean2 = self.get_expected_val_from_samples(samples2)
+    if jnp.mean((mean1 - mean2)**2) < self.sampler_convergance_threshold:
+      return True
+    return False
+
   def get_expected_val_from_samples(self, samples):
-    """Computes distribution expected value from samples [chain lenght, batch size, sample shape]."""
-    mean_over_chain = jnp.mean(samples, axis=0)
-    mean_over_batch = jnp.mean(mean_over_chain, axis=0)
-    return mean_over_batch
+    """Computes distribution expected value from samples."""
+    mean = jnp.mean(samples, axis=0)
+    return mean
 
   def get_var_from_samples(self, samples):
-    """Computes distribution variance from samples [chain lenght, batch size, sample shape]."""
+    """Computes distribution variance from samples."""
     sample_mean = jnp.mean(samples, axis=0, keepdims=True)
-    # unbiased var estimator
-    var_over_samples = jnp.sum(
-        (samples - sample_mean)**2, axis=0) / (
-            samples.shape[0] - 1)
-    mean_var_over_batch = jnp.mean(var_over_samples, axis=0)
-    return mean_var_over_batch
+    var = jnp.sum((samples - sample_mean)**2, axis=0) / (samples.shape[0]-1)
+    return var
 
   def split(self, arr, n_devices):
     return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
