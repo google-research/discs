@@ -18,9 +18,7 @@ class IsingTest(parameterized.TestCase):
             shape=7,
             init_sigma=1.0,
             lambdaa=0.4407,
-            external_field_type=0,
-            parallel_sampling=True,
-            sampler_convergance_threshold = 0.01))
+            external_field_type=0))
     self.ising_model = ising_model.Ising(self.config)
     self.rng = jax.random.PRNGKey(0)
     if isinstance(self.config.shape, int):
@@ -60,20 +58,6 @@ class IsingTest(parameterized.TestCase):
     self.assertEqual(loglikelihood.shape, (num_samples,))
     self.assertEqual(grad.shape,
                      (num_samples,)+self.shape)
-
-  def test_get_expected_val(self):
-    rng_param, _ = jax.random.split(self.rng)
-    params = self.ising_model.make_init_params(rng_param)
-    expected_val = self.ising_model.get_expected_val(params)
-    self.assertEqual(expected_val.shape, self.shape)
-    self.assertNotEqual(self.ising_model.var, None)
-
-  def test_get_var(self):
-    rng_param, _ = jax.random.split(self.rng)
-    params = self.ising_model.make_init_params(rng_param)
-    variance = self.ising_model.get_var(params)
-    self.assertEqual(variance.shape, self.shape)
-    self.assertNotEqual(self.ising_model.expected_val, None)
 
 if __name__ == '__main__':
   absltest.main()

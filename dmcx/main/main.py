@@ -34,12 +34,7 @@ def load_configs():
           window_stride=10))
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(
-          shape=(10, 10),
-          init_sigma=1.0,
-          lambdaa=0.1,
-          external_field_type=0,
-          parallel_sampling=False,
-          sampler_convergance_threshold = 0.01))
+          shape=(10, 10), init_sigma=1.0, lambdaa=0.1, external_field_type=0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
@@ -221,10 +216,11 @@ def main(argv: Sequence[str]) -> None:
   print(
       'Samples Shape [Num of samples in each chain, Batch Size, Sample shape]: ',
       samples.shape)
-  compute_error_across_chain_and_batch(model, params, chain)
-  get_mixing_time_graph_over_chain(model, params, chain,
-                                   config_main.window_size,
-                                   config_main.window_stride, config_main)
+  if config_main.model == 'bernouli':
+    compute_error_across_chain_and_batch(model, params, chain)
+    get_mixing_time_graph_over_chain(model, params, chain,
+                                     config_main.window_size,
+                                     config_main.window_stride, config_main)
 
 
 if __name__ == '__main__':
