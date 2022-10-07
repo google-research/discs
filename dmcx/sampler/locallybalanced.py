@@ -4,17 +4,15 @@ from dmcx.sampler import abstractsampler
 from jax import random
 import jax.numpy as jnp
 import ml_collections
-import pdb
 import math
+
 
 class LocallyBalancedSampler(abstractsampler.AbstractSampler):
   """Locally Balanced Informed Sampler Class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    if isinstance(config.sample_shape, int):
-      self.sample_shape = (config.sample_shape,)
-    else:
-      self.sample_shape = config.sample_shape
+
+    self.sample_shape = config.sample_shape
     self.num_categories = config.num_categories
     # self.radius = config.radius
     self.balancing_fn_type = config.balancing_fn_type
@@ -48,18 +46,22 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       category_range = jnp.expand_dims(
           jnp.array(jnp.tile(category_range, dim)), 1)
       flipped = category_range * index_to_flip_for_category
-      flipped_batch = jnp.vstack([flipped]*x.shape[0])
+      flipped_batch = jnp.vstack([flipped] * x.shape[0])
       x_flatten = x.reshape(x.shape[0], -1)
-      y_flatten = jnp.repeat(x_flatten, dim*(self.num_categories - 1), axis=0)
+      y_flatten = jnp.repeat(x_flatten, dim * (self.num_categories - 1), axis=0)
       y_flatten = (y_flatten + flipped_batch) % self.num_categories
-      y = y_flatten.reshape( (y_flatten.shape[0],) + self.sample_shape)
+      y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
       return y
 
     def select_new_samples(model, model_param, x, y, rnd_categorical):
       x_expanded = jnp.repeat(x, int(y.shape[0] / x.shape[0]), axis=0)
       t = get_ratio(model, model_param, x_expanded, y)
       locally_balance_proposal_dist = get_balancing_fn(t)
-      loglikelihood = locally_balance_proposal_dist.reshape(x.shape[0], -1)
+      proposal_dist_unnormalized = locally_balance_proposal_dist.reshape(
+          x.shape[0], -1)
+      proposal_dist = proposal_dist_unnormalized / jnp.sum(
+          proposal_dist_unnormalized, axis=-1, keepdims=True)
+      loglikelihood = jnp.log(proposal_dist)
       selected_y_index = random.categorical(
           rnd_categorical, loglikelihood, axis=1)
       dim = math.prod(self.sample_shape)
@@ -68,6 +70,7 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       return new_x
 
     def get_ratio(model, model_param, x, y):
+      #TODO: define cutomized forward function in the model that only calculated modified regions.
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
       return jnp.exp(loglikelihood_y - loglikelihood_x)
@@ -80,7 +83,7 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       elif self.balancing_fn_type == 4:
         return jnp.where(t > 1, t, 1)
       return jnp.sqrt(t)
-    
+
     rnd_categorical, _ = random.split(rnd)
     del rnd
     y = generate_new_samples(x)

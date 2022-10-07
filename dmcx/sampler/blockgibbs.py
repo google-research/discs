@@ -14,10 +14,8 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
   """Gibbs Sampler Class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    if isinstance(config.sample_shape, int):
-      self.sample_shape = (config.sample_shape,)
-    else:
-      self.sample_shape = config.sample_shape
+
+    self.sample_shape = config.sample_shape
     self.num_categories = config.num_categories
     self.random_order = config.random_order
     self.block_size = config.block_size
@@ -72,6 +70,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     indices = jnp.arange(dim)
     if self.random_order:
       indices = random.permutation(rnd_shuffle, indices, axis=0, independent=True)
+    #TODO: use jax.lax.scan or jax.lax.fori_loop
     for flip_index_start in range(0, len(indices), self.block_size):
       indices_to_flip = indices[flip_index_start:flip_index_start +
                                 self.block_size]
