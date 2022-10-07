@@ -15,14 +15,14 @@ class RandomWalkSamplerTest(parameterized.TestCase):
     super().setUp()
     self.rng = jax.random.PRNGKey(0)
     self.config_model = config_dict.ConfigDict(
-        initial_dictionary=dict(shape=(10), init_sigma=1.0))
+        initial_dictionary=dict(shape=(10,), init_sigma=1.0))
     self.bernouli_model = bernouli_model.Bernouli(self.config_model)
     # non-adaptive sampler
     self.config_sampler_nonadaprive = config_dict.ConfigDict(
         initial_dictionary=dict(
             adaptive=False,
             target_acceptance_rate=0.234,
-            sample_shape=(10),
+            sample_shape=(10,),
             num_categories=2))
     self.sampler_nonadaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_nonadaprive)
@@ -31,7 +31,7 @@ class RandomWalkSamplerTest(parameterized.TestCase):
         initial_dictionary=dict(
             adaptive=True,
             target_acceptance_rate=0.234,
-            sample_shape=(10),
+            sample_shape=(10,),
             num_categories=2))
     self.sampler_adaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_adaptive)
