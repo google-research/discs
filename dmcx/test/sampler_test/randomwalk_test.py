@@ -15,14 +15,14 @@ class RandomWalkSamplerTest(parameterized.TestCase):
     super().setUp()
     self.rng = jax.random.PRNGKey(0)
     self.config_model = config_dict.ConfigDict(
-        initial_dictionary=dict(dimension=10, init_sigma=1.0))
+        initial_dictionary=dict(shape=(10,), init_sigma=1.0))
     self.bernouli_model = bernouli_model.Bernouli(self.config_model)
     # non-adaptive sampler
     self.config_sampler_nonadaprive = config_dict.ConfigDict(
         initial_dictionary=dict(
             adaptive=False,
             target_acceptance_rate=0.234,
-            sample_dimension=10,
+            sample_shape=(10,),
             num_categories=2))
     self.sampler_nonadaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_nonadaprive)
@@ -31,12 +31,16 @@ class RandomWalkSamplerTest(parameterized.TestCase):
         initial_dictionary=dict(
             adaptive=True,
             target_acceptance_rate=0.234,
-            sample_dimension=10,
+            sample_shape=(10,),
             num_categories=2))
     self.sampler_adaptive = randomwalk_sampler.RandomWalkSampler(
         self.config_sampler_adaptive)
+    if isinstance(self.config_model.shape, int):
+      self.sample_shape = (self.config_model.shape,)
+    else:
+      self.sample_shape = self.config_model.shape
 
-  @parameterized.named_parameters(('Random Walk Step Non Adaptive', 5))
+  @parameterized.named_parameters(('Random Walk Step Non Adaptive', 100))
   def test_step_nonadaptive(self, num_samples):
     rng_param, rng_x0, rng_sampler, rng_sampler_step = jax.random.split(
         self.rng, num=4)
@@ -46,7 +50,7 @@ class RandomWalkSamplerTest(parameterized.TestCase):
     n_x, n_s = self.sampler_nonadaptive.step(self.bernouli_model,
                                              rng_sampler_step, x0, params,
                                              state)
-    self.assertEqual(n_x.shape, (num_samples, self.config_model.dimension))
+    self.assertEqual(n_x.shape, (num_samples,)+ self.sample_shape)
     self.assertEqual(n_s, state)
 
   @parameterized.named_parameters(('Random Walk Step Adaptive', 5))
@@ -58,7 +62,7 @@ class RandomWalkSamplerTest(parameterized.TestCase):
     state = self.sampler_adaptive.make_init_state(rng_sampler)
     n_x, n_s = self.sampler_adaptive.step(self.bernouli_model, rng_sampler_step,
                                           x0, params, state)
-    self.assertEqual(n_x.shape, (num_samples, self.config_model.dimension))
+    self.assertEqual(n_x.shape, (num_samples,)+ self.sample_shape)
     self.assertNotEqual(n_s, state)
 
 

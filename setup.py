@@ -8,5 +8,7 @@ setup(name='dmcx',
       install_requires=[
           'ml_collections',
           'numpy',
+          'matplotlib',
+          'tqdm'
       ]
       )
