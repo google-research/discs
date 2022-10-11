@@ -14,12 +14,8 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     self.adaptive = config.adaptive
     self.target_acceptance_rate = config.target_acceptance_rate
-    if isinstance(config.sample_shape, int):
-      self.sample_shape = (config.sample_shape,)
-    else:
-      self.sample_shape = config.sample_shape
+    self.sample_shape = config.sample_shape
     self.num_categories = config.num_categories
-    self.num_dimension = len(self.sample_shape)
 
   def make_init_state(self, rnd):
     """Returns expected number of flips(hamming distance)."""

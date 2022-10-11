@@ -48,6 +48,9 @@ def load_configs():
           random_order=False,
           block_size=3,
           balancing_fn_type=1))
+  
+  if isinstance(config_sampler.sample_shape, int):
+    config_sampler.sample_shape = (config_sampler.sample_shape,)
   if config_model.shape != config_sampler.sample_shape:
     config_model.shape = config_sampler.sample_shape
   return config_main, config_model, config_sampler

@@ -17,6 +17,8 @@ class BernouliTest(parameterized.TestCase):
         initial_dictionary=dict(shape=(100, 100), init_sigma=1.0))
     self.bernouli_model = bernouli_model.Bernouli(self.config)
     self.rng = jax.random.PRNGKey(0)
+    if isinstance(self.config.shape, int):
+      self.config.shape = (self.config.shape,)
 
   def test_make_init_params(self):
     params = self.bernouli_model.make_init_params(self.rng)
