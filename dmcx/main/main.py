@@ -7,6 +7,7 @@ import dmcx.model.ising as ising_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
 import dmcx.sampler.blockgibbs as blockgibbs_sampler
 import dmcx.sampler.locallybalanced as locallybalanced_sampler
+import dmcx.sampler.gibbswithgrad as gibbswithgrad_sampler
 import os
 
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=4'
@@ -25,8 +26,8 @@ def load_configs():
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
           parallel=False,
-          model='ising',
-          sampler='locally_balanced',
+          model='bernouli',
+          sampler='gibbs_with_grad',
           num_samples=50,
           chain_length=1000,
           chain_burnin_length=950,
@@ -34,7 +35,7 @@ def load_configs():
           window_stride=10))
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(
-          shape=(5, 5),
+          shape=(5,),
           init_sigma=1.0,
           lamda=0.1,
           external_field_type=0,
@@ -43,8 +44,8 @@ def load_configs():
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_shape=(5, 5),
-          num_categories=2,
+          sample_shape=(5,),
+          num_categories=5,
           random_order=False,
           block_size=3,
           balancing_fn_type=1))
@@ -71,6 +72,8 @@ def get_sampler(config_main, config_sampler):
     return blockgibbs_sampler.BlockGibbsSampler(config_sampler)
   elif config_main.sampler == 'locally_balanced':
     return locallybalanced_sampler.LocallyBalancedSampler(config_sampler)
+  elif config_main.sampler == 'gibbs_with_grad':
+    return gibbswithgrad_sampler.GibbsWithGradSampler(config_sampler)
   raise Exception('Please provide a correct sampler name.')
 
 

@@ -15,7 +15,7 @@ class GibbsWithGradSamplerTest(parameterized.TestCase):
     super().setUp()
     self.rng = jax.random.PRNGKey(0)
     self.config_model = config_dict.ConfigDict(
-        initial_dictionary=dict(shape=(2, 2), init_sigma=1.0))
+        initial_dictionary=dict(shape=(20), init_sigma=1.0))
     self.bernouli_model = bernouli_model.Bernouli(self.config_model)
     # non-adaptive sampler
     self.config_sampler = config_dict.ConfigDict(
@@ -37,10 +37,9 @@ class GibbsWithGradSamplerTest(parameterized.TestCase):
     params = self.bernouli_model.make_init_params(rng_param)
     x0 = self.bernouli_model.get_init_samples(rng_x0, num_samples)
     state = self.sampler.make_init_state(rng_sampler)
-    n_x, n_s = self.sampler.step(self.bernouli_model,
-                                             rng_sampler_step, x0, params,
-                                             state)
-    self.assertEqual(n_x.shape, (num_samples,)+ self.sample_shape)
+    n_x, n_s = self.sampler.step(self.bernouli_model, rng_sampler_step, x0,
+                                 params, state)
+    self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape)
     self.assertEqual(n_s, state)
 
   # @parameterized.named_parameters(('Random Walk Step Adaptive', 5))

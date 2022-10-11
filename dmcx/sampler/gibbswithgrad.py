@@ -41,13 +41,28 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       _, grad = model.get_value_and_grad(model_param, x)
       if self.num_categories == 2:
         return (-2 * x + 1) * grad
+      else:
+        pdb.set_trace()
+        score_change_x = grad - (grad * x).sum(dim=-1, keepdim=True)
+        score_change_x = score_change_x - 1e9 * x
+        
+        # dist_x = StableOnehotCategorical(logits=score_change_x.view(bsize, -1))
+        # index_x = dist_x.sample()
+        # log_x2y = dist_x.log_prob(index_x)
+        # index_y = x * index_x.view(x.shape).sum(dim=-1, keepdim=True)
+        # y = x * (1 - index_x.view(x.shape).sum(dim=-1, keepdim=True)) + index_x.view(x.shape)
+        
+        return x
+        
 
-    def compute_index_dist(delta_x):
-      delta_x_flatten = delta_x.reshape(delta_x.shape[0], -1)
-      return jnp.exp(delta_x_flatten) / jnp.sum(jnp.exp(delta_x_flatten),axis=1, keepdims = True)
-    
-    def select_index(rnd_categorical, probability):
-      return random.categorical(rnd_categorical, probability, axis=1)
+    def compute_index_dist(x, model, model_param):
+      delta_x = compute_delta_x(x, model, model_param)
+      delta_x_flatten = (delta_x / 2).reshape(delta_x.shape[0], -1)
+      return jnp.exp(delta_x_flatten) / jnp.sum(
+          jnp.exp(delta_x_flatten), axis=1, keepdims=True)
+
+    def select_index(rnd_categorical, loglikelihood):
+      return random.categorical(rnd_categorical, loglikelihood, axis=1)
 
     def generate_new_samples(rnd, x, model, model_param):
       """Generate the new samples, given the current samples based on the given expected hamming distance.
@@ -61,40 +76,35 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       Returns:
         New samples.
       """
-      delta_x = compute_delta_x(x, model, model_param)
-      dist_flatten = compute_index_dist(delta_x)
-      index_flatten = select_index(rnd, dist_flatten)
+      dist_flatten = compute_index_dist(x, model, model_param)
+      select_i_flatten = select_index(rnd, dist_flatten)
 
       x_flatten = x.reshape(x.shape[0], -1)
 
       if self.num_categories == 2:
-        new_vals = (x_flatten[jnp.arange(x.shape[0]), index_flatten] + 1) % 2
+        new_vals = (x_flatten[jnp.arange(x.shape[0]), select_i_flatten] + 1) % 2
         new_x = x_flatten.at[jnp.arange(x.shape[0]),
-                             index_flatten].set(new_vals)
-        
+                             select_i_flatten].set(new_vals)
         new_x = new_x.reshape((x.shape[0],) + self.sample_shape)
 
-      return new_x
+      return new_x, select_i_flatten
 
-    def select_new_samples(rnd_acceptance, model, model_param, x, y):
-      pdb.set_trace()
-      
-      accept_ratio = get_ratio(model, model_param, x, y)
+    def select_new_samples(rnd_acceptance, model, model_param, x, y, i_flatten):
+      accept_ratio = get_ratio(model, model_param, x, y, i_flatten)
       accepted = is_accepted(rnd_acceptance, accept_ratio)
       accepted = accepted.reshape(accepted.shape +
                                   tuple([1] * len(self.sample_shape)))
       new_x = accepted * y + (1 - accepted) * x
       return new_x
 
-    def get_ratio(model, model_param, x, y):
-      
-      pdb.set_trace()
-      
+    def get_ratio(model, model_param, x, y, i_flatten):
+
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-      x_dist = compute_index_dist(x)
-      y_dist = compute_index_dist(y)
-      return jnp.exp(loglikelihood_y - loglikelihood_x) * (y_dist / x_dist)
+      q_i_x = compute_index_dist(x, model, model_param).reshape(x.shape[0], -1)
+      q_i_y = compute_index_dist(y, model, model_param).reshape(x.shape[0], -1)
+      dist_index_ratio = (q_i_y / q_i_x)[jnp.arange(x.shape[0]), i_flatten]
+      return jnp.exp(loglikelihood_y - loglikelihood_x) * (dist_index_ratio)
 
     def is_accepted(rnd_acceptance, accept_ratio):
       random_uniform_val = random.uniform(
@@ -103,9 +113,9 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
     rnd_new_sample, rnd_acceptance = random.split(rnd)
     del rnd
-    y = generate_new_samples(rnd_new_sample, x, model, model_param)
-    
-    new_x = select_new_samples(rnd_acceptance, model, model_param, x, y)
+    y, i_flatten = generate_new_samples(rnd_new_sample, x, model, model_param)
 
+    new_x = select_new_samples(rnd_acceptance, model, model_param, x, y,
+                               i_flatten)
     new_state = state
     return new_x, new_state
