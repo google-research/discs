@@ -1,17 +1,9 @@
 """Ising Energy Function."""
 
-import os
-from os.path import exists
-
-os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=4"
 from dmcx.model import abstractmodel
-from tqdm import tqdm
-import dmcx.sampler.blockgibbs as blockgibbs_sampler
-import pdb
 import jax
 import jax.numpy as jnp
 import ml_collections
-import pickle
 
 
 class Ising(abstractmodel.AbstractModel):
@@ -26,18 +18,18 @@ class Ising(abstractmodel.AbstractModel):
     self.lambdaa = config.lambdaa
     self.external_field_type = config.external_field_type
     self.init_sigma = config.init_sigma
-   
+
   def make_init_params(self, rnd):
     # connectivity strength
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
 
-    # external force
+    # external force (default value is zero)
     if self.external_field_type == 1:
       params_b = jax.random.normal(rnd, shape=self.shape) * self.init_sigma
-    else:
-      params_b = jnp.zeros(shape=self.shape)
-    return jnp.array([params_b, params_weight_h, params_weight_v])
+      return jnp.array([params_weight_h, params_weight_v, params_b])
+
+    return jnp.array([params_weight_h, params_weight_v])
 
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
@@ -51,9 +43,9 @@ class Ising(abstractmodel.AbstractModel):
   def forward(self, params, x):
 
     x = 2 * x - 1
-    w_b = params[0]
-    w_h = params[1][:, :-1]
-    w_v = params[2][:-1, :]
+    w_h = params[0][:, :-1]
+    w_v = params[1][:-1, :]
+
     sum_neighbors = jnp.zeros((x.shape[0],) + self.shape)
     sum_neighbors = sum_neighbors.at[:, :, :-1].set(
         sum_neighbors[:, :, :-1] + x[:, :, :-1] * x[:, :, 1:] * w_h)  # right
@@ -63,8 +55,12 @@ class Ising(abstractmodel.AbstractModel):
         sum_neighbors[:, :-1, :] + x[:, :-1, :] * x[:, 1:, :] * w_v)  # down
     sum_neighbors = sum_neighbors.at[:, 1:, :].set(
         sum_neighbors[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v)  # up
-    biases = w_b * x
-    loglikelihood = sum_neighbors + biases
+
+    loglikelihood = sum_neighbors
+    if self.external_field_type == 1:
+      w_b = params[2]
+      loglikelihood += w_b * x
+
     loglikelihood = jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
     return loglikelihood
 
