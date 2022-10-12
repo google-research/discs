@@ -30,7 +30,7 @@ def load_configs():
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
           parallel=False,
-          model='bernouli',
+          model='ising',
           sampler='locally_balanced',
           num_samples=50,
           chain_length=1000,
@@ -51,7 +51,7 @@ def load_configs():
           num_categories=2,
           random_order=False,
           block_size=3,
-          balancing_fn_type=4))
+          balancing_fn_type=0))
   return config_main, config_model, config_sampler
 
 
@@ -99,9 +99,7 @@ def get_mapped_samples(samples):
 
 
 def get_effective_sample_size(samples):
-
   mapped_samples = get_mapped_samples(samples)
-  tf.config.experimental.enable_tensor_float_32_execution(False)
   cv = tfp.mcmc.effective_sample_size(mapped_samples).numpy()
   cv[jnp.isnan(cv)] = 1.
   return cv
@@ -240,9 +238,9 @@ def main(argv: Sequence[str]) -> None:
     get_mixing_time_graph_over_chain(model, params, chain,
                                      config_main.window_size,
                                      config_main.window_stride, config_main)
-  ess_chains = get_effective_sample_size(samples)
-  print('Effective Sample Size: ', ess_chains)
-  print('Mean Effective Sample Size: ', jnp.mean(ess_chains))
+  ess_of_chains = get_effective_sample_size(samples)
+  print('Effective Sample Size: ', ess_of_chains)
+  print('Mean Effective Sample Size over batch: ', jnp.mean(ess_of_chains))
 
 
 if __name__ == '__main__':
