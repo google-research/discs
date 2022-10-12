@@ -31,8 +31,8 @@ def load_configs():
       initial_dictionary=dict(
           parallel=False,
           model='ising',
-          sampler='locally_balanced',
-          num_samples=50,
+          sampler='gibbs',
+          num_samples=48,
           chain_length=1000,
           chain_burnin_length=900,
           window_size=10,
@@ -52,6 +52,8 @@ def load_configs():
           random_order=False,
           block_size=3,
           balancing_fn_type=0))
+  
+  
   return config_main, config_model, config_sampler
 
 
@@ -99,7 +101,7 @@ def get_mapped_samples(samples):
 
 
 def get_effective_sample_size(samples):
-  mapped_samples = get_mapped_samples(samples)
+  mapped_samples = get_mapped_samples(samples).astype(jnp.float32)
   cv = tfp.mcmc.effective_sample_size(mapped_samples).numpy()
   cv[jnp.isnan(cv)] = 1.
   return cv
