@@ -76,6 +76,7 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       return jnp.exp(loglikelihood_y - loglikelihood_x)
 
     def get_balancing_fn(t):
+      #TODO: Enums
       if self.balancing_fn_type == 2:
         return t / (t + 1)
       elif self.balancing_fn_type == 3: #and

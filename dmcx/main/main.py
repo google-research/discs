@@ -9,6 +9,8 @@ import dmcx.sampler.blockgibbs as blockgibbs_sampler
 import dmcx.sampler.locallybalanced as locallybalanced_sampler
 import dmcx.sampler.gibbswithgrad as gibbswithgrad_sampler
 import os
+import tensorflow as tf
+import tensorflow_probability as tfp
 
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=4'
 from jax import random
@@ -23,37 +25,36 @@ import pdb
 def load_configs():
   """Loading config vals for main, model and sampler."""
 
+  sample_shape = (10, 10)
+  if isinstance(sample_shape, int):
+    sample_shape = (sample_shape,)
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
           parallel=False,
           model='bernouli',
           sampler='gibbs_with_grad',
-          num_samples=50,
+          num_samples=48,
           chain_length=1000,
-          chain_burnin_length=950,
+          chain_burnin_length=900,
           window_size=10,
           window_stride=10))
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(
-          shape=(5,),
+          shape=sample_shape,
           init_sigma=1.0,
-          lamda=0.1,
-          external_field_type=0,
-          parallel_sampling=False))
+          lambdaa=0.1,
+          external_field_type=0))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
-          sample_shape=(5,),
+          sample_shape=sample_shape,
           num_categories=5,
           random_order=False,
           block_size=3,
-          balancing_fn_type=1))
+          balancing_fn_type=0))
   
-  if isinstance(config_sampler.sample_shape, int):
-    config_sampler.sample_shape = (config_sampler.sample_shape,)
-  if config_model.shape != config_sampler.sample_shape:
-    config_model.shape = config_sampler.sample_shape
+  
   return config_main, config_model, config_sampler
 
 
@@ -96,6 +97,17 @@ def compute_chain(model, chain_length, chain_burnin_length, sampler_step, state,
 def get_sample_mean(samples):
   mean_over_samples = jnp.mean(samples, axis=0)
   return mean_over_samples
+
+
+def get_mapped_samples(samples):
+  return jnp.sum(abs(samples), axis=jnp.arange(len(samples.shape))[2:])
+
+
+def get_effective_sample_size(samples):
+  mapped_samples = get_mapped_samples(samples).astype(jnp.float32)
+  cv = tfp.mcmc.effective_sample_size(mapped_samples).numpy()
+  cv[jnp.isnan(cv)] = 1.
+  return cv
 
 
 def get_sample_variance_unbiased(samples):
@@ -226,10 +238,14 @@ def main(argv: Sequence[str]) -> None:
   print(
       'Samples Shape [Num of samples in each chain, Batch Size, Sample shape]: ',
       samples.shape)
-  compute_error_across_chain_and_batch(model, params, chain)
-  get_mixing_time_graph_over_chain(model, params, chain,
-                                   config_main.window_size,
-                                   config_main.window_stride, config_main)
+  if config_main.model == 'bernouli':
+    compute_error_across_chain_and_batch(model, params, chain)
+    get_mixing_time_graph_over_chain(model, params, chain,
+                                     config_main.window_size,
+                                     config_main.window_stride, config_main)
+  ess_of_chains = get_effective_sample_size(samples)
+  print('Effective Sample Size: ', ess_of_chains)
+  print('Mean Effective Sample Size over batch: ', jnp.mean(ess_of_chains))
 
 
 if __name__ == '__main__':
