@@ -9,6 +9,7 @@ setup(name='dmcx',
           'ml_collections',
           'numpy',
           'matplotlib',
-          'tqdm'
+          'tqdm',
+          'tensorflow'
       ]
       )

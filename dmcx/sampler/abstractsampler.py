@@ -3,7 +3,6 @@
 import abc
 import ml_collections
 
-
 class AbstractSampler(abc.ABC):
   """Base Sampler Class."""
 
