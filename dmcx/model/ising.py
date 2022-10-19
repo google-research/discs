@@ -11,10 +11,7 @@ class Ising(abstractmodel.AbstractModel):
 
   def __init__(self, config: ml_collections.ConfigDict):
 
-    if isinstance(config.shape, int):
-      self.shape = (config.shape, config.shape)
-    else:
-      self.shape = config.shape
+    self.shape = config.shape
     self.lambdaa = config.lambdaa
     self.external_field_type = config.external_field_type
     self.init_sigma = config.init_sigma
@@ -24,6 +21,7 @@ class Ising(abstractmodel.AbstractModel):
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
 
+    #TODO: Enums
     # external force (default value is zero)
     if self.external_field_type == 1:
       params_b = jax.random.normal(rnd, shape=self.shape) * self.init_sigma
