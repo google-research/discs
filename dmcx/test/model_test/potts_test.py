@@ -6,7 +6,7 @@ import dmcx.model.potts as potts_model
 import jax
 from ml_collections import config_dict
 import numpy as np
-import pdb
+
 
 class PottsTest(parameterized.TestCase):
 
@@ -14,10 +14,7 @@ class PottsTest(parameterized.TestCase):
     """This method will be run before each of the test methods in the class."""
     super().setUp()
     self.config = config_dict.ConfigDict(
-        initial_dictionary=dict(
-            shape=(3, 3),
-            lambdaa=0.4407,
-            num_categories=5))
+        initial_dictionary=dict(shape=(3, 3), lambdaa=0.4407, num_categories=5))
     self.potts_model = potts_model.Potts(self.config)
     self.rng = jax.random.PRNGKey(0)
     if isinstance(self.config.shape, int):
@@ -28,10 +25,10 @@ class PottsTest(parameterized.TestCase):
     self.assertEqual(params[0].shape,
                      self.config.shape + (self.config.num_categories,))
     self.assertEqual(params[1].shape,
-                  self.config.shape + (self.config.num_categories,))
+                     self.config.shape + (self.config.num_categories,))
 
   @parameterized.named_parameters(('Potts Initial Samples', 10))
-  def test_get_one_hot_init_samples(self, num_samples):
+  def test_get_samples(self, num_samples):
     x0 = self.potts_model.get_init_samples(self.rng, num_samples)
     self.assertEqual(x0.shape, (num_samples,) + self.config.shape +
                      (self.config.num_categories,))
@@ -39,15 +36,15 @@ class PottsTest(parameterized.TestCase):
         np.array_equal(
             np.sum(x0, axis=-1), np.ones((num_samples,) + self.config.shape)))
 
-  @parameterized.named_parameters(('Potts Forward One Hot', 10))
-  def test_forward_one_hot(self, num_samples):
+  @parameterized.named_parameters(('Potts Forward', 10))
+  def test_forward(self, num_samples):
     rng_param, rng_x0 = jax.random.split(self.rng)
     params = self.potts_model.make_init_params(rng_param)
     x0 = self.potts_model.get_init_samples(rng_x0, num_samples)
     loglikelihood = self.potts_model.forward(params, x0)
     self.assertEqual(loglikelihood.shape, (num_samples,))
-    
-  @parameterized.named_parameters(('Potts Value and Grad One-hot', 10))
+
+  @parameterized.named_parameters(('Potts Value and Grad', 10))
   def test_value_grad_one_hot(self, num_samples):
     rng_param, rng_x0 = jax.random.split(self.rng)
     params = self.potts_model.make_init_params(rng_param)
@@ -56,6 +53,7 @@ class PottsTest(parameterized.TestCase):
     self.assertEqual(loglikelihood.shape, (num_samples,))
     self.assertEqual(grad.shape, (num_samples,) + self.config.shape +
                      (self.config.num_categories,))
+
 
 if __name__ == '__main__':
   absltest.main()

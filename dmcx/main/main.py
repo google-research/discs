@@ -28,7 +28,7 @@ def load_configs():
   """Loading config vals for main, model and sampler."""
 
   sample_shape = (5, 5)
-  num_categories = 4
+  num_categories = 6
   one_hot_rep = True
   if isinstance(sample_shape, int):
     sample_shape = (sample_shape,)
@@ -37,7 +37,7 @@ def load_configs():
           parallel=False,
           model='categorical',
           sampler='gibbs_with_grad',
-          num_samples=75,
+          num_samples=48,
           chain_length=1000,
           chain_burnin_length=900,
           window_size=10,

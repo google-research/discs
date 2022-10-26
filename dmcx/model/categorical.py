@@ -4,7 +4,6 @@ from dmcx.model import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
-import pdb
 
 
 class Categorical(abstractmodel.AbstractModel):
@@ -42,21 +41,16 @@ class Categorical(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
-    # x not following one-hot representation
-    if len(x.shape) == (len(self.shape) + 1):
+
+    if not self.one_hot_representation:
       x = self.get_one_hot_represntation(x)
 
     params = jnp.expand_dims(params, axis=0)
     loglikelihood = jnp.sum((x * params).reshape(x.shape[0], -1), axis=-1)
+
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
-
-    one_hot = True
-    # x not following one-hot representation
-    if len(x.shape) == (len(self.shape) + 1):
-      one_hot = False
-      x = self.get_one_hot_represntation(x)
 
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
@@ -65,8 +59,5 @@ class Categorical(abstractmodel.AbstractModel):
       return jnp.sum(loglikelihood), loglikelihood
 
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
-
-    if not one_hot:
-      grad = jnp.sum(grad, axis=-1)
 
     return loglikelihood, grad

@@ -65,17 +65,6 @@ class CategoricalTest(parameterized.TestCase):
     self.assertEqual(loglikelihood.shape, (num_samples,))
 
   @parameterized.named_parameters(('Categorical Value and Grad', 10))
-  def test_value_grad(self, num_samples):
-    self.categorical_model.one_hot_representation = False
-    rng_param, rng_x0 = jax.random.split(self.rng)
-    params = self.categorical_model.make_init_params(rng_param)
-    x0 = self.categorical_model.get_init_samples(rng_x0, num_samples)
-    loglikelihood, grad = self.categorical_model.get_value_and_grad(params, x0)
-    self.assertEqual(loglikelihood.shape, (num_samples,))
-    self.assertEqual(grad.shape, (num_samples,) + self.config.shape)
-    self.categorical_model.one_hot_representation = True
-
-  @parameterized.named_parameters(('Categorical Value and Grad One-hot', 10))
   def test_value_grad_one_hot(self, num_samples):
     rng_param, rng_x0 = jax.random.split(self.rng)
     params = self.categorical_model.make_init_params(rng_param)

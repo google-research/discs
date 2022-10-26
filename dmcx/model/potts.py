@@ -41,7 +41,6 @@ class Potts(abstractmodel.AbstractModel):
 
   def forward(self, params, x):
 
-    x = 2 * x - 1
     w_h = params[0][:, :-1, :]
     w_v = params[1][:-1, :, :]
 
@@ -55,8 +54,7 @@ class Potts(abstractmodel.AbstractModel):
     loglikelihood = loglikelihood.at[:, 1:, :].set(
         loglikelihood[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v)  # up
 
-    loglikelihood = jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
-    return loglikelihood
+    return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
 
   def get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable

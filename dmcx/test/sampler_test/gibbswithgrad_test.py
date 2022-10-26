@@ -7,8 +7,7 @@ import dmcx.model.categorical as categorical_model
 import dmcx.sampler.gibbswithgrad as gibbswithgrad_sampler
 import jax
 from ml_collections import config_dict
-import pdb
-
+import numpy as np
 
 class GibbsWithGradSamplerTest(parameterized.TestCase):
 
@@ -59,6 +58,7 @@ class GibbsWithGradSamplerTest(parameterized.TestCase):
     self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape +
                      (self.num_categories,))
     self.assertEqual(n_s, state)
+
 
 if __name__ == '__main__':
   absltest.main()

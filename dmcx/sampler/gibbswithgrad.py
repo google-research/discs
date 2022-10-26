@@ -66,6 +66,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
       loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
       sampled_index_flatten_x = sample_index(rnd, loglike_delta_x)
+      # in binary case is the same
       sampled_index_flatten_y = sampled_index_flatten_x
 
       if self.num_categories == 2:
@@ -77,25 +78,27 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         flipped = flipped_flatten.reshape(x.shape)
         y = (x + flipped) % self.num_categories
       else:
-        dim = math.prod(self.sample_shape)
-        sampled_index_from_shape = jnp.floor_divide(sampled_index_flatten_x,
-                                                    self.num_categories)
+        # generating new one-hot samples
         sampled_category = sampled_index_flatten_x % self.num_categories
-        # generating new one hots
         new_x = jnp.zeros([x.shape[0], self.num_categories])
         new_x = new_x.at[jnp.arange(x.shape[0]),
                          sampled_category].set(jnp.ones(x.shape[0]))
+
+        dim = math.prod(self.sample_shape)
         y_flatten = x.reshape(x.shape[0], dim, self.num_categories)
+        sampled_index = jnp.floor_divide(sampled_index_flatten_x,
+                                         self.num_categories)
         # getting sampled i backward
-        selected_i = y_flatten[jnp.arange(x.shape[0]), sampled_index_from_shape]
+        selected_sample_i = y_flatten[jnp.arange(x.shape[0]), sampled_index]
         index_catogories = jnp.tile(
             jnp.arange(self.num_categories), reps=(x.shape[0], 1))
-        sampled_category_back = jnp.sum(selected_i * index_catogories, axis=-1)
-        sampled_index_flatten_y = sampled_index_from_shape * self.num_categories + sampled_category_back
+        sampled_category_back = jnp.sum(
+            selected_sample_i * index_catogories, axis=-1)
+        sampled_index_flatten_y = sampled_index * self.num_categories + sampled_category_back
 
         # creating the new sample
         y_flatten = y_flatten.at[jnp.arange(x.shape[0]),
-                                 sampled_index_from_shape].set(new_x)
+                                 sampled_index].set(new_x)
         y = y_flatten.reshape(x.shape)
 
       return y, sampled_index_flatten_x, sampled_index_flatten_y
