@@ -7,7 +7,7 @@ import ml_collections
 import pdb
 
 class Potts(abstractmodel.AbstractModel):
-  """Potts Distribution with Cyclic 2D Lattice."""
+  """Potts Distribution (2D cyclic ising model with one-hot representation)."""
 
   def __init__(self, config: ml_collections.ConfigDict):
 
