@@ -27,7 +27,7 @@ import pdb
 def load_configs():
   """Loading config vals for main, model and sampler."""
 
-  sample_shape = (2, 3)
+  sample_shape = (5, 5)
   num_categories = 4
   one_hot_rep = True
   if isinstance(sample_shape, int):
@@ -35,7 +35,7 @@ def load_configs():
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
           parallel=False,
-          model='potts',
+          model='categorical',
           sampler='gibbs_with_grad',
           num_samples=75,
           chain_length=1000,
@@ -63,8 +63,7 @@ def load_configs():
           random_order=False,
           block_size=3,
           balancing_fn_type=0))
-  
-  
+
   return config_main, config_model, config_sampler
 
 
@@ -114,19 +113,20 @@ def get_sample_mean(samples):
 
 
 def get_mapped_samples(samples, rnd_ess):
-  print("Shape of Sample before Mapped: ", samples.shape)
+  print('Shape of Sample before Mapped: ', samples.shape)
   vec_shape = jnp.array(samples.shape)[2:]
   vec = jax.random.normal(rnd_ess, shape=vec_shape)
   vec = jnp.array([[vec]])
-  return jnp.sum(samples* vec, axis=jnp.arange(len(samples.shape))[2:])
+  return jnp.sum(samples * vec, axis=jnp.arange(len(samples.shape))[2:])
 
 
 def get_effective_sample_size(samples, rnd_ess):
   mapped_samples = get_mapped_samples(samples, rnd_ess).astype(jnp.float32)
-  print("Shape of Mapped Sample ESS: ", mapped_samples.shape)
+  print('Shape of Mapped Sample ESS: ', mapped_samples.shape)
   cv = tfp.mcmc.effective_sample_size(mapped_samples).numpy()
   cv[jnp.isnan(cv)] = 1.
   return cv
+
 
 def get_sample_variance_unbiased(samples):
   sample_mean = jnp.mean(samples, axis=0, keepdims=True)
