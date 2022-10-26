@@ -65,7 +65,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         New samples.
       """
 
-      loglike_delta_x = compute_loglike_delta(x, model, model_param)/2
+      loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
       selected_index_flatten = select_index(rnd, loglike_delta_x)
       selected_index_flatten_y = selected_index_flatten
 
@@ -86,15 +86,22 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         new_x = new_x.at[jnp.arange(x.shape[0]),
                          selected_category].set(jnp.ones(x.shape[0]))
         y_flatten = x.reshape(x.shape[0], dim, self.num_categories)
+        # getting sampled i backward
+        selected_i = y_flatten[jnp.arange(x.shape[0]), selected_index]
+        index_catogories = jnp.tile(
+            jnp.arange(self.num_categories), reps=(x.shape[0], 1))
+        selected_category_back = jnp.sum(selected_i * index_catogories, axis=-1)
+        selected_index_flatten_y = selected_index * self.num_categories + selected_category_back
+
+        # creating the new sample
         y_flatten = y_flatten.at[jnp.arange(x.shape[0]),
                                  selected_index].set(new_x)
         y = y_flatten.reshape(x.shape)
-        selected_index_flatten_y = jnp.where(
-            (y - x).reshape(x.shape[0], -1) == -1)[1]
-  
+
       return y, selected_index_flatten, selected_index_flatten_y
 
-    def select_new_samples(rnd_acceptance, model, model_param, x, y, i_flatten_x, i_flatten_y):
+    def select_new_samples(rnd_acceptance, model, model_param, x, y,
+                           i_flatten_x, i_flatten_y):
 
       accept_ratio = get_ratio(model, model_param, x, y, i_flatten_x,
                                i_flatten_y)
@@ -130,7 +137,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-      
+
       return jnp.exp(loglikelihood_y - loglikelihood_x) * (
           probab_i_given_y / probab_i_given_x)
 
@@ -147,26 +154,3 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
                                i_flatten_x, i_flatten_y)
     new_state = state
     return new_x, new_state
-
-
-# [[1 0 0][0 1 0]]
-# pdb.set_trace()
-# score_change_x = grad - (grad * x).sum(dim=-1, keepdim=True)
-# score_change_x = score_change_x - 1e9 * x
-# dist_x = StableOnehotCategorical(logits=score_change_x.view(bsize, -1))
-# index_x = dist_x.sample()
-# log_x2y = dist_x.log_prob(index_x)
-# index_y = x * index_x.view(x.shape).sum(dim=-1, keepdim=True)
-# y = x * (1 - index_x.view(x.shape).sum(dim=-1, keepdim=True)) + index_x.view(x.shape)
-# return x
-# else:
-#   dim = math.prod(self.sample_shape)
-#   selected_index = (i_flatten / dim).astype(jnp.int32)
-#   selected_category = i_flatten % dim
-#   loglikelihood = loglikelihood.reshape(loglikelihood.shape[0], dim,
-#                                         self.num_categories)
-#   loglikelihood_category = loglikelihood[
-#       jnp.arange(loglikelihood.shape[0]), selected_index]
-#   probability = compute_softmax(loglikelihood_category)
-#   return probability[jnp.arange(loglikelihood.shape[0]),
-#                      selected_category]

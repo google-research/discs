@@ -1,4 +1,4 @@
-"""Tests for bernouli."""
+"""Tests for categorical."""
 
 from absl.testing import absltest
 from absl.testing import parameterized

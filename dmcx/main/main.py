@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from absl import app
 import dmcx.model.bernouli as bernouli_model
 import dmcx.model.ising as ising_model
+import dmcx.model.potts as potts_model
 import dmcx.model.categorical as categorical_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
 import dmcx.sampler.blockgibbs as blockgibbs_sampler
@@ -26,17 +27,17 @@ import pdb
 def load_configs():
   """Loading config vals for main, model and sampler."""
 
-  sample_shape = (10, 10)
-  num_categories = 3
+  sample_shape = (2, 3)
+  num_categories = 4
   one_hot_rep = True
   if isinstance(sample_shape, int):
     sample_shape = (sample_shape,)
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
           parallel=False,
-          model='categorical',
+          model='potts',
           sampler='gibbs_with_grad',
-          num_samples=48,
+          num_samples=75,
           chain_length=1000,
           chain_burnin_length=900,
           window_size=10,
@@ -74,6 +75,8 @@ def get_model(config_main, config_model):
     return ising_model.Ising(config_model)
   elif config_main.model == 'categorical':
     return categorical_model.Categorical(config_model)
+  elif config_main.model == 'potts':
+    return potts_model.Potts(config_model)
   raise Exception('Please provide a correct model name.')
 
 
@@ -223,7 +226,7 @@ def main(argv: Sequence[str]) -> None:
     n_devices = 2
     step_jit = jax.jit(sampler.step, static_argnums=0)
     chain, samples = compute_chain(model, config_main.chain_length,
-                                   config_main.chain_burnin_length, sampler.step,
+                                   config_main.chain_burnin_length, step_jit,
                                    state, params, rng_sampler_step, x,
                                    n_devices)
   else:
