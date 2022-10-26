@@ -41,6 +41,7 @@ class CategoricalTest(parameterized.TestCase):
     x0 = self.categorical_model.get_init_samples(self.rng, num_samples)
     self.assertEqual(x0.shape, (num_samples,) + self.config.shape +
                      (self.config.num_categories,))
+    # checking one-hot condition.
     self.assertTrue(
         np.array_equal(
             np.sum(x0, axis=-1), np.ones((num_samples,) + self.config.shape)))
@@ -73,7 +74,7 @@ class CategoricalTest(parameterized.TestCase):
     self.assertEqual(loglikelihood.shape, (num_samples,))
     self.assertEqual(grad.shape, (num_samples,) + self.config.shape)
     self.categorical_model.one_hot_representation = True
-    
+
   @parameterized.named_parameters(('Categorical Value and Grad One-hot', 10))
   def test_value_grad_one_hot(self, num_samples):
     rng_param, rng_x0 = jax.random.split(self.rng)
@@ -83,6 +84,7 @@ class CategoricalTest(parameterized.TestCase):
     self.assertEqual(loglikelihood.shape, (num_samples,))
     self.assertEqual(grad.shape, (num_samples,) + self.config.shape +
                      (self.config.num_categories,))
+
 
 if __name__ == '__main__':
   absltest.main()

@@ -47,9 +47,7 @@ class Categorical(abstractmodel.AbstractModel):
       x = self.get_one_hot_represntation(x)
 
     params = jnp.expand_dims(params, axis=0)
-    loglikelihood_over_categories = jnp.sum((x * params), axis=-1)
-    loglikelihood = jnp.sum(
-        loglikelihood_over_categories.reshape(x.shape[0], -1), axis=-1)
+    loglikelihood = jnp.sum((x * params).reshape(x.shape[0], -1), axis=-1)
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
@@ -59,6 +57,7 @@ class Categorical(abstractmodel.AbstractModel):
     if len(x.shape) == (len(self.shape) + 1):
       one_hot = False
       x = self.get_one_hot_represntation(x)
+
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):

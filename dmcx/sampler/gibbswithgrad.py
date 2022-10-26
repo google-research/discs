@@ -39,16 +39,15 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       _, grad = model.get_value_and_grad(model_param, x)
       if self.num_categories == 2:
         # shape of sample
-        loglike_delta = (-2 * x + 1) * grad
-        return loglike_delta
+        return (-2 * x + 1) * grad
       else:
         # shape of sample with categories
         loglike_delta = (jnp.ones(x.shape) - x) * grad
-        # loglike_delta = jnp.zeros(loglike_delta.shape)
+        # hamming ball distance of one
         loglike_delta = loglike_delta - 1e9 * x
         return loglike_delta
 
-    def select_index(rnd_categorical, loglikelihood):
+    def sample_index(rnd_categorical, loglikelihood):
       loglikelihood_flatten = loglikelihood.reshape(loglikelihood.shape[0], -1)
       return random.categorical(rnd_categorical, loglikelihood_flatten, axis=1)
 
@@ -66,48 +65,47 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       """
 
       loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
-      selected_index_flatten = select_index(rnd, loglike_delta_x)
-      selected_index_flatten_y = selected_index_flatten
+      sampled_index_flatten_x = sample_index(rnd, loglike_delta_x)
+      sampled_index_flatten_y = sampled_index_flatten_x
 
       if self.num_categories == 2:
         flipped = jnp.zeros(x.shape)
         flipped_flatten = flipped.reshape(x.shape[0], -1)
         flipped_flatten = flipped_flatten.at[jnp.arange(x.shape[0]),
-                                             selected_index_flatten].set(
+                                             sampled_index_flatten_x].set(
                                                  jnp.ones(x.shape[0]))
         flipped = flipped_flatten.reshape(x.shape)
         y = (x + flipped) % self.num_categories
       else:
         dim = math.prod(self.sample_shape)
-        selected_index = jnp.floor_divide(selected_index_flatten,
-                                          self.num_categories)
-        selected_category = selected_index_flatten % self.num_categories
+        sampled_index_from_shape = jnp.floor_divide(sampled_index_flatten_x,
+                                                    self.num_categories)
+        sampled_category = sampled_index_flatten_x % self.num_categories
+        # generating new one hots
         new_x = jnp.zeros([x.shape[0], self.num_categories])
         new_x = new_x.at[jnp.arange(x.shape[0]),
-                         selected_category].set(jnp.ones(x.shape[0]))
+                         sampled_category].set(jnp.ones(x.shape[0]))
         y_flatten = x.reshape(x.shape[0], dim, self.num_categories)
         # getting sampled i backward
-        selected_i = y_flatten[jnp.arange(x.shape[0]), selected_index]
+        selected_i = y_flatten[jnp.arange(x.shape[0]), sampled_index_from_shape]
         index_catogories = jnp.tile(
             jnp.arange(self.num_categories), reps=(x.shape[0], 1))
-        selected_category_back = jnp.sum(selected_i * index_catogories, axis=-1)
-        selected_index_flatten_y = selected_index * self.num_categories + selected_category_back
+        sampled_category_back = jnp.sum(selected_i * index_catogories, axis=-1)
+        sampled_index_flatten_y = sampled_index_from_shape * self.num_categories + sampled_category_back
 
         # creating the new sample
         y_flatten = y_flatten.at[jnp.arange(x.shape[0]),
-                                 selected_index].set(new_x)
+                                 sampled_index_from_shape].set(new_x)
         y = y_flatten.reshape(x.shape)
 
-      return y, selected_index_flatten, selected_index_flatten_y
+      return y, sampled_index_flatten_x, sampled_index_flatten_y
 
     def select_new_samples(rnd_acceptance, model, model_param, x, y,
                            i_flatten_x, i_flatten_y):
 
       accept_ratio = get_ratio(model, model_param, x, y, i_flatten_x,
                                i_flatten_y)
-      # print(accept_ratio)
       accepted = is_accepted(rnd_acceptance, accept_ratio)
-      # print(accepted)
       if self.num_categories == 2:
         accepted = accepted.reshape(accepted.shape +
                                     tuple([1] * len(self.sample_shape)))
