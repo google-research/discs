@@ -115,9 +115,10 @@ def get_sample_mean(samples):
 def get_mapped_samples(samples, rnd_ess):
   print('Shape of Sample before Mapped: ', samples.shape)
   vec_shape = jnp.array(samples.shape)[2:]
-  vec = jax.random.normal(rnd_ess, shape=vec_shape)
-  vec = jnp.array([[vec]])
-  return jnp.sum(samples * vec, axis=jnp.arange(len(samples.shape))[2:])
+  vec_to_project = jax.random.normal(rnd_ess, shape=vec_shape)
+  vec_to_project = jnp.array([[vec_to_project]])
+  return jnp.sum(
+      samples * vec_to_project, axis=jnp.arange(len(samples.shape))[2:])
 
 
 def get_effective_sample_size(samples, rnd_ess):
