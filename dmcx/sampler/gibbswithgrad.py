@@ -44,7 +44,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       else:
         # shape of sample with categories
         loglike_delta = (jnp.ones(x.shape) - x) * grad
-        loglike_delta = jnp.zeros(loglike_delta.shape)
+        # loglike_delta = jnp.zeros(loglike_delta.shape)
         loglike_delta = loglike_delta - 1e9 * x
         return loglike_delta
 
@@ -65,7 +65,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         New samples.
       """
 
-      loglike_delta_x = compute_loglike_delta(x, model, model_param)
+      loglike_delta_x = compute_loglike_delta(x, model, model_param)/2
       selected_index_flatten = select_index(rnd, loglike_delta_x)
       selected_index_flatten_y = selected_index_flatten
 
@@ -89,17 +89,18 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         y_flatten = y_flatten.at[jnp.arange(x.shape[0]),
                                  selected_index].set(new_x)
         y = y_flatten.reshape(x.shape)
-        # pdb.set_trace()
         selected_index_flatten_y = jnp.where(
             (y - x).reshape(x.shape[0], -1) == -1)[1]
-
+  
       return y, selected_index_flatten, selected_index_flatten_y
 
     def select_new_samples(rnd_acceptance, model, model_param, x, y, i_flatten_x, i_flatten_y):
 
       accept_ratio = get_ratio(model, model_param, x, y, i_flatten_x,
                                i_flatten_y)
+      # print(accept_ratio)
       accepted = is_accepted(rnd_acceptance, accept_ratio)
+      # print(accepted)
       if self.num_categories == 2:
         accepted = accepted.reshape(accepted.shape +
                                     tuple([1] * len(self.sample_shape)))
@@ -129,7 +130,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-
+      
       return jnp.exp(loglikelihood_y - loglikelihood_x) * (
           probab_i_given_y / probab_i_given_x)
 

@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from absl import app
 import dmcx.model.bernouli as bernouli_model
 import dmcx.model.ising as ising_model
+import dmcx.model.categorical as categorical_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
 import dmcx.sampler.blockgibbs as blockgibbs_sampler
 import dmcx.sampler.locallybalanced as locallybalanced_sampler
@@ -26,30 +27,38 @@ def load_configs():
   """Loading config vals for main, model and sampler."""
 
   sample_shape = (10, 10)
+  num_categories = 3
+  one_hot_rep = True
   if isinstance(sample_shape, int):
     sample_shape = (sample_shape,)
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
           parallel=False,
-          model='bernouli',
+          model='categorical',
           sampler='gibbs_with_grad',
           num_samples=48,
           chain_length=1000,
           chain_burnin_length=900,
           window_size=10,
           window_stride=10))
+  if config_main.sampler == 'gibbs_with_grad' and num_categories > 2:
+    one_hot_rep = True
+  else:
+    one_hot_rep = False
   config_model = config_dict.ConfigDict(
       initial_dictionary=dict(
           shape=sample_shape,
           init_sigma=1.0,
           lambdaa=0.1,
-          external_field_type=0))
+          external_field_type=0,
+          num_categories=num_categories,
+          one_hot_representation=one_hot_rep))
   config_sampler = config_dict.ConfigDict(
       initial_dictionary=dict(
           adaptive=False,
           target_acceptance_rate=0.234,
           sample_shape=sample_shape,
-          num_categories=5,
+          num_categories=num_categories,
           random_order=False,
           block_size=3,
           balancing_fn_type=0))
@@ -63,6 +72,8 @@ def get_model(config_main, config_model):
     return bernouli_model.Bernouli(config_model)
   elif config_main.model == 'ising':
     return ising_model.Ising(config_model)
+  elif config_main.model == 'categorical':
+    return categorical_model.Categorical(config_model)
   raise Exception('Please provide a correct model name.')
 
 
@@ -99,16 +110,20 @@ def get_sample_mean(samples):
   return mean_over_samples
 
 
-def get_mapped_samples(samples):
-  return jnp.sum(abs(samples), axis=jnp.arange(len(samples.shape))[2:])
+def get_mapped_samples(samples, rnd_ess):
+  print("Shape of Sample before Mapped: ", samples.shape)
+  vec_shape = jnp.array(samples.shape)[2:]
+  vec = jax.random.normal(rnd_ess, shape=vec_shape)
+  vec = jnp.array([[vec]])
+  return jnp.sum(samples* vec, axis=jnp.arange(len(samples.shape))[2:])
 
 
-def get_effective_sample_size(samples):
-  mapped_samples = get_mapped_samples(samples).astype(jnp.float32)
+def get_effective_sample_size(samples, rnd_ess):
+  mapped_samples = get_mapped_samples(samples, rnd_ess).astype(jnp.float32)
+  print("Shape of Mapped Sample ESS: ", mapped_samples.shape)
   cv = tfp.mcmc.effective_sample_size(mapped_samples).numpy()
   cv[jnp.isnan(cv)] = 1.
   return cv
-
 
 def get_sample_variance_unbiased(samples):
   sample_mean = jnp.mean(samples, axis=0, keepdims=True)
@@ -197,8 +212,8 @@ def main(argv: Sequence[str]) -> None:
   model = get_model(config_main, config_model)
   sampler = get_sampler(config_main, config_sampler)
 
-  rng_param, rng_x0, rng_sampler, rng_sampler_step = jax.random.split(
-      rnd, num=4)
+  rng_param, rng_x0, rng_sampler, rng_sampler_step, rnd_ess = jax.random.split(
+      rnd, num=5)
   del rnd
   params = model.make_init_params(rng_param)
   x = model.get_init_samples(rng_x0, config_main.num_samples)
@@ -208,7 +223,7 @@ def main(argv: Sequence[str]) -> None:
     n_devices = 2
     step_jit = jax.jit(sampler.step, static_argnums=0)
     chain, samples = compute_chain(model, config_main.chain_length,
-                                   config_main.chain_burnin_length, step_jit,
+                                   config_main.chain_burnin_length, sampler.step,
                                    state, params, rng_sampler_step, x,
                                    n_devices)
   else:
@@ -243,7 +258,7 @@ def main(argv: Sequence[str]) -> None:
     get_mixing_time_graph_over_chain(model, params, chain,
                                      config_main.window_size,
                                      config_main.window_stride, config_main)
-  ess_of_chains = get_effective_sample_size(samples)
+  ess_of_chains = get_effective_sample_size(samples, rnd_ess)
   print('Effective Sample Size: ', ess_of_chains)
   print('Mean Effective Sample Size over batch: ', jnp.mean(ess_of_chains))
 

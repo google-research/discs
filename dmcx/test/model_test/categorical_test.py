@@ -71,11 +71,7 @@ class CategoricalTest(parameterized.TestCase):
     x0 = self.categorical_model.get_init_samples(rng_x0, num_samples)
     loglikelihood, grad = self.categorical_model.get_value_and_grad(params, x0)
     self.assertEqual(loglikelihood.shape, (num_samples,))
-    self.assertEqual(grad.shape, (num_samples,) + self.config.shape +
-                     (self.config.num_categories,))
-    np_param = jax.device_get(params)
-    np_grad = jax.device_get(grad)
-    self.assertTrue(np.allclose(np_grad, np.expand_dims(np_param, axis=0)))
+    self.assertEqual(grad.shape, (num_samples,) + self.config.shape)
     self.categorical_model.one_hot_representation = True
     
   @parameterized.named_parameters(('Categorical Value and Grad One-hot', 10))
@@ -87,9 +83,6 @@ class CategoricalTest(parameterized.TestCase):
     self.assertEqual(loglikelihood.shape, (num_samples,))
     self.assertEqual(grad.shape, (num_samples,) + self.config.shape +
                      (self.config.num_categories,))
-    np_param = jax.device_get(params)
-    np_grad = jax.device_get(grad)
-    self.assertTrue(np.allclose(np_grad, np.expand_dims(np_param, axis=0)))
 
 if __name__ == '__main__':
   absltest.main()

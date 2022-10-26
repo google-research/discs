@@ -43,7 +43,7 @@ class Categorical(abstractmodel.AbstractModel):
 
   def forward(self, params, x):
     # x not following one-hot representation
-    if len(x.shape) == (len(self.shape)+1):
+    if len(x.shape) == (len(self.shape) + 1):
       x = self.get_one_hot_represntation(x)
 
     params = jnp.expand_dims(params, axis=0)
@@ -53,8 +53,11 @@ class Categorical(abstractmodel.AbstractModel):
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
-    
-    if not self.one_hot_representation:
+
+    one_hot = True
+    # x not following one-hot representation
+    if len(x.shape) == (len(self.shape) + 1):
+      one_hot = False
       x = self.get_one_hot_represntation(x)
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
@@ -63,4 +66,8 @@ class Categorical(abstractmodel.AbstractModel):
       return jnp.sum(loglikelihood), loglikelihood
 
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
+
+    if not one_hot:
+      grad = jnp.sum(grad, axis=-1)
+
     return loglikelihood, grad

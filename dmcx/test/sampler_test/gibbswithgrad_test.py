@@ -33,19 +33,19 @@ class GibbsWithGradSamplerTest(parameterized.TestCase):
     self.sampler = gibbswithgrad_sampler.GibbsWithGradSampler(
         self.config_sampler)
 
-  # @parameterized.named_parameters(('Gibbs With Grad Step Binay', 3))
-  # def test_step_binary(self, num_samples):
-  #   self.sampler.num_categories = 2
-  #   rng_param, rng_x0, rng_sampler, rng_sampler_step = jax.random.split(
-  #       self.rng, num=4)
-  #   params = self.bernouli_model.make_init_params(rng_param)
-  #   x0 = self.bernouli_model.get_init_samples(rng_x0, num_samples)
-  #   state = self.sampler.make_init_state(rng_sampler)
-  #   n_x, n_s = self.sampler.step(self.bernouli_model, rng_sampler_step, x0,
-  #                                params, state)
-  #   self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape)
-  #   self.assertEqual(n_s, state)
-  #   self.sampler.num_categories = self.num_categories
+  @parameterized.named_parameters(('Gibbs With Grad Step Binay', 3))
+  def test_step_binary(self, num_samples):
+    self.sampler.num_categories = 2
+    rng_param, rng_x0, rng_sampler, rng_sampler_step = jax.random.split(
+        self.rng, num=4)
+    params = self.bernouli_model.make_init_params(rng_param)
+    x0 = self.bernouli_model.get_init_samples(rng_x0, num_samples)
+    state = self.sampler.make_init_state(rng_sampler)
+    n_x, n_s = self.sampler.step(self.bernouli_model, rng_sampler_step, x0,
+                                 params, state)
+    self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape)
+    self.assertEqual(n_s, state)
+    self.sampler.num_categories = self.num_categories
 
   @parameterized.named_parameters(('Gibbs With Grad Step Categorical', 3))
   def test_step_categorical(self, num_samples):
@@ -56,21 +56,9 @@ class GibbsWithGradSamplerTest(parameterized.TestCase):
     state = self.sampler.make_init_state(rng_sampler)
     n_x, n_s = self.sampler.step(self.categorical_model, rng_sampler_step, x0,
                                  params, state)
-    self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape)
+    self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape +
+                     (self.num_categories,))
     self.assertEqual(n_s, state)
-
-  # @parameterized.named_parameters(('Random Walk Step Adaptive', 5))
-  # def test_step_adaptive(self, num_samples):
-  #   rng_param, rng_x0, rng_sampler, rng_sampler_step = jax.random.split(
-  #       self.rng, num=4)
-  #   params = self.bernouli_model.make_init_params(rng_param)
-  #   x0 = self.bernouli_model.get_init_samples(rng_x0, num_samples)
-  #   state = self.sampler_adaptive.make_init_state(rng_sampler)
-  #   n_x, n_s = self.sampler_adaptive.step(self.bernouli_model, rng_sampler_step,
-  #                                         x0, params, state)
-  #   self.assertEqual(n_x.shape, (num_samples,)+ self.sample_shape)
-  #   self.assertNotEqual(n_s, state)
-
 
 if __name__ == '__main__':
   absltest.main()
