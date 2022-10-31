@@ -21,11 +21,6 @@ class Categorical(abstractmodel.AbstractModel):
         rnd, shape=(self.shape + (self.num_categories,))) * self.init_sigma
     return params
 
-  def get_one_hot_represntation(self, x0):
-    x0 = jnp.expand_dims(x0, axis=-1)
-    x0_one_hot = jnp.tile(jnp.arange(self.num_categories), x0.shape)
-    return jnp.array(x0 == x0_one_hot, dtype=jnp.int32)
-
   def get_init_samples(self, rnd, num_samples: int):
 
     x0 = jax.random.randint(
@@ -36,14 +31,14 @@ class Categorical(abstractmodel.AbstractModel):
         dtype=jnp.int32)
 
     if self.one_hot_representation:
-      return self.get_one_hot_represntation(x0)
+      return jax.nn.one_hot(x0, self.num_categories)
 
     return x0
 
   def forward(self, params, x):
 
     if not self.one_hot_representation:
-      x = self.get_one_hot_represntation(x)
+      x = jax.nn.one_hot(x, self.num_categories)
 
     params = jnp.expand_dims(params, axis=0)
     loglikelihood = jnp.sum((x * params).reshape(x.shape[0], -1), axis=-1)

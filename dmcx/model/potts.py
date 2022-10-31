@@ -37,8 +37,8 @@ class Potts(abstractmodel.AbstractModel):
         maxval=self.num_categories,
         dtype=jnp.int32)
 
-    return self.get_one_hot_represntation(x0)
-
+    return jax.nn.one_hot(x0, self.num_categories)
+  
   def forward(self, params, x):
 
     w_h = params[0][:, :-1, :]
