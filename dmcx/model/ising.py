@@ -15,6 +15,7 @@ class Ising(abstractmodel.AbstractModel):
     self.lambdaa = config.lambdaa
     self.external_field_type = config.external_field_type
     self.init_sigma = config.init_sigma
+    self.num_loglike_calls = 0
 
   def make_init_params(self, rnd):
     # connectivity strength
@@ -39,6 +40,8 @@ class Ising(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+
+    self.num_loglike_calls += 1
 
     x = 2 * x - 1
     w_h = params[0][:, :-1]
@@ -71,3 +74,6 @@ class Ising(abstractmodel.AbstractModel):
 
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
     return loglikelihood, grad
+
+  def get_num_loglike_calls(self):
+    return self.num_loglike_calls

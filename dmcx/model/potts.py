@@ -15,6 +15,7 @@ class Potts(abstractmodel.AbstractModel):
     self.lambdaa = config.lambdaa
     self.num_categories = config.num_categories
     self.shape = self.sample_shape + (self.num_categories,)
+    self.num_loglike_calls = 0
 
   def make_init_params(self, rnd):
     # connectivity strength
@@ -41,6 +42,7 @@ class Potts(abstractmodel.AbstractModel):
   
   def forward(self, params, x):
 
+    self.num_loglike_calls += 1
     w_h = params[0][:, :-1, :]
     w_v = params[1][:-1, :, :]
 
@@ -65,3 +67,6 @@ class Potts(abstractmodel.AbstractModel):
 
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
     return loglikelihood, grad
+  
+  def get_num_loglike_calls(self):
+    return self.num_loglike_calls

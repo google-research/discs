@@ -15,6 +15,7 @@ class Categorical(abstractmodel.AbstractModel):
     self.init_sigma = config.init_sigma
     self.num_categories = config.num_categories
     self.one_hot_representation = config.one_hot_representation
+    self.num_loglike_calls = 0
 
   def make_init_params(self, rnd):
     params = jax.random.normal(
@@ -36,7 +37,7 @@ class Categorical(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
-
+    self.num_loglike_calls += 1
     if not self.one_hot_representation:
       x = jax.nn.one_hot(x, self.num_categories)
 
@@ -56,3 +57,6 @@ class Categorical(abstractmodel.AbstractModel):
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
 
     return loglikelihood, grad
+  
+  def get_num_loglike_calls(self):
+    return self.num_loglike_calls
