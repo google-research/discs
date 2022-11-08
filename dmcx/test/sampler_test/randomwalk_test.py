@@ -6,7 +6,7 @@ import dmcx.model.bernouli as bernouli_model
 import dmcx.sampler.randomwalk as randomwalk_sampler
 import jax
 from ml_collections import config_dict
-
+import pdb
 
 class RandomWalkSamplerTest(parameterized.TestCase):
 
@@ -51,7 +51,7 @@ class RandomWalkSamplerTest(parameterized.TestCase):
                                              rng_sampler_step, x0, params,
                                              state)
     self.assertEqual(n_x.shape, (num_samples,)+ self.sample_shape)
-    self.assertEqual(n_s, state)
+    self.assertEqual(n_s[0], state[0])
 
   @parameterized.named_parameters(('Random Walk Step Adaptive', 5))
   def test_step_adaptive(self, num_samples):
@@ -63,7 +63,7 @@ class RandomWalkSamplerTest(parameterized.TestCase):
     n_x, n_s = self.sampler_adaptive.step(self.bernouli_model, rng_sampler_step,
                                           x0, params, state)
     self.assertEqual(n_x.shape, (num_samples,)+ self.sample_shape)
-    self.assertNotEqual(n_s, state)
+    self.assertNotEqual(n_s[0], state[0])
 
 
 if __name__ == '__main__':

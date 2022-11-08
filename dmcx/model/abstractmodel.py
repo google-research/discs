@@ -30,10 +30,6 @@ class AbstractModel(abc.ABC):
   @abc.abstractmethod
   def forward(self, params, x):
     pass
-  
-  @abc.abstractmethod
-  def get_num_loglike_calls(self):
-    pass
 
   def get_value_and_grad(self, params, x):
     """Get Model Val and Grad."""

@@ -18,7 +18,8 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
   def make_init_state(self, rnd):
     """Returns expected number of flips(hamming distance)."""
-    return 1
+    num_log_like_calls = 0
+    return jnp.array([1, num_log_like_calls])
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
@@ -104,10 +105,10 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       return y, sampled_index_flatten_x, sampled_index_flatten_y
 
     def select_new_samples(rnd_acceptance, model, model_param, x, y,
-                           i_flatten_x, i_flatten_y):
+                           i_flatten_x, i_flatten_y, state):
 
-      accept_ratio = get_ratio(model, model_param, x, y, i_flatten_x,
-                               i_flatten_y)
+      accept_ratio, new_state = get_ratio(model, model_param, x, y, i_flatten_x,
+                                          i_flatten_y, state)
       accepted = is_accepted(rnd_acceptance, accept_ratio)
       if self.num_categories == 2:
         accepted = accepted.reshape(accepted.shape +
@@ -116,7 +117,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         accepted = accepted.reshape(accepted.shape +
                                     tuple([1] * (len(self.sample_shape) + 1)))
       new_x = accepted * y + (1 - accepted) * x
-      return new_x
+      return new_x, new_state
 
     def compute_softmax(loglikelihood):
       return jnp.exp(loglikelihood) / jnp.sum(
@@ -128,7 +129,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       probability = compute_softmax(loglikelihood)
       return probability[jnp.arange(loglikelihood.shape[0]), i_flatten]
 
-    def get_ratio(model, model_param, x, y, i_flatten_x, i_flatten_y):
+    def get_ratio(model, model_param, x, y, i_flatten_x, i_flatten_y, state):
 
       loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
       loglike_delta_y = compute_loglike_delta(y, model, model_param) / 2
@@ -138,9 +139,10 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
+      state = state.at[1].set(state[1] + 2)
 
       return jnp.exp(loglikelihood_y - loglikelihood_x) * (
-          probab_i_given_y / probab_i_given_x)
+          probab_i_given_y / probab_i_given_x), state
 
     def is_accepted(rnd_acceptance, accept_ratio):
       random_uniform_val = random.uniform(
@@ -151,7 +153,6 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
     del rnd
     y, i_flatten_x, i_flatten_y = generate_new_samples(rnd_new_sample, x, model,
                                                        model_param)
-    new_x = select_new_samples(rnd_acceptance, model, model_param, x, y,
-                               i_flatten_x, i_flatten_y)
-    new_state = state
+    new_x, new_state = select_new_samples(rnd_acceptance, model, model_param, x,
+                                          y, i_flatten_x, i_flatten_y, state)
     return new_x, new_state

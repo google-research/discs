@@ -19,7 +19,8 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
 
   def make_init_state(self, rnd):
     """Returns expected number of flips."""
-    return 1  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_shape).at[0, 0].get()
+    num_log_like_calls = 0
+    return jnp.array([1, num_log_like_calls])
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
@@ -53,9 +54,9 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
       return y
 
-    def select_new_samples(model, model_param, x, y, rnd_categorical):
+    def select_new_samples(model, model_param, x, y, rnd_categorical, state):
       x_expanded = jnp.repeat(x, int(y.shape[0] / x.shape[0]), axis=0)
-      t = get_ratio(model, model_param, x_expanded, y)
+      t, new_state = get_ratio(model, model_param, x_expanded, y, state)
       locally_balance_proposal_dist = get_balancing_fn(t)
       proposal_dist_unnormalized = locally_balance_proposal_dist.reshape(
           x.shape[0], -1)
@@ -67,13 +68,14 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       dim = math.prod(self.sample_shape)
       selected_y_index_batch = (jnp.arange(x.shape[0]) * dim) + selected_y_index
       new_x = jnp.take(y, selected_y_index_batch, axis=0)
-      return new_x
+      return new_x, new_state
 
-    def get_ratio(model, model_param, x, y):
+    def get_ratio(model, model_param, x, y, state):
       #TODO: define cutomized forward function in the model that only calculated modified regions.
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-      return jnp.exp(loglikelihood_y - loglikelihood_x)
+      state = state.at[1].set(state[1]+2)
+      return jnp.exp(loglikelihood_y - loglikelihood_x), state
 
     def get_balancing_fn(t):
       #TODO: Enums
@@ -85,10 +87,9 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
         return jnp.where(t > 1, t, 1)
       return jnp.sqrt(t)
 
+    num_log_like_calls = state[1]
     rnd_categorical, _ = random.split(rnd)
     del rnd
     y = generate_new_samples(x)
-    new_x = select_new_samples(model, model_param, x, y, rnd_categorical)
-    new_state = state
-
+    new_x, new_state = select_new_samples(model, model_param, x, y, rnd_categorical, state)
     return new_x, new_state

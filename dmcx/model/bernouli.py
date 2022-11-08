@@ -13,7 +13,6 @@ class Bernouli(abstractmodel.AbstractModel):
 
     self.shape = config.shape
     self.init_sigma = config.init_sigma
-    self.num_loglike_calls = 0
 
   def make_init_params(self, rnd):
     params = jax.random.normal(rnd, shape=self.shape) * self.init_sigma
@@ -29,7 +28,6 @@ class Bernouli(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
-    self.num_loglike_calls += 1
     params = jnp.expand_dims(params, axis=0)
     loglikelihood = jnp.sum((x * params).reshape(x.shape[0], -1), axis=-1)
     return loglikelihood
@@ -50,6 +48,3 @@ class Bernouli(abstractmodel.AbstractModel):
   def get_var(self, params):
     p = self.get_expected_val(params)
     return p * (1 - p)
-
-  def get_num_loglike_calls(self):
-    return self.num_loglike_calls
