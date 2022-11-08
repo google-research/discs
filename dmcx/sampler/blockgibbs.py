@@ -55,7 +55,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
 
     def select_new_samples(model, model_param, x, y, rnd_categorical, state):
       loglikelihood = model.forward(model_param, y)
-      state = state.at[1].set(state[1]+1)
+      state = state.at[1].set(state[1] + 1)
       loglikelihood = loglikelihood.reshape(
           -1, self.num_categories**self.block_size)
       new_x_dim = random.categorical(
@@ -78,7 +78,8 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
       indices_to_flip = indices[flip_index_start:flip_index_start +
                                 self.block_size]
       y = generate_new_samples(indices_to_flip, x)
-      x, new_state = select_new_samples(model, model_param, x, y, rnd_categorical, state)
+      x, new_state = select_new_samples(model, model_param, x, y,
+                                        rnd_categorical, state)
     new_x = x
 
     return new_x, new_state

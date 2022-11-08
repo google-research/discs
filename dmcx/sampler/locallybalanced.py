@@ -74,16 +74,16 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       #TODO: define cutomized forward function in the model that only calculated modified regions.
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-      state = state.at[1].set(state[1]+2)
+      state = state.at[1].set(state[1] + 2)
       return jnp.exp(loglikelihood_y - loglikelihood_x), state
 
     def get_balancing_fn(t):
       #TODO: Enums
       if self.balancing_fn_type == 2:
         return t / (t + 1)
-      elif self.balancing_fn_type == 3: #and
+      elif self.balancing_fn_type == 3:  #and
         return jnp.where(t < 1, t, 1)
-      elif self.balancing_fn_type == 4: #or
+      elif self.balancing_fn_type == 4:  #or
         return jnp.where(t > 1, t, 1)
       return jnp.sqrt(t)
 
@@ -91,5 +91,6 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
     rnd_categorical, _ = random.split(rnd)
     del rnd
     y = generate_new_samples(x)
-    new_x, new_state = select_new_samples(model, model_param, x, y, rnd_categorical, state)
+    new_x, new_state = select_new_samples(model, model_param, x, y,
+                                          rnd_categorical, state)
     return new_x, new_state
