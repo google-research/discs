@@ -20,9 +20,9 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
   def make_init_state(self, rnd):
     """Returns expected number of flips(hamming distance)."""
     num_log_like_calls = 0
-    return jnp.array([
-        1.0, num_log_like_calls
-    ])  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_shape).at[0, 0].get()
+    return jnp.array(
+        [1.0, num_log_like_calls]
+    )  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_shape).at[0, 0].get()
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
