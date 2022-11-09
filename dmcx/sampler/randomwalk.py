@@ -19,7 +19,10 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
   def make_init_state(self, rnd):
     """Returns expected number of flips(hamming distance)."""
-    return 1  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_shape).at[0, 0].get()
+    num_log_like_calls = 0
+    return jnp.array(
+        [1.0, num_log_like_calls]
+    )  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_shape).at[0, 0].get()
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
@@ -51,9 +54,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       rnd_new_sample, rnd_new_sample_randint = random.split(rnd_new_sample)
       dim = math.prod(self.sample_shape)
       indices_to_flip = random.bernoulli(
-          rnd_new_sample,
-          p=(expected_hamming_distance / dim),
-          shape=x.shape)
+          rnd_new_sample, p=(expected_hamming_distance / dim), shape=x.shape)
       flipping_value = indices_to_flip * random.randint(
           rnd_new_sample_randint,
           shape=x.shape,
@@ -62,19 +63,26 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       return (flipping_value + x) % self.num_categories
 
     def select_new_samples(model, model_param, x, y, state):
-      accept_ratio = get_ratio(model, model_param, x, y)
+      expected_flips = state[0]
+      num_log_like_calls = state[1]
+      accept_ratio, num_log_like_calls = get_ratio(model, model_param, x, y,
+                                                   num_log_like_calls)
       accepted = is_accepted(rnd_acceptance, accept_ratio)
       accepted = accepted.reshape(accepted.shape +
                                   tuple([1] * len(self.sample_shape)))
       new_x = accepted * y + (1 - accepted) * x
-      new_state = jnp.where(self.adaptive, update_state(accept_ratio, state, x),
-                            state)
-      return new_x, new_state
+      expected_flips = jnp.where(self.adaptive,
+                                 update_state(accept_ratio, expected_flips, x),
+                                 expected_flips)
+      state = state.at[0].set(expected_flips)
+      state = state.at[1].set(num_log_like_calls)
+      return new_x, state
 
-    def get_ratio(model, model_param, x, y):
+    def get_ratio(model, model_param, x, y, num_log_like_calls):
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-      return jnp.exp(loglikelihood_y - loglikelihood_x)
+      num_log_like_calls += 2
+      return jnp.exp(loglikelihood_y - loglikelihood_x), num_log_like_calls
 
     def is_accepted(rnd_acceptance, accept_ratio):
       random_uniform_val = random.uniform(
@@ -91,9 +99,9 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
     rnd_new_sample, rnd_acceptance = random.split(rnd)
     del rnd
-    y = generate_new_samples(rnd_new_sample, x, state)
+    y = generate_new_samples(rnd_new_sample, x, state[0])
     assert y.shape == x.shape
     new_x, new_state = select_new_samples(model, model_param, x, y, state)
     assert new_x.shape == x.shape
-    
+
     return new_x, new_state

@@ -36,7 +36,6 @@ class Categorical(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
-
     if not self.one_hot_representation:
       x = jax.nn.one_hot(x, self.num_categories)
 

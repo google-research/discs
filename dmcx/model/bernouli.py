@@ -21,7 +21,7 @@ class Bernouli(abstractmodel.AbstractModel):
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
         rnd,
-        shape=(num_samples,)+ self.shape,
+        shape=(num_samples,) + self.shape,
         minval=0,
         maxval=2,
         dtype=jnp.int32)
@@ -43,8 +43,7 @@ class Bernouli(abstractmodel.AbstractModel):
     return loglikelihood, grad
 
   def get_expected_val(self, params):
-    return jnp.exp(params) / (
-        jnp.exp(params) + jnp.ones(params.shape))
+    return jnp.exp(params) / (jnp.exp(params) + jnp.ones(params.shape))
 
   def get_var(self, params):
     p = self.get_expected_val(params)

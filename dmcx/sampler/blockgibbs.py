@@ -21,7 +21,8 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     self.block_size = config.block_size
 
   def make_init_state(self, rnd):
-    return 1
+    num_log_like_calls = 0
+    return jnp.array([1, num_log_like_calls])
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
@@ -52,8 +53,9 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
       y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
       return y
 
-    def select_new_samples(model, model_param, x, y, rnd_categorical):
+    def select_new_samples(model, model_param, x, y, rnd_categorical, state):
       loglikelihood = model.forward(model_param, y)
+      state = state.at[1].set(state[1] + 1)
       loglikelihood = loglikelihood.reshape(
           -1, self.num_categories**self.block_size)
       new_x_dim = random.categorical(
@@ -61,7 +63,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
       selected_index = (jnp.arange(x.shape[0]) *
                         (self.num_categories**self.block_size)) + new_x_dim
       x = jnp.take(y, selected_index, axis=0)
-      return x
+      return x, state
 
     # iterative conditional
     rnd_shuffle, rnd_categorical = random.split(rnd)
@@ -69,14 +71,15 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     dim = math.prod(self.sample_shape)
     indices = jnp.arange(dim)
     if self.random_order:
-      indices = random.permutation(rnd_shuffle, indices, axis=0, independent=True)
+      indices = random.permutation(
+          rnd_shuffle, indices, axis=0, independent=True)
     #TODO: use jax.lax.scan or jax.lax.fori_loop
     for flip_index_start in range(0, len(indices), self.block_size):
       indices_to_flip = indices[flip_index_start:flip_index_start +
                                 self.block_size]
       y = generate_new_samples(indices_to_flip, x)
-      x = select_new_samples(model, model_param, x, y, rnd_categorical)
+      x, new_state = select_new_samples(model, model_param, x, y,
+                                        rnd_categorical, state)
     new_x = x
-    new_state = state
 
     return new_x, new_state

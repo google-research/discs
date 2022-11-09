@@ -9,6 +9,7 @@ import jax
 from ml_collections import config_dict
 import numpy as np
 
+
 class GibbsWithGradSamplerTest(parameterized.TestCase):
 
   def setUp(self):
@@ -40,10 +41,9 @@ class GibbsWithGradSamplerTest(parameterized.TestCase):
     params = self.bernouli_model.make_init_params(rng_param)
     x0 = self.bernouli_model.get_init_samples(rng_x0, num_samples)
     state = self.sampler.make_init_state(rng_sampler)
-    n_x, n_s = self.sampler.step(self.bernouli_model, rng_sampler_step, x0,
-                                 params, state)
+    n_x, _ = self.sampler.step(self.bernouli_model, rng_sampler_step, x0,
+                               params, state)
     self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape)
-    self.assertEqual(n_s, state)
     self.sampler.num_categories = self.num_categories
 
   @parameterized.named_parameters(('Gibbs With Grad Step Categorical', 3))
@@ -53,11 +53,10 @@ class GibbsWithGradSamplerTest(parameterized.TestCase):
     params = self.categorical_model.make_init_params(rng_param)
     x0 = self.categorical_model.get_init_samples(rng_x0, num_samples)
     state = self.sampler.make_init_state(rng_sampler)
-    n_x, n_s = self.sampler.step(self.categorical_model, rng_sampler_step, x0,
-                                 params, state)
+    n_x, _ = self.sampler.step(self.categorical_model, rng_sampler_step, x0,
+                               params, state)
     self.assertEqual(n_x.shape, (num_samples,) + self.sample_shape +
                      (self.num_categories,))
-    self.assertEqual(n_s, state)
 
 
 if __name__ == '__main__':

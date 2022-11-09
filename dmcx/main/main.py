@@ -19,6 +19,7 @@ from jax import random
 from ml_collections import config_dict
 import jax.numpy as jnp
 import jax
+import time
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import pdb
@@ -27,15 +28,15 @@ import pdb
 def load_configs():
   """Loading config vals for main, model and sampler."""
 
-  sample_shape = (5, 5)
-  num_categories = 6
+  sample_shape = (10, 10)
+  num_categories = 2
   one_hot_rep = True
   if isinstance(sample_shape, int):
     sample_shape = (sample_shape,)
   config_main = config_dict.ConfigDict(
       initial_dictionary=dict(
-          parallel=False,
-          model='categorical',
+          parallel=True,
+          model='bernouli',
           sampler='gibbs_with_grad',
           num_samples=48,
           chain_length=1000,
@@ -104,7 +105,8 @@ def compute_chain(model, chain_length, chain_burnin_length, sampler_step, state,
     del rng_sampler_step_p
     rng_sampler_step, _ = jax.random.split(rng_sampler_step)
     chain.append(x)
-  return jnp.array(chain), jnp.array(chain[chain_burnin_length:])
+  return jnp.array(chain), jnp.array(
+      chain[chain_burnin_length:]), jnp.array(state)
 
 
 def get_sample_mean(samples):
@@ -127,6 +129,18 @@ def get_effective_sample_size(samples, rnd_ess):
   cv = tfp.mcmc.effective_sample_size(mapped_samples).numpy()
   cv[jnp.isnan(cv)] = 1.
   return cv
+
+
+def get_effective_sample_size_over_num_loglike_calls(ess, num_loglike_calls):
+  return ess / num_loglike_calls
+
+
+def get_effective_sample_size_over_mh_step(ess, mh_steps):
+  return ess / mh_steps
+
+
+def get_effective_sample_size_over_time(ess, time):
+  return ess / time
 
 
 def get_sample_variance_unbiased(samples):
@@ -223,13 +237,14 @@ def main(argv: Sequence[str]) -> None:
   x = model.get_init_samples(rng_x0, config_main.num_samples)
   state = sampler.make_init_state(rng_sampler)
 
+  start_time = time.time()
   if not config_main.parallel:
     n_devices = 2
     step_jit = jax.jit(sampler.step, static_argnums=0)
-    chain, samples = compute_chain(model, config_main.chain_length,
-                                   config_main.chain_burnin_length, step_jit,
-                                   state, params, rng_sampler_step, x,
-                                   n_devices)
+    chain, samples, state = compute_chain(model, config_main.chain_length,
+                                          config_main.chain_burnin_length,
+                                          step_jit, state, params,
+                                          rng_sampler_step, x, n_devices)
   else:
     n_devices = jax.local_device_count()
     step_pmap = jax.pmap(sampler.step, static_broadcasted_argnums=[0])
@@ -238,10 +253,10 @@ def main(argv: Sequence[str]) -> None:
     x_pmap = split(x, n_devices)
     print('Num devices: ', n_devices, ',X shape: ', x_pmap.shape,
           ',Params shape: ', params_pmap.shape)
-    chain, samples = compute_chain(model, config_main.chain_length,
-                                   config_main.chain_burnin_length, step_pmap,
-                                   state_pmap, params_pmap, rng_sampler_step,
-                                   x_pmap, n_devices)
+    chain, samples, state = compute_chain(model, config_main.chain_length,
+                                          config_main.chain_burnin_length,
+                                          step_pmap, state_pmap, params_pmap,
+                                          rng_sampler_step, x_pmap, n_devices)
     if isinstance(config_sampler.sample_shape, int):
       sample_shape = (config_sampler.sample_shape,)
     else:
@@ -250,7 +265,10 @@ def main(argv: Sequence[str]) -> None:
                           sample_shape)
     samples = samples.reshape((samples.shape[0], config_main.num_samples) +
                               sample_shape)
+    state = state[0]
 
+  computation_time = (time.time() - start_time)
+  print('Time took to generate the chain: ', computation_time)
   print('Sampler: ', config_main.sampler, '! Chain Length: ',
         config_main.chain_length, '! Burn-in Length: ',
         config_main.chain_burnin_length)
@@ -264,7 +282,19 @@ def main(argv: Sequence[str]) -> None:
                                      config_main.window_stride, config_main)
   ess_of_chains = get_effective_sample_size(samples, rnd_ess)
   print('Effective Sample Size: ', ess_of_chains)
-  print('Mean Effective Sample Size over batch: ', jnp.mean(ess_of_chains))
+  mean_ess = jnp.mean(ess_of_chains)
+  print('Mean Effective Sample Size over batch: ', mean_ess)
+
+  ess_over_loglike_calls = get_effective_sample_size_over_num_loglike_calls(
+      mean_ess, state[1])
+  print('Effective Sample Size over num calls of loglike: ',
+        ess_over_loglike_calls)
+  ess_over_mh_steps = get_effective_sample_size_over_mh_step(
+      mean_ess, config_main.chain_length)
+  print('Effective Sample Size over num of M-H steps: ', ess_over_mh_steps)
+  ess_over_time = get_effective_sample_size_over_time(mean_ess,
+                                                      computation_time)
+  print('Effective Sample Size over time: ', ess_over_time)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ import jax.numpy as jnp
 import ml_collections
 import pdb
 
+
 class Potts(abstractmodel.AbstractModel):
   """Potts Distribution (2D cyclic ising model with one-hot representation)."""
 
@@ -38,7 +39,7 @@ class Potts(abstractmodel.AbstractModel):
         dtype=jnp.int32)
 
     return jax.nn.one_hot(x0, self.num_categories)
-  
+
   def forward(self, params, x):
 
     w_h = params[0][:, :-1, :]
