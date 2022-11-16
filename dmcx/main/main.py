@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 from absl import app
+from ml_collections import config_dict
 import dmcx.model.bernouli as bernouli_model
 import dmcx.model.ising as ising_model
 import dmcx.model.potts as potts_model
@@ -14,7 +15,6 @@ import dmcx.evaluation.evaluator as metric_evaluator
 import os
 
 os.environ['XLA_FLAGS'] = '--xla_force_host_platform_device_count=4'
-from ml_collections import config_dict
 import jax.numpy as jnp
 import jax
 import time
