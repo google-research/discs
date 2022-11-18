@@ -3,8 +3,8 @@
 from setuptools import setup
 
 
-setup(name='dmcx',
-      py_modules=['dmcx'],
+setup(name='discs',
+      py_modules=['discs'],
       install_requires=[
           'ml_collections',
           'numpy',
@@ -12,4 +12,4 @@ setup(name='dmcx',
           'tqdm',
           'tensorflow'
       ]
-      )
+)
