@@ -13,8 +13,8 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
   def __init__(self, config: ml_collections.ConfigDict):
 
-    self.sample_shape = config.sample_shape
-    self.num_categories = config.num_categories
+    self.sample_shape = config.model.sample_shape
+    self.num_categories = config.model.num_categories
 
   def make_init_state(self, rnd):
     """Returns expected number of flips(hamming distance)."""
@@ -156,3 +156,6 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
     new_x, new_state = select_new_samples(rnd_acceptance, model, model_param, x,
                                           y, i_flatten_x, i_flatten_y, state)
     return new_x, new_state
+
+def build_sampler(config):
+  return GibbsWithGradSampler(config)
