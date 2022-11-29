@@ -3,9 +3,9 @@ import jax
 import jax.numpy as jnp
 import tqdm
 from ml_collections import config_dict
+import pdb
 
-
-class Experiment:
+class Experiment():
   """Experiment class that generates chains of samples."""
 
   def __init__(self, config):
@@ -46,6 +46,7 @@ class Experiment:
     rnd = jax.random.PRNGKey(0)
     params, x, state = self._initialize_model_and_sampler(rnd, model, sampler)
     model_params = params
+    sample_shape = x.shape[1:]
     n_rand_split = self._setup_num_devices()
     if self.config.run_parallel:
       params, x, state = self._prepare_data_for_parallel(
@@ -64,11 +65,11 @@ class Experiment:
 
     if self.config.run_parallel:
       chain = chain.reshape(
-          (self.config.chain_length, self.config.batch_size)
-          + self.config.sample_shape
+          (chain.shape[0], self.config.batch_size)
+          + sample_shape
       )
       samples = samples.reshape(
-          (samples.shape[0], self.config.batch_size) + self.config.sample_shape
+          (samples.shape[0], self.config.batch_size) + sample_shape
       )
       state = state[0]
 
