@@ -8,11 +8,9 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 
-class Evaluator:
+class Evaluator():
 
   def __init__(self, config: ml_collections.ConfigDict):
-    self.window_size = config.window_size
-    self.window_stride = config.window_stride
     self.config = config
 
   def _get_ess_over_num_loglike_calls(self, ess, num_loglike_calls):
@@ -129,10 +127,10 @@ class Evaluator:
     """Plots the error over window of samples of chains over time."""
     mean_errors = []
     max_mean_errors = []
-    for start in range(0, len(chain), self.window_stride):
-      if (len(chain) - start) < self.window_size:
+    for start in range(0, len(chain), self.config.window_stride):
+      if (len(chain) - start) < self.config.window_size:
         break
-      samples = chain[start : start + self.window_size]
+      samples = chain[start : start + self.config.window_size]
       avg_mean_error, max_mean_error, _, _ = self._compute_error(
           model, params, samples
       )
