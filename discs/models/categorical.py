@@ -4,7 +4,6 @@ from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
-import pdb
 
 class Categorical(abstractmodel.AbstractModel):
   """Categorical Distribution."""

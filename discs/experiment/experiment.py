@@ -3,10 +3,9 @@ import jax
 import jax.numpy as jnp
 import tqdm
 from ml_collections import config_dict
-import pdb
 
 
-class Experiment:
+class Experiment():
   """Experiment class that generates chains of samples."""
 
   def __init__(self, config):
