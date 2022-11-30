@@ -169,7 +169,6 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       )
       return jnp.where(accept_ratio >= random_uniform_val, 1, 0)
 
-    # TODO: binary case if separated!!
     if self.num_categories != 2:
       x = jax.nn.one_hot(x, self.num_categories)
     rnd_new_sample, rnd_acceptance = random.split(rnd)
