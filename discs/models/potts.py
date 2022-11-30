@@ -23,11 +23,6 @@ class Potts(abstractmodel.AbstractModel):
 
     return jnp.array([params_weight_h, params_weight_v])
 
-  def get_one_hot_represntation(self, x0):
-    x0 = jnp.expand_dims(x0, axis=-1)
-    x0_one_hot = jnp.tile(jnp.arange(self.num_categories), x0.shape)
-    return jnp.array(x0 == x0_one_hot, dtype=jnp.int32)
-
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
         rnd,
@@ -36,10 +31,12 @@ class Potts(abstractmodel.AbstractModel):
         maxval=self.num_categories,
         dtype=jnp.int32,
     )
-
-    return jax.nn.one_hot(x0, self.num_categories)
+    return x0
 
   def forward(self, params, x):
+    if len(x.shape) - 1 == len(self.sample_shape):
+      x = jax.nn.one_hot(x, self.num_categories)
+      
     w_h = params[0][:, :-1, :]
     w_v = params[1][:-1, :, :]
 
@@ -56,7 +53,8 @@ class Potts(abstractmodel.AbstractModel):
     loglikelihood = loglikelihood.at[:, 1:, :].set(
         loglikelihood[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v
     )  # up
-
+    
+    
     return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
 
   def get_value_and_grad(self, params, x):

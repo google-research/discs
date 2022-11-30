@@ -3,7 +3,8 @@ from ml_collections import config_dict
 
 def get_config():
   model_config = dict(
-      shape=(10, 10),
+      shape=(2, 2),
+      num_categories=2,
       lambdaa=0.1,
       external_field_type=0,
       init_sigma=1.0,
