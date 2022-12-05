@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 import tqdm
 from ml_collections import config_dict
-import pdb
+
 
 class Experiment():
   """Experiment class that generates chains of samples."""
@@ -65,8 +65,7 @@ class Experiment():
 
     if self.config.run_parallel:
       chain = chain.reshape(
-          (chain.shape[0], self.config.batch_size)
-          + sample_shape
+          (chain.shape[0], self.config.batch_size) + sample_shape
       )
       samples = samples.reshape(
           (samples.shape[0], self.config.batch_size) + sample_shape

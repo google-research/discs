@@ -10,7 +10,6 @@ class Ising(abstractmodel.AbstractModel):
   """Ising Distribution with Cyclic 2D Lattice."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-
     self.shape = config.shape
     self.lambdaa = config.lambdaa
     self.external_field_type = config.external_field_type
@@ -21,7 +20,7 @@ class Ising(abstractmodel.AbstractModel):
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
 
-    #TODO: Enums
+    # TODO: Enums
     # external force (default value is zero)
     if self.external_field_type == 1:
       params_b = jax.random.normal(rnd, shape=self.shape) * self.init_sigma
@@ -35,24 +34,28 @@ class Ising(abstractmodel.AbstractModel):
         shape=(num_samples,) + self.shape,
         minval=0,
         maxval=2,
-        dtype=jnp.int32)
+        dtype=jnp.int32,
+    )
     return x0
 
   def forward(self, params, x):
-
     x = 2 * x - 1
     w_h = params[0][:, :-1]
     w_v = params[1][:-1, :]
 
     sum_neighbors = jnp.zeros((x.shape[0],) + self.shape)
     sum_neighbors = sum_neighbors.at[:, :, :-1].set(
-        sum_neighbors[:, :, :-1] + x[:, :, :-1] * x[:, :, 1:] * w_h)  # right
+        sum_neighbors[:, :, :-1] + x[:, :, :-1] * x[:, :, 1:] * w_h
+    )  # right
     sum_neighbors = sum_neighbors.at[:, :, 1:].set(
-        sum_neighbors[:, :, 1:] + x[:, :, 1:] * x[:, :, :-1] * w_h)  # left
+        sum_neighbors[:, :, 1:] + x[:, :, 1:] * x[:, :, :-1] * w_h
+    )  # left
     sum_neighbors = sum_neighbors.at[:, :-1, :].set(
-        sum_neighbors[:, :-1, :] + x[:, :-1, :] * x[:, 1:, :] * w_v)  # down
+        sum_neighbors[:, :-1, :] + x[:, :-1, :] * x[:, 1:, :] * w_v
+    )  # down
     sum_neighbors = sum_neighbors.at[:, 1:, :].set(
-        sum_neighbors[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v)  # up
+        sum_neighbors[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v
+    )  # up
 
     loglikelihood = sum_neighbors
     if self.external_field_type == 1:
@@ -71,3 +74,7 @@ class Ising(abstractmodel.AbstractModel):
 
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
     return loglikelihood, grad
+
+
+def build_model(config):
+  return Ising(config.model)
