@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+
 class Evaluator():
 
   def __init__(self, config: ml_collections.ConfigDict):
-    self.window_size = config.window_size
-    self.window_stride = config.window_stride
+    self.config = config
 
   def _get_ess_over_num_loglike_calls(self, ess, num_loglike_calls):
     return ess / num_loglike_calls
@@ -40,15 +40,18 @@ class Evaluator():
     return cv
 
   def get_effective_sample_size_metrics(
-      self, rnd_ess, samples, mh_steps, running_time, num_loglike_calls
+      self, samples, running_time, num_loglike_calls
   ):
     """Computes ESS over time, M-H step and calls of loglike function."""
-    ess_of_chains = self._get_ess(rnd_ess, samples)
+    rnd = jax.random.PRNGKey(0)
+    ess_of_chains = self._get_ess(rnd, samples)
     mean_ess = jnp.mean(ess_of_chains)
     ess_over_loglike_calls = self._get_ess_over_num_loglike_calls(
         mean_ess, num_loglike_calls
     )
-    ess_over_mh_steps = self._get_ess_over_mh_step(mean_ess, mh_steps)
+    ess_over_mh_steps = self._get_ess_over_mh_step(
+        mean_ess, self.config.chain_length
+    )
     ess_over_time = self._get_ess_over_time(mean_ess, running_time)
     return mean_ess, ess_over_mh_steps, ess_over_time, ess_over_loglike_calls
 
@@ -124,10 +127,10 @@ class Evaluator():
     """Plots the error over window of samples of chains over time."""
     mean_errors = []
     max_mean_errors = []
-    for start in range(0, len(chain), self.window_stride):
-      if (len(chain) - start) < self.window_size:
+    for start in range(0, len(chain), self.config.window_stride):
+      if (len(chain) - start) < self.config.window_size:
         break
-      samples = chain[start : start + self.window_size]
+      samples = chain[start : start + self.config.window_size]
       avg_mean_error, max_mean_error, _, _ = self._compute_error(
           model, params, samples
       )
@@ -144,3 +147,7 @@ class Evaluator():
     plt.ylabel('Max Mean Error')
     plt.title('Max Mean Error Over Chains for {}!'.format(config_main.sampler))
     plt.savefig('MixingTimeMaxMean_{}'.format(config_main.sampler))
+
+
+def build_evaluator(config):
+  return Evaluator(config.experiment)

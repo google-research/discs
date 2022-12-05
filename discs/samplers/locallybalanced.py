@@ -12,10 +12,11 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
 
   def __init__(self, config: ml_collections.ConfigDict):
 
-    self.sample_shape = config.sample_shape
-    self.num_categories = config.num_categories
+    self.sample_shape = config.model.shape
+    self.num_categories = config.model.num_categories
     # self.radius = config.radius
-    self.balancing_fn_type = config.balancing_fn_type
+    self.balancing_fn_type = config.sampler.balancing_fn_type
+
 
   def make_init_state(self, rnd):
     """Returns expected number of flips."""
@@ -94,3 +95,6 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
     new_x, new_state = select_new_samples(model, model_param, x, y,
                                           rnd_categorical, state)
     return new_x, new_state
+
+def build_sampler(config):
+  return LocallyBalancedSampler(config)
