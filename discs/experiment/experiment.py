@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 import tqdm
 from ml_collections import config_dict
-
+import pdb
 
 class Experiment():
   """Experiment class that generates chains of samples."""
@@ -36,7 +36,7 @@ class Experiment():
 
   def _setup_num_devices(self):
     if not self.config.run_parallel:
-      n_rand_split = 2
+      n_rand_split = 1
     else:
       n_rand_split = jax.local_device_count()
     return n_rand_split
@@ -87,7 +87,10 @@ class Experiment():
     """Generates the chain of samples."""
     chain = []
     for _ in tqdm.tqdm(range(self.config.chain_length)):
-      rng_sampler_step_p = jax.random.split(rng_sampler_step, num=n_rand_split)
+      if self.config.run_parallel:
+        rng_sampler_step_p = jax.random.split(rng_sampler_step, num=n_rand_split)
+      else:
+        rng_sampler_step_p = rng_sampler_step
       x, state = sampler_step(model, rng_sampler_step_p, x, params, state)
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
