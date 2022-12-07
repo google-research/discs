@@ -52,7 +52,10 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
         New samples.
       """
       rnd_new_sample, rnd_new_sample_randint = random.split(rnd_new_sample)
-      dim = math.prod(self.sample_shape)
+      # dim = math.prod(self.sample_shape)
+      dim = 1
+      for i in self.sample_shape:
+          dim *= i
       indices_to_flip = random.bernoulli(
           rnd_new_sample, p=(expected_hamming_distance / dim), shape=x.shape)
       flipping_value = indices_to_flip * random.randint(
