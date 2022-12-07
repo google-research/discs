@@ -9,6 +9,11 @@ Then navigate to the root of project folder and run
 
     pip install -e .
 
+## Run sampling locally 
+
+under the root folder, run 
+
+    model=bernoulli sampler=randomwalk ./experiments/run_sampling_local.sh
 
 ## Test
 
