@@ -5,9 +5,8 @@ from jax import random
 import jax.numpy as jnp
 import ml_collections
 import jax
-import math
 import pdb
-
+import numpy as np
 
 class GibbsWithGradSampler(abstractsampler.AbstractSampler):
   """Gibbs With Grad Sampler Class."""
@@ -86,7 +85,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
             jnp.ones(x.shape[0])
         )
 
-        dim = math.prod(self.sample_shape)
+        dim = np.prod(self.sample_shape)
         y_flatten = x.reshape(x.shape[0], dim, self.num_categories)
         sampled_index = jnp.floor_divide(
             sampled_index_flatten_x, self.num_categories

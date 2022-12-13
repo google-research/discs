@@ -4,7 +4,7 @@ from discs.samplers import abstractsampler
 from jax import random
 import jax.numpy as jnp
 import ml_collections
-import math
+import numpy as np
 
 
 class LocallyBalancedSampler(abstractsampler.AbstractSampler):
@@ -40,7 +40,7 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
     """
 
     def generate_new_samples(x):
-      dim = math.prod(self.sample_shape)
+      dim = np.prod(self.sample_shape)
       index_to_flip = jnp.identity(dim)
       index_to_flip_for_category = jnp.repeat(
           index_to_flip, self.num_categories - 1, axis=0)
@@ -66,7 +66,7 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       loglikelihood = jnp.log(proposal_dist)
       selected_y_index = random.categorical(
           rnd_categorical, loglikelihood, axis=1)
-      dim = math.prod(self.sample_shape)
+      dim = np.prod(self.sample_shape)
       selected_y_index_batch = (jnp.arange(x.shape[0]) * dim) + selected_y_index
       new_x = jnp.take(y, selected_y_index_batch, axis=0)
       return new_x, new_state
