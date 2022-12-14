@@ -62,6 +62,13 @@ class PathAuxiliaryFastSampler(abstractsampler.AbstractSampler):
         return jnp.where(t < 0., t, 0.)
       return t / 2.
 
+    def categorical_without_replacement(rate, radius):
+      idx_flip = jnp.argsort(-rate)
+      mask = jnp.full(idx_flip.shape, idx_flip.shape[-1])
+      indices = jnp.vstack([jnp.arange(idx_flip.shape[-1])] * rate.shape[0])
+      idx_flip = jnp.where(indices < radius, idx_flip, mask).astype(jnp.int32)
+      return idx_flip
+
     rnd_radius, rnd_flip, rnd_mh = random.split(rnd, num=3)
     del rnd
     b_idx = jnp.expand_dims(jnp.arange(x.shape[0]), -1)
@@ -74,8 +81,7 @@ class PathAuxiliaryFastSampler(abstractsampler.AbstractSampler):
       log_rate_x = nn.log_softmax(
           get_balancing_fn(log_likelihood_delta_x).reshape(-1, np.product(self.sample_shape)), axis=-1
       )
-      # TODO(kati) line 78 has bug because of the random variable. Could you help to resolve this kati?
-      _, idx_flip = lax.top_k(log_rate_x + random.gumbel(rnd_flip, shape=log_rate_x.shape), k=radius.astype(int))
+      idx_flip = categorical_without_replacement(log_rate_x, radius)
       y = x.reshape(-1, np.product(self.sample_shape))
       y.at[b_idx, idx_flip].set(1. - y[b_idx, idx_flip])
       y = y.reshape(-1, *self.sample_shape)
@@ -86,21 +92,19 @@ class PathAuxiliaryFastSampler(abstractsampler.AbstractSampler):
         get_balancing_fn(log_likelihood_delta_y).reshape(-1, np.product(self.sample_shape)), axis=-1
       )
 
-      idx_grid = (jnp.expand_dims(b_idx, -1),
-                  jnp.expand_dims(jnp.arange(radius), (0, 2)),
-                  jnp.expand_dims(idx_flip, 1))
+      # TODO(kati): rewrite the for loop
+      mask_x = jnp.ones_like(log_rate_x)
+      log_x2y = log_rate_x[b_idx, idx_flip].sum(-1)
+      for i in range(radius):
+        log_x2y -= special.logsumexp(a=log_rate_x, b=mask_x, axis=-1)
+        mask_x = mask_x.at[b_idx, idx_flip[b_idx, i]].set(0)
 
-      log_rate_x_expand = jnp.stack([log_rate_x for _ in range(radius)], axis=1)
-      coef_x = jnp.ones_like(log_rate_x_expand)
-      coef_x[idx_grid] = jnp.triu(jnp.ones((self.sample_shape[0], radius, radius)))
-      log_x2y = (log_rate_x[b_idx, idx_flip].sum(-1) -
-                 special.logsumexp(a=log_rate_x_expand, b=coef_x, axis=-1).sum(-1))
-
-      log_rate_y_expand = jnp.stack([log_rate_y for _ in range(radius)], axis=1)
-      coef_y = jnp.ones_like(log_rate_y_expand)
-      coef_y[idx_grid] = jnp.tril(jnp.ones((self.sample_shape[0], radius, radius)))
-      log_y2x = (log_rate_y[b_idx, idx_flip].sum(-1) -
-                 special.logsumexp(a=log_rate_y_expand, b=coef_y, axis=-1).sum(-1))
+      # TODO(kati): rewrite the for loop
+      mask_y = jnp.ones_like(log_rate_y)
+      log_y2x = log_rate_y[b_idx, idx_flip].sum(-1)
+      for i in range(radius-1, -1, -1):
+        log_y2x -= special.logsumexp(a=log_rate_y, b=mask_y, axis=-1)
+        mask_y = mask_y.at[b_idx, idx_flip[b_idx, i]].set(0)
 
       log_acc = log_likelihood_y + log_y2x - log_likelihood_x - log_x2y
       accepted = (random.exponential(rnd_mh, log_acc.shape) > - log_acc).astype(float).reshape(-1, *([1] * self.rank))
