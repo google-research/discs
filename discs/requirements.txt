@@ -1,0 +1,7 @@
+jax
+jaxlib
+ml_collections
+tensorflow
+tensorflow_probability
+matplotlib
+numpy

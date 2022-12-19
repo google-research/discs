@@ -5,7 +5,7 @@ import tqdm
 from ml_collections import config_dict
 
 
-class Experiment():
+class Experiment:
   """Experiment class that generates chains of samples."""
 
   def __init__(self, config):
@@ -87,7 +87,12 @@ class Experiment():
     """Generates the chain of samples."""
     chain = []
     for _ in tqdm.tqdm(range(self.config.chain_length)):
-      rng_sampler_step_p = jax.random.split(rng_sampler_step, num=n_rand_split)
+      if self.config.run_parallel:
+        rng_sampler_step_p = jax.random.split(
+            rng_sampler_step, num=n_rand_split
+        )
+      else:
+        rng_sampler_step_p = rng_sampler_step
       x, state = sampler_step(model, rng_sampler_step_p, x, params, state)
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
