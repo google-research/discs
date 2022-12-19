@@ -55,6 +55,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         loglike_delta = loglike_delta - 1e9 * x
         return loglike_delta
 
+    #TODO: move this to common utils for mutual use of different samplers.
     def get_balancing_fn(t):
       """Different locally balanced functions in log scale.
 
@@ -65,6 +66,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       Returns:
         Applied locally balanced function.
       """
+      #TODO: use string or enums for function types.
       if self.balancing_fn_type == 2:
         return nn.log_sigmoid(t)
       elif self.balancing_fn_type == 3:  # and
