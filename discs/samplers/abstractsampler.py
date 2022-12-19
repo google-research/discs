@@ -11,7 +11,7 @@ class AbstractSampler(abc.ABC):
     pass
 
   @abc.abstractmethod
-  def step(self, model, rnd, x, model_param, state):
+  def step(self, model, rng, x, model_param, state):
     pass
 
   @abc.abstractmethod

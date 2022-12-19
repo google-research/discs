@@ -1,13 +1,13 @@
-"""Config file for bernoulli models."""
+"""Config file for rbms."""
 
 from ml_collections import config_dict
 
 
 def get_config():
   model_config = dict(
-      shape=(10, 10),
+      num_visible=0,
+      num_hidden=200,
       num_categories=2,
-      init_sigma=1.0,
-      name='bernoulli',
+      name='rbm',
   )
   return config_dict.ConfigDict(model_config)
