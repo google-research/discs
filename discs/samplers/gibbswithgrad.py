@@ -1,11 +1,13 @@
 """Gibbs with Grad Sampler Class."""
 
+import pdb
+
 from discs.samplers import abstractsampler
+import jax
+from jax import nn
 from jax import random
 import jax.numpy as jnp
 import ml_collections
-import jax
-import pdb
 import numpy as np
 
 
@@ -19,6 +21,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         self.num_categories != 2, False, config.sampler.adaptive
     )
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
+    self.balancing_fn_type = config.sampler.balancing_fn_type
 
   def make_init_state(self, rnd):
     """Returns expected number of flips(hamming distance)."""
@@ -53,12 +56,14 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         return loglike_delta
 
     def get_balancing_fn(t):
-      """implement different locally balanced functions in log scale
+      """Different locally balanced functions in log scale.
 
-      type_1: sqrt(t)
-      type_2: t / (t + 1)
-      type_3: max {t, 1}
-      type_t: min {t, 1}
+      type_1: sqrt(t) type_2: t / (t + 1) type_3: max {t, 1} type_t: min {t, 1}
+      Args:
+        t: loglikelihood delta.
+
+      Returns:
+        Applied locally balanced function.
       """
       if self.balancing_fn_type == 2:
         return nn.log_sigmoid(t)
@@ -113,6 +118,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         x: current sample.
         model: target distribution.
         model_param: target distribution parameters.
+        state: state of the sampler.
 
       Returns:
         New samples.
