@@ -96,7 +96,9 @@ class DicreteLangevinMonteCarloSampler(abstractsampler.AbstractSampler):
       raise NotImplementedError
     avg_acc = jnp.exp(jnp.clip(log_acc, a_max=0.)).mean()
     log_tau = jnp.where(
-        self.adaptive, jnp.exp(log_tau) + (avg_acc - self.target_acceptance_rate) / (1 + state[2]) ** 0.2, log_tau
+        self.adaptive,
+        jnp.log(jnp.exp(log_tau) + (avg_acc - self.target_acceptance_rate) / (1 + state[2]) ** 0.2),
+        log_tau
     )
 
     state.at[0].set(log_tau)
