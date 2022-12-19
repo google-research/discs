@@ -4,7 +4,7 @@ from discs.samplers import abstractsampler
 from jax import random
 import jax.numpy as jnp
 import ml_collections
-import math
+import numpy as np
 import pdb
 
 
@@ -52,7 +52,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
         New samples.
       """
       rnd_new_sample, rnd_new_sample_randint = random.split(rnd_new_sample)
-      dim = math.prod(self.sample_shape)
+      dim = np.prod(self.sample_shape)
       indices_to_flip = random.bernoulli(
           rnd_new_sample, p=(expected_hamming_distance / dim), shape=x.shape)
       flipping_value = indices_to_flip * random.randint(

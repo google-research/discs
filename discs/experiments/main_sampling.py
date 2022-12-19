@@ -9,9 +9,13 @@ from discs.common import configs as common_configs
 from discs.experiment import experiment as experiment_mod
 from discs.evaluation import evaluator as evaluator_mod
 import time
+import os
 
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
+
+FLAGS = flags.FLAGS
+_SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
 
 
 def main(_):
@@ -30,13 +34,27 @@ def main(_):
   evaluator = evaluator_mod.build_evaluator(config)
 
   start_time = time.time()
-  chain, samples, num_loglike_calls, _ = experiment.get_batch_of_chains(
+  chain, _, num_loglike_calls, _ = experiment.get_batch_of_chains(
       model, sampler
   )
   running_time = time.time() - start_time
   ess_metrcis = evaluator.get_effective_sample_size_metrics(
-      samples, running_time, num_loglike_calls
+      chain, running_time, num_loglike_calls
   )
+
+  if not os.path.isdir(_SAVE_DIR.value):
+    os.makedirs(_SAVE_DIR.value)
+
+  with open(
+      f'{_SAVE_DIR.value}/{config.model.name}_{config.sampler.name}.txt',
+      'w',
+  ) as f:
+    f.write('Mean ESS: {} \n'.format(ess_metrcis[0]))
+    f.write('ESS M-H Steps: {} \n'.format(ess_metrcis[1]))
+    f.write('ESS over time: {} \n'.format(ess_metrcis[2]))
+    f.write('ESS over loglike calls: {} \n'.format(ess_metrcis[3]))
+    f.write('Running time: {} s \n'.format(running_time))
+    f.write(str(config))
 
 
 if __name__ == '__main__':
