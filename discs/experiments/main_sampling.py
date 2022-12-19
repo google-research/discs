@@ -38,6 +38,11 @@ def main(_):
       model, sampler
   )
   running_time = time.time() - start_time
+  
+  chain = chain[
+      int(config.experiment.chain_length * config.experiment.ess_ratio) :
+  ]
+    
   ess_metrcis = evaluator.get_effective_sample_size_metrics(
       chain, running_time, num_loglike_calls
   )
