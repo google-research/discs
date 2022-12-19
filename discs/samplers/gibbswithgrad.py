@@ -52,6 +52,22 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         loglike_delta = loglike_delta - 1e9 * x
         return loglike_delta
 
+    def get_balancing_fn(t):
+      """implement different locally balanced functions in log scale
+
+      type_1: sqrt(t)
+      type_2: t / (t + 1)
+      type_3: max {t, 1}
+      type_t: min {t, 1}
+      """
+      if self.balancing_fn_type == 2:
+        return nn.log_sigmoid(t)
+      elif self.balancing_fn_type == 3:  # and
+        return jnp.where(t > 0.0, t, 0.0)
+      elif self.balancing_fn_type == 4:  # or
+        return jnp.where(t < 0.0, t, 0.0)
+      return t / 2.0
+
     def gumbel_noise(rnd, rate):
       uniform_sample = jax.random.uniform(
           rnd, shape=rate.shape, minval=0, maxval=1
@@ -101,7 +117,8 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       Returns:
         New samples.
       """
-      loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
+      loglike_delta_x = compute_loglike_delta(x, model, model_param)
+      loglike_delta_x = get_balancing_fn(loglike_delta_x)
       radius = state[0]
       sampled_index_flatten_x = sample_index(rnd, loglike_delta_x, radius)
       # in binary case is the same
@@ -194,8 +211,10 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       return log_probab
 
     def get_ratio(model, model_param, x, y, i_flatten_x, i_flatten_y, state):
-      loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
-      loglike_delta_y = compute_loglike_delta(y, model, model_param) / 2
+      loglike_delta_x = compute_loglike_delta(x, model, model_param)
+      loglike_delta_x = get_balancing_fn(loglike_delta_x)
+      loglike_delta_y = compute_loglike_delta(y, model, model_param)
+      loglike_delta_y = get_balancing_fn(loglike_delta_y)
 
       probab_i_given_x = compute_log_probab_index(loglike_delta_x, i_flatten_x)
       probab_i_given_y = compute_log_probab_index(loglike_delta_y, i_flatten_y)
