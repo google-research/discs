@@ -15,9 +15,10 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
-    self.adaptive = jnp.where(
-        self.num_categories != 2, False, config.sampler.adaptive
-    )
+    if self.num_categories != 2:
+      self.adaptive = False
+    else:
+      self.adaptive = config.sampler.adaptive
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
 
   def make_init_state(self, rnd):
@@ -52,6 +53,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         loglike_delta = loglike_delta - 1e9 * x
         return loglike_delta
 
+    #TODO: Send these functions to common utils.
     def gumbel_noise(rnd, rate):
       uniform_sample = jax.random.uniform(
           rnd, shape=rate.shape, minval=0, maxval=1
