@@ -1,4 +1,4 @@
-Jax
+jax
 jaxlib
 ml_collections
 tensorflow
