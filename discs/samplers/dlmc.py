@@ -101,9 +101,9 @@ class DicreteLangevinMonteCarloSampler(abstractsampler.AbstractSampler):
         log_tau
     )
 
-    state.at[0].set(log_tau)
-    state.at[1].set(state[1] + 4)
-    state.at[2].set(state[2] + 1)
+    state = state.at[0].set(log_tau)
+    state = state.at[1].set(state[1] + 4)
+    state = state.at[2].set(state[2] + 1)
     return new_x, state
 
 
