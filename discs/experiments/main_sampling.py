@@ -49,7 +49,7 @@ def main(_):
     os.makedirs(_SAVE_DIR.value)
 
   with open(
-      f'{_SAVE_DIR.value}/{config.model.name}_{config.sampler.name}.txt',
+      f'{_SAVE_DIR.value}/{config.model.name}_{config.sampler.name}_{running_time}.txt'',
       'w',
   ) as f:
     f.write('Mean ESS: {} \n'.format(ess_metrcis[0]))
