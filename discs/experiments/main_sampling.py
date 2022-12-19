@@ -34,15 +34,13 @@ def main(_):
   evaluator = evaluator_mod.build_evaluator(config)
 
   start_time = time.time()
-  chain, _, num_loglike_calls, _ = experiment.get_batch_of_chains(
-      model, sampler
-  )
+  chain, num_loglike_calls, _ = experiment.get_batch_of_chains(model, sampler)
   running_time = time.time() - start_time
-  
+
   chain = chain[
       int(config.experiment.chain_length * config.experiment.ess_ratio) :
   ]
-    
+
   ess_metrcis = evaluator.get_effective_sample_size_metrics(
       chain, running_time, num_loglike_calls
   )

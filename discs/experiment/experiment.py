@@ -105,7 +105,6 @@ class Experiment:
       chain.append(mapped_x)
     return (
         jnp.array(chain),
-        jnp.array(chain[self.config.chain_burnin_length :]),
         jnp.array(state),
     )
 
