@@ -56,7 +56,7 @@ class Experiment:
           params, x, state, n_rand_split
       )
     compiled_step = self._compile_sampler_step(sampler)
-    chain, samples, state = self._compute_chain(
+    chain, state = self._compute_chain(
         model,
         compiled_step,
         state,
@@ -76,7 +76,7 @@ class Experiment:
       )
       state = state[0]
 
-    return chain, samples, state[1], model_params
+    return chain, state[1], model_params
 
   def _compute_chain(
       self,
