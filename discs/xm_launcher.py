@@ -92,7 +92,7 @@ def main(argv) -> None:
     (executable,) = experiment.package(
         [
             xm.python_container(
-                path='.',
+                path='gcr.io/deeplearning-platform-release/pytorch-gpu.1-12',
                 entrypoint=xm.ModuleName(module),
                 use_deep_module=True,
                 executor_spec=executor.Spec(),

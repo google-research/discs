@@ -1,7 +1,5 @@
-jax
--f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-jax[tpu]>=0.2.16
-jaxlib
+--find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+jax[cuda]
 ml_collections
 tensorflow
 tensorflow_probability
