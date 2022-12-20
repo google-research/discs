@@ -232,7 +232,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-      state = state.at[1].set(state[1] + 2)
+      state = state.at[1].set(state[1] + 4)
 
       return (
           jnp.exp(
