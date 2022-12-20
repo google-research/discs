@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #TODO: Kati migrate this to xmanager script.
-models="bernoulli ising"
-samplers="randomwalk gibbswithgrad"
+models="bernoulli"
+samplers="randomwalk"
 
 for model in $models
 do
