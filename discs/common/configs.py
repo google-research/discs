@@ -13,7 +13,7 @@ def get_config():
       experiment=dict(
           run_parallel=False,
           batch_size=100,
-          chain_length=10000,
+          chain_length=100000,
           window_size=10,
           window_stride=10,
           ess_ratio = 0.5,
