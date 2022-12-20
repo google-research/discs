@@ -1,11 +1,13 @@
 """Gibbs with Grad Sampler Class."""
 
+import pdb
+
 from discs.samplers import abstractsampler
+import jax
+from jax import nn
 from jax import random
 import jax.numpy as jnp
 import ml_collections
-import jax
-import pdb
 import numpy as np
 
 
@@ -20,6 +22,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
     else:
       self.adaptive = config.sampler.adaptive
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
+    self.balancing_fn_type = config.sampler.balancing_fn_type
 
   def make_init_state(self, rnd):
     """Returns expected number of flips(hamming distance)."""
@@ -52,6 +55,27 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         # hamming ball distance of one
         loglike_delta = loglike_delta - 1e9 * x
         return loglike_delta
+
+
+    #TODO: move this to common utils for mutual use of different samplers.
+    def get_balancing_fn(t):
+      """Different locally balanced functions in log scale.
+
+      type_1: sqrt(t) type_2: t / (t + 1) type_3: max {t, 1} type_t: min {t, 1}
+      Args:
+        t: loglikelihood delta.
+
+      Returns:
+        Applied locally balanced function.
+      """
+      #TODO: use string or enums for function types.
+      if self.balancing_fn_type == 2:
+        return nn.log_sigmoid(t)
+      elif self.balancing_fn_type == 3:  # and
+        return jnp.where(t > 0.0, t, 0.0)
+      elif self.balancing_fn_type == 4:  # or
+        return jnp.where(t < 0.0, t, 0.0)
+      return t / 2.0
 
     #TODO: Send these functions to common utils.
     def gumbel_noise(rnd, rate):
@@ -99,11 +123,13 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         x: current sample.
         model: target distribution.
         model_param: target distribution parameters.
+        state: state of the sampler.
 
       Returns:
         New samples.
       """
-      loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
+      loglike_delta_x = compute_loglike_delta(x, model, model_param)
+      loglike_delta_x = get_balancing_fn(loglike_delta_x)
       radius = state[0]
       sampled_index_flatten_x = sample_index(rnd, loglike_delta_x, radius)
       # in binary case is the same
@@ -196,8 +222,10 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       return log_probab
 
     def get_ratio(model, model_param, x, y, i_flatten_x, i_flatten_y, state):
-      loglike_delta_x = compute_loglike_delta(x, model, model_param) / 2
-      loglike_delta_y = compute_loglike_delta(y, model, model_param) / 2
+      loglike_delta_x = compute_loglike_delta(x, model, model_param)
+      loglike_delta_x = get_balancing_fn(loglike_delta_x)
+      loglike_delta_y = compute_loglike_delta(y, model, model_param)
+      loglike_delta_y = get_balancing_fn(loglike_delta_y)
 
       probab_i_given_x = compute_log_probab_index(loglike_delta_x, i_flatten_x)
       probab_i_given_y = compute_log_probab_index(loglike_delta_y, i_flatten_y)
