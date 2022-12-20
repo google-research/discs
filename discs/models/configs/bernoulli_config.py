@@ -5,7 +5,7 @@ def get_config():
   model_config = dict(
       shape=(10000,),
       num_categories=2,
-      init_sigma=1.0,
+      init_sigma=0.5,
       name='bernoulli',
   )
   return config_dict.ConfigDict(model_config)
