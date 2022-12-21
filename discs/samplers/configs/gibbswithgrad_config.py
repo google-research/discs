@@ -6,5 +6,6 @@ def get_config():
       name='gibbswithgrad',
       adaptive=True,
       target_acceptance_rate=0.574,
+      balancing_fn_type=0,
   )
   return config_dict.ConfigDict(model_config)

@@ -34,10 +34,13 @@ def main(_):
   evaluator = evaluator_mod.build_evaluator(config)
 
   start_time = time.time()
-  chain, _, num_loglike_calls, _ = experiment.get_batch_of_chains(
-      model, sampler
-  )
+  chain, num_loglike_calls, _ = experiment.get_batch_of_chains(model, sampler)
   running_time = time.time() - start_time
+
+  chain = chain[
+      int(config.experiment.chain_length * config.experiment.ess_ratio) :
+  ]
+
   ess_metrcis = evaluator.get_effective_sample_size_metrics(
       chain, running_time, num_loglike_calls
   )
@@ -46,7 +49,7 @@ def main(_):
     os.makedirs(_SAVE_DIR.value)
 
   with open(
-      f'{_SAVE_DIR.value}/{config.model.name}_{config.sampler.name}.txt',
+      f'{_SAVE_DIR.value}/{config.model.name}_{config.sampler.name}_{running_time}.txt',
       'w',
   ) as f:
     f.write('Mean ESS: {} \n'.format(ess_metrcis[0]))
