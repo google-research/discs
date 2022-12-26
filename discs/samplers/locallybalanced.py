@@ -1,10 +1,19 @@
 """Locally Balanced Informed Sampler Class."""
 
+import enum
 from discs.samplers import abstractsampler
+import jax
 from jax import random
 import jax.numpy as jnp
 import ml_collections
 import numpy as np
+
+
+class LBWeightFn(enum.Enum):
+  SQRT = 1  # sqrt(t)
+  RATIO = 2  # t / (t + 1)
+  MAX = 3  # max{t, 1}
+  MIN = 4  # min{t, 1}
 
 
 class LocallyBalancedSampler(abstractsampler.AbstractSampler):
@@ -17,11 +26,31 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
     # self.radius = config.radius
     self.balancing_fn_type = config.sampler.balancing_fn_type
 
+  def apply_weight_function(self, t):
+    """Apply locally balanced weight function."""
+    if self.balancing_fn_type == LBWeightFn.SQRT:
+      return jnp.sqrt(t)
+    elif self.balancing_fn_type == LBWeightFn.RATIO:
+      return t / (t + 1)
+    elif self.balancing_fn_type == LBWeightFn.MAX:
+      return jnp.clip(t, a_min=1.0)
+    elif self.balancing_fn_type == LBWeightFn.MIN:
+      return jnp.clip(t, a_max=1.0)
+    else:
+      raise ValueError('Unknown function %s' % str(self.balancing_fn_type))
 
-  def make_init_state(self, rnd):
-    """Returns expected number of flips."""
-    num_log_like_calls = 0
-    return jnp.array([1, num_log_like_calls])
+  def apply_weight_function_logscale(self, logt):
+    """Apply locally balanced weight function in log scale."""
+    if self.balancing_fn_type == LBWeightFn.SQRT:
+      return logt / 2.0
+    elif self.balancing_fn_type == LBWeightFn.RATIO:
+      return jax.nn.log_sigmoid(logt)
+    elif self.balancing_fn_type == LBWeightFn.MAX:
+      return jnp.clip(logt, a_min=0.0)
+    elif self.balancing_fn_type == LBWeightFn.MIN:
+      return jnp.clip(logt, a_max=0.0)
+    else:
+      raise ValueError('Unknown function %s' % str(self.balancing_fn_type))
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
