@@ -30,15 +30,15 @@ def get_config():
           save_root='.',
           fig_folder='',
           run_parallel=False,
-          batch_size=48,
-          chain_length=1000,
-          chain_burnin_length=900,
+          batch_size=100,
+          chain_length=100000,
           window_size=10,
           window_stride=10,
           shuffle_buffer_size=0,
           log_every_steps=1,
           plot_every_steps=10,
           save_every_steps=100,
+          ess_ratio=0.5,
       ),
   )
   return config_dict.ConfigDict(general_config)

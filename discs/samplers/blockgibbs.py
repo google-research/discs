@@ -6,7 +6,7 @@ from itertools import product
 import jax.numpy as jnp
 import jax
 import ml_collections
-import math
+import numpy as np
 import pdb
 
 
@@ -74,7 +74,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     # iterative conditional
     rnd_shuffle, rnd_categorical = random.split(rnd)
     del rnd
-    dim = math.prod(self.sample_shape)
+    dim = np.prod(self.sample_shape)
     indices = jnp.arange(dim)
     if self.random_order:
       indices = random.permutation(

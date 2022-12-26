@@ -14,13 +14,13 @@ class Evaluator():
     self.config = config
 
   def _get_ess_over_num_loglike_calls(self, ess, num_loglike_calls):
-    return ess / num_loglike_calls
+    return ess / (num_loglike_calls * self.config.ess_ratio)
 
   def _get_ess_over_mh_step(self, ess, mh_steps):
-    return ess / mh_steps
+    return ess / (mh_steps * self.config.ess_ratio)
 
   def _get_ess_over_time(self, ess, time):
-    return ess / time
+    return ess / (time * self.config.ess_ratio)
 
   def _get_mapped_samples(self, rnd_ess, samples):
     vec_shape = jnp.array(samples.shape)[2:]
