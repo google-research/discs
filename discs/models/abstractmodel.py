@@ -11,15 +11,15 @@ class AbstractModel(abc.ABC):
     pass
 
   @abc.abstractmethod
-  def make_init_params(self, rnd):
+  def make_init_params(self, rng):
     pass
 
   @abc.abstractmethod
-  def get_init_samples(self, rnd, num_samples):
+  def get_init_samples(self, rng, num_samples):
     """Get initial samples.
 
     Args:
-      rnd: jax random seed
+      rng: jax random seed
       num_samples: sample size.
 
     Returns:

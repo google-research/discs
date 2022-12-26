@@ -94,5 +94,19 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     return new_x, new_state
 
 
+class RBMBlockGibbsSampler(abstractsampler.AbstractSampler):
+  """BlockGibbs Sampler specialized for rbm."""
+
+  def make_init_state(self, rng):
+    del rng
+    return jnp.array((1,))
+
+  def step(self, model, rng, x, model_param, state):
+    h_rng, v_rng = jax.random.split(rng)
+    h = model.step_h(model_param, h_rng, x)
+    new_x = model.step_v(model_param, v_rng, h)
+    return new_x, state
+
+
 def build_sampler(config):
   return BlockGibbsSampler(config)
