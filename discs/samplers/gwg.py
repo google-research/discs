@@ -58,12 +58,9 @@ class BinaryGWGSampler(GibbsWithGradSampler):
     return y.astype(jnp.int32), sampler_state
 
   def get_ll_onestep(self, dist, src, dst, aux):
-    if self.replacement:
-      ll = dist[jnp.expand_dims(jnp.arange(dist.shape[0]), axis=1), aux]
-      ll = jnp.sum(ll, axis=-1)
-      return ll
-    else:
-      raise NotImplementedError
+    ll = dist[jnp.expand_dims(jnp.arange(dist.shape[0]), axis=1), aux]
+    ll = jnp.sum(ll, axis=-1)
+    return ll
 
   def get_dist_at(self, x, grad_x):
     ll_delta = (1 - 2 * x) * grad_x
@@ -73,8 +70,8 @@ class BinaryGWGSampler(GibbsWithGradSampler):
     return log_prob
 
   def sample_from_proposal(self, rng, x, dist_x, state):
-    idx = math.multinomial(rng, dist_x, num_samples=self.num_flips,
-                           replacement=self.replacement)
+    idx = math.multinomial(
+        rng, dist_x, num_samples=self.num_flips, replacement=self.replacement)
     x_shape = x.shape
     x = jnp.reshape(x, (x_shape[0], -1))
     rows = jnp.expand_dims(jnp.arange(idx.shape[0]), axis=1)
@@ -92,8 +89,35 @@ class AdaptiveGWGSampler(BinaryGWGSampler):
 
   def make_init_state(self, rng):
     state = super().make_init_state(rng)
-    state['average_acceptance_rate'] = jnp.ones(shape=(), dtype=jnp.float32)
+    state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
     return state
+
+  def select_sample(self, rng, log_acc,
+                    current_sample, new_sample, sampler_state):
+    y, new_state = super().select_sample(
+        rng, log_acc, current_sample, new_sample, sampler_state)
+    acc = jnp.mean(jnp.exp(jnp.clip(log_acc, a_max=0.0)))
+    r = sampler_state['radius'] + acc - self.target_acceptance_rate
+    new_state['radius'] = jnp.clip(r, a_min=1, a_max=math.prod(y.shape[1:]))
+    return y, new_state
+
+  def get_ll_onestep(self, dist, src, dst, aux):
+    ll = dist * aux.astype(jnp.float32)
+    ll = jnp.sum(ll, axis=-1)
+    return ll
+
+  def sample_from_proposal(self, rng, x, dist_x, state):
+    ns = jnp.clip(jnp.round(state['radius']).astype(jnp.int32),
+                  a_min=1, a_max=dist_x.shape[1])
+    selected = math.multinomial(
+        rng, dist_x, num_samples=ns,
+        replacement=self.replacement, is_nsample_const=False)
+    indicator = (selected > 0).astype(jnp.int32)
+    x_shape = x.shape
+    x = jnp.reshape(x, (x_shape[0], -1))
+    y = x * (1 - indicator) + indicator * (1 - x)
+    y = jnp.reshape(y, x_shape)
+    return y, selected
 
 
 class CategoricalGWGSampler(GibbsWithGradSampler):
@@ -113,8 +137,7 @@ class CategoricalGWGSampler(GibbsWithGradSampler):
     return log_prob
 
   def sample_from_proposal(self, rng, x, dist_x, state):
-    _ = state
-    pass
+    raise NotImplementedError
 
 
 def build_sampler(config):
