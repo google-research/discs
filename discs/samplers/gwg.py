@@ -10,7 +10,7 @@ import ml_collections
 class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
   """Gibbs With Grad Sampler Class."""
 
-  def step(self, model, rng, x, model_param, state):
+  def step(self, model, rng, x, model_param, state, x_mask=None):
     """Given the current sample, returns the next sample of the chain.
 
     Args:
@@ -20,6 +20,7 @@ class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
       model_param: target distribution parameters used for loglikelihood
         calulation.
       state: the state of the sampler.
+      x_mask: (optional) broadcast to x, masking out certain dimensions.
 
     Returns:
       New sample.
@@ -29,11 +30,11 @@ class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
     ll_x, grad_x = model.get_value_and_grad(model_param, x)
-    dist_x = self.get_dist_at(x, grad_x)
+    dist_x = self.get_dist_at(x, grad_x, x_mask)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x, state)
     ll_x2y = self.get_ll_onestep(dist_x, src=x, dst=y, aux=aux)
     ll_y, grad_y = model.get_value_and_grad(model_param, y)
-    dist_y = self.get_dist_at(y, grad_y)
+    dist_y = self.get_dist_at(y, grad_y, x_mask)
     ll_y2x = self.get_ll_onestep(dist_y, src=y, dst=x, aux=aux)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(rng_acceptance, log_acc, x, y, state)
@@ -62,10 +63,12 @@ class BinaryGWGSampler(GibbsWithGradSampler):
     ll = jnp.sum(ll, axis=-1)
     return ll
 
-  def get_dist_at(self, x, grad_x):
+  def get_dist_at(self, x, grad_x, x_mask):
     ll_delta = (1 - 2 * x) * grad_x
     score_change_x = self.apply_weight_function_logscale(ll_delta)
     score_change_x = jnp.reshape(score_change_x, (score_change_x.shape[0], -1))
+    if x_mask is not None:
+      score_change_x = score_change_x * x_mask + -1e9 * (1 - x_mask)
     log_prob = jax.nn.log_softmax(score_change_x, axis=-1)
     return log_prob
 

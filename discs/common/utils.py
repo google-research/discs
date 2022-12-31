@@ -70,6 +70,11 @@ def shard_to_local_devices(pytree):
   return jax.tree_map(shard_tensor, pytree)
 
 
+@functools.partial(jax.pmap, axis_name='shard')
+def all_gather(x):
+  return jax.lax.all_gather(x, 'shard', tiled=True)
+
+
 def get_per_process_batch_size(batch_size):
   num_devices = jax.device_count()
   assert (batch_size // num_devices * num_devices == batch_size), (

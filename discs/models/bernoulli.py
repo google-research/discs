@@ -42,6 +42,19 @@ class Bernoulli(abstractmodel.AbstractModel):
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
     return loglikelihood, grad
 
+  def get_neighbor_fn(self, x, neighbhor_idx):
+    x_shape = x.shape
+    x = jnp.reshape(x, (x.shape[0], -1))
+    brange = jnp.arange(x.shape[0])
+    cur_val = x[brange, neighbhor_idx]
+    y = x.at[brange, neighbhor_idx].set(1 - cur_val)
+    return jnp.reshape(y, x_shape)
+
+  def logratio_in_neighborhood(self, params, x):
+    params = jnp.expand_dims(params, axis=0)
+    diff = (1 - 2 * x) * params
+    return diff, 1, self.get_neighbor_fn
+
   def get_expected_val(self, params):
     return jnp.exp(params) / (jnp.exp(params) + jnp.ones(params.shape))
 
