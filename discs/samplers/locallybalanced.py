@@ -3,10 +3,8 @@
 import enum
 from discs.samplers import abstractsampler
 import jax
-from jax import random
 import jax.numpy as jnp
 import ml_collections
-import numpy as np
 
 
 class LBWeightFn(enum.Enum):
@@ -52,21 +50,9 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
       raise ValueError('Unknown function %s' % str(self.balancing_fn_type))
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
-    """Given the current sample, returns the next sample of the chain.
-
-    Args:
-      model: target distribution.
-      rng: random key generator for JAX.
-      x: current sample.
-      model_param: target distribution parameters used for loglikelihood
-        calulation.
-      state: the state of the sampler (changes in adaptive case to tune the
-        proposal distribution).
-
-    Returns:
-      New sample.
-    """
     _ = x_mask
+    if not hasattr(model, 'logratio_in_neighborhood'):
+      raise ValueError('model does not have logratio_in_neighborhood function.')
     logratio, num_calls, fn_get_neighbor = model.logratio_in_neighborhood(
         model_param, x)
     logits = self.apply_weight_function_logscale(logratio)

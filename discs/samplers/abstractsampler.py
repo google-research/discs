@@ -27,7 +27,7 @@ class AbstractSampler(abc.ABC):
     Returns:
       new_sample: new sample.
       new_state: new sampler state.
-    """    
+    """
     pass
 
   def make_init_state(self, rng):

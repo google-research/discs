@@ -13,20 +13,8 @@ class GibbsSampler(abstractsampler.AbstractSampler):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
 
-  def step(self, model, rng, x, model_param, state):
-    """Given the current sample, returns the next sample of the chain.
-
-    Args:
-      model: target distribution.
-      rng: random key generator for JAX.
-      x: current sample.
-      model_param: target distribution parameters used for loglikelihood
-        calulation.
-      state: the state of the sampler.
-
-    Returns:
-      New sample.
-    """
+  def step(self, model, rng, x, model_param, state, x_mask=None):
+    _ = x_mask
     x_shape = x.shape
     x = jnp.reshape(x, (x.shape[0], -1))
     cur_ll = jnp.expand_dims(

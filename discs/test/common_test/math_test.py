@@ -37,6 +37,34 @@ class MathTest(parameterized.TestCase):
                            batch_size=3)
     self.assertEqual(idx.shape, self.log_prob.shape)
 
+  def test_multinomial_ll(self):
+    key = jax.random.PRNGKey(2)
+    num_samples = 2
+    idx, ll_idx = math.multinomial(
+        key, self.log_prob, num_samples=num_samples, replacement=True,
+        is_nsample_const=True, return_ll=True)
+    self.assertEqual(idx.shape, self.log_prob.shape[:-1] + (num_samples,))
+    self.assertEqual(ll_idx.shape, idx.shape)
+    idx, ll_idx = math.multinomial(
+        key, self.log_prob, num_samples=num_samples, replacement=False,
+        is_nsample_const=True, return_ll=True)
+    self.assertEqual(idx.shape, self.log_prob.shape[:-1] + (num_samples,))
+    self.assertEqual(ll_idx.shape, idx.shape)
+
+    num_samples = jnp.array(2, dtype=jnp.int32)
+    idx, ll_idx = math.multinomial(
+        key, self.log_prob, num_samples=num_samples, replacement=True,
+        is_nsample_const=False, return_ll=True)
+    self.assertEqual(idx.shape, self.log_prob.shape)
+    self.assertEqual(ll_idx.shape, idx.shape)
+
+    idx, ll_idx = math.multinomial(
+        key, self.log_prob, num_samples=num_samples, replacement=False,
+        is_nsample_const=False, return_ll=True)
+
+    self.assertEqual(idx.shape, self.log_prob.shape)
+    self.assertEqual(ll_idx.shape, self.log_prob.shape)
+
 
 if __name__ == '__main__':
   absltest.main()

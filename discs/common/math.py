@@ -16,8 +16,24 @@ def gumbel(rng, loc):
   return loc -jnp.log(-jnp.log(uniform_sample))
 
 
-def multinomial(rng, log_prob, num_samples,
-                replacement=True, is_nsample_const=True, batch_size=1):
+def log1mexp(x):
+  # Computes log(1-exp(-|x|))
+  # https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
+  x = -jnp.abs(x)
+  return jnp.where(x > -0.693, jnp.log(-jnp.expm1(x)), jnp.log1p(-jnp.exp(x)))
+
+
+def noreplacement_sampling_renormalize(ll_idx, axis=-1):
+  ll_base = jnp.max(ll_idx, axis=axis, keepdims=True)
+  prob_idx = jnp.exp(ll_idx - ll_base)
+  ll_delta = jnp.log(jnp.cumsum(prob_idx, axis=axis) - prob_idx) + ll_base
+  ll_idx = jnp.clip(ll_idx - log1mexp(ll_delta), a_max=0.0)
+  return ll_idx
+
+
+def multinomial(rng, log_prob, num_samples, replacement=True,
+                is_nsample_const=True, batch_size=1, return_ll=False,
+                need_ordering_info=False):
   """Multinomial sample.
 
   Args:
@@ -27,9 +43,13 @@ def multinomial(rng, log_prob, num_samples,
     replacement: sampling with/without replacement
     is_nsample_const: is num_samples a constant int or a tensor?
     batch_size: only used when replacement=True and is_nsample_const=False
+    return_ll: return log-likelihood of selected indices?
+    need_ordering_info: when is_nsample_const=False and replacement=False,
+    whether we need the ordered sample information or not.
   Returns:
-    sampled indices, in the form of either a counting matrix (
+    sampled indices: in the form of either a counting matrix (
     is_nsample_const=False), or an index matrix (is_nsample_const=True)
+    ll_selected: (when return_ll=True)
   """
   num_classes = log_prob.shape[-1]
   pbatch_shape = log_prob.shape[:-1]
@@ -41,7 +61,13 @@ def multinomial(rng, log_prob, num_samples,
     else:
       perturbed_ll = gumbel(rng, loc=log_prob)
       _, idx = jax.lax.top_k(perturbed_ll, k=num_samples)
-    return idx
+    if return_ll:
+      ll_idx = jnp.take_along_axis(log_prob, idx, -1)
+      if not replacement and num_samples > 1:
+        ll_idx = noreplacement_sampling_renormalize(ll_idx)
+      return idx, ll_idx
+    else:
+      return idx
   else:
     if replacement:
       def body_fun(val):
@@ -64,13 +90,36 @@ def multinomial(rng, log_prob, num_samples,
           body_fun=body_fun,
           init_val=init_val
       )
+      is_ninf = selected == 0
+      ll_selected = log_prob * selected + -1e9 * is_ninf
     else:
       perturbed_ll = gumbel(rng, loc=log_prob)
       sorted_ll = jnp.sort(perturbed_ll)
       threshold = jnp.expand_dims(
           sorted_ll[..., num_classes - num_samples], axis=-1)
-      selected = (perturbed_ll >= threshold).astype(jnp.int32)
-    return selected
+      selected_mask = (perturbed_ll >= threshold).astype(jnp.int32)
+      if need_ordering_info:
+        selected = {
+            'selected_mask': selected_mask,
+            'perturbed_ll': perturbed_ll,
+        }
+      else:
+        selected = selected_mask
+    if return_ll:
+      if not replacement:
+        sorted_idx = jnp.argsort(-perturbed_ll)
+        sorted_ll = jnp.take_along_axis(log_prob, sorted_idx, -1)
+        idx_ll = noreplacement_sampling_renormalize(sorted_ll)
+        flat_idx = jnp.reshape(sorted_idx, (-1, num_classes))
+        flat_ll = jnp.reshape(idx_ll, (-1, num_classes))
+        ll_selected = jnp.zeros_like(flat_ll).at[
+            jnp.expand_dims(jnp.arange(flat_idx.shape[0]), 1), flat_idx
+        ].set(flat_ll)
+        ll_selected = jnp.reshape(ll_selected, log_prob.shape)
+        ll_selected = jnp.where(selected_mask, ll_selected, -1e9)
+      return selected, ll_selected
+    else:
+      return selected
 
 
 def bernoulli_logp(rng, log_prob):
