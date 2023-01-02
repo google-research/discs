@@ -10,7 +10,7 @@ import jax
 from ml_collections import config_dict
 
 
-class GWGSamplerTest(parameterized.TestCase):
+class PASTest(parameterized.TestCase):
 
   def setUp(self):
     """This method will be run before each of the test methods in the class."""
@@ -24,7 +24,7 @@ class GWGSamplerTest(parameterized.TestCase):
             init_sigma=0.5, name='bernoulli',
         ),
         sampler=dict(
-            name='path_auxiliary',
+            name='path_auxiliary', num_flips=1,
             adaptive=False, target_acceptance_rate=0.574,
             use_fast_path=True,
             balancing_fn_type=lb_sampler.LBWeightFn.SQRT,
@@ -45,6 +45,14 @@ class GWGSamplerTest(parameterized.TestCase):
   def test_static_binary(self):
     config = copy.deepcopy(self.config)
     config.sampler.num_flips = 2
+    config.sampler.approx_with_grad = True
+    sampler = pas.build_sampler(config)
+    self.run_single_step(config, sampler)
+
+  def test_adaptive_binary(self):
+    config = copy.deepcopy(self.config)
+    config.sampler.num_flips = 2
+    config.sampler.adaptive = True
     config.sampler.approx_with_grad = True
     sampler = pas.build_sampler(config)
     self.run_single_step(config, sampler)

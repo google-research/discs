@@ -49,8 +49,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     self.adaptive = config.sampler.get('adaptive', False)
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
-    else:
-      self.num_flips = config.sampler.get('num_flips', 1)
+    self.num_flips = config.sampler.get('num_flips', 1)
     self.approx_with_grad = config.sampler.get('approx_with_grad', True)
 
   def select_sample(self, rng, num_calls, log_acc,
@@ -118,11 +117,16 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     if self.adaptive:
       selected_mask = forward_trajectory['selected_idx']['selected_mask']
       order_info = forward_trajectory['selected_idx']['perturbed_ll']
-      raise NotImplementedError
+      backwd_idx = jnp.argsort(order_info)
+      log_prob = jnp.where(selected_mask, log_prob, -1e18)
+      backwd_ll = jnp.take_along_axis(log_prob, backwd_idx, -1)
+      backwd_mask = jnp.take_along_axis(selected_mask, backwd_idx, -1)
+      ll_backwd = math.noreplacement_sampling_renormalize(backwd_ll)
+      ll_y2x = jnp.sum(jnp.where(backwd_mask, ll_backwd, 0.0), axis=-1)
     else:
       reverse_idx_traj = jnp.flip(forward_trajectory['selected_idx'], axis=-1)
-      ll_idx = jnp.take_along_axis(log_prob, reverse_idx_traj, -1)
-      ll_y2x_traj = math.noreplacement_sampling_renormalize(ll_idx)
+      backwd_ll = jnp.take_along_axis(log_prob, reverse_idx_traj, -1)
+      ll_y2x_traj = math.noreplacement_sampling_renormalize(backwd_ll)
       ll_y2x = jnp.sum(ll_y2x_traj, axis=-1)
     return ll_y, ll_y2x, num_calls
 
