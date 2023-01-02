@@ -19,7 +19,7 @@ class PathAuxiliarySampler(locallybalanced.LocallyBalancedSampler):
         model, rng_new_sample, x, model_param, state, x_mask)
     ll_x2y = trajectory['ll_x2y']
     ll_y, ll_y2x, num_calls_backward = self.ll_y2x(
-        model, x, model_param, trajectory, y)
+        model, x, model_param, trajectory, y, x_mask)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
         rng_acceptance, num_calls_forward + num_calls_backward,
@@ -67,7 +67,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32) * self.num_flips
     return state
 
-  def get_local_dist(self, model, x, model_param):
+  def get_local_dist(self, model, x, model_param, x_mask):
     if self.approx_with_grad:
       ll_x, grad_x = model.get_value_and_grad(model_param, x)
       if self.num_categories != 2:
@@ -81,11 +81,14 @@ class PAFSNoReplacement(PathAuxiliarySampler):
       num_calls = num_calls + 1
       assert logratio.shape == x.shape
     logits = self.apply_weight_function_logscale(logratio)
+    if x_mask is not None:
+      logits = logits * x_mask + -1e9 * (1 - x_mask)
     log_prob = jax.nn.log_softmax(jnp.reshape(logits, (x.shape[0], -1)), -1)
     return ll_x, log_prob, num_calls
 
   def proposal(self, model, rng, x, model_param, state, x_mask):
-    ll_x, log_prob, num_calls = self.get_local_dist(model, x, model_param)
+    ll_x, log_prob, num_calls = self.get_local_dist(
+        model, x, model_param, x_mask)
     num_classes = log_prob.shape[1]
     if self.adaptive:
       num_samples = jnp.clip(jnp.round(state['radius']).astype(jnp.int32),
@@ -112,8 +115,9 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     }
     return ll_x, y, trajectory, num_calls
 
-  def ll_y2x(self, model, x, model_param, forward_trajectory, y):
-    ll_y, log_prob, num_calls = self.get_local_dist(model, y, model_param)
+  def ll_y2x(self, model, x, model_param, forward_trajectory, y, x_mask):
+    ll_y, log_prob, num_calls = self.get_local_dist(
+        model, y, model_param, x_mask)
     if self.adaptive:
       selected_mask = forward_trajectory['selected_idx']['selected_mask']
       order_info = forward_trajectory['selected_idx']['perturbed_ll']
