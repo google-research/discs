@@ -47,6 +47,7 @@ class BinaryGWGSampler(GibbsWithGradSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.num_flips = config.sampler.get('num_flips', 1)
+    self.replacement = config.sampler.get('replacement', True)
 
   def select_sample(self, rng, log_acc,
                     current_sample, new_sample, sampler_state):
@@ -73,7 +74,7 @@ class BinaryGWGSampler(GibbsWithGradSampler):
 
   def sample_from_proposal(self, rng, x, dist_x, state):
     idx = math.multinomial(
-        rng, dist_x, num_samples=self.num_flips, replacement=True)
+        rng, dist_x, num_samples=self.num_flips, replacement=self.replacement)
     x_shape = x.shape
     x = jnp.reshape(x, (x_shape[0], -1))
     rows = jnp.expand_dims(jnp.arange(idx.shape[0]), axis=1)
@@ -112,7 +113,8 @@ class AdaptiveGWGSampler(BinaryGWGSampler):
     ns = jnp.clip(jnp.round(state['radius']).astype(jnp.int32),
                   a_min=1, a_max=dist_x.shape[1])
     selected = math.multinomial(
-        rng, dist_x, num_samples=ns, replacement=True, is_nsample_const=False)
+        rng, dist_x, num_samples=ns,
+        replacement=self.replacement, is_nsample_const=False)
     indicator = (selected > 0).astype(jnp.int32)
     x_shape = x.shape
     x = jnp.reshape(x, (x_shape[0], -1))
