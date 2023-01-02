@@ -90,8 +90,7 @@ def multinomial(rng, log_prob, num_samples, replacement=True,
           body_fun=body_fun,
           init_val=init_val
       )
-      is_ninf = selected == 0
-      ll_selected = log_prob * selected + -1e9 * is_ninf
+      ll_selected = log_prob * selected
     else:
       perturbed_ll = gumbel(rng, loc=log_prob)
       sorted_ll = jnp.sort(perturbed_ll)
@@ -116,7 +115,7 @@ def multinomial(rng, log_prob, num_samples, replacement=True,
             jnp.expand_dims(jnp.arange(flat_idx.shape[0]), 1), flat_idx
         ].set(flat_ll)
         ll_selected = jnp.reshape(ll_selected, log_prob.shape)
-        ll_selected = jnp.where(selected_mask, ll_selected, -1e9)
+        ll_selected = ll_selected * selected_mask
       return selected, ll_selected
     else:
       return selected
