@@ -88,8 +88,11 @@ class PAFSNoReplacement(PathAuxiliarySampler):
   def proposal(self, model, rng, x, model_param, state, x_mask):
     ll_x, log_prob, num_calls = self.get_local_dist(model, x, model_param)
     num_classes = log_prob.shape[1]
-    num_samples = jnp.clip(jnp.round(state['radius']).astype(jnp.int32),
-                           a_min=1, a_max=num_classes)
+    if self.adaptive:
+      num_samples = jnp.clip(jnp.round(state['radius']).astype(jnp.int32),
+                             a_min=1, a_max=num_classes)
+    else:
+      num_samples = self.num_flips
     selected_idx, ll_selected = math.multinomial(
         rng, log_prob, num_samples, replacement=False, return_ll=True,
         is_nsample_const=not self.adaptive, need_ordering_info=True)
