@@ -75,8 +75,11 @@ class Experiment:
           (samples.shape[0], self.config.batch_size) + sample_shape
       )
       state = state[0]
-
-    return chain, state[1], model_params
+    if isinstance(state, dict):
+      num_ll_calls = state['num_ll_calls']
+    else:
+      num_ll_calls = state[1]
+    return chain, num_ll_calls, model_params
 
   def _compute_chain(
       self,
@@ -105,7 +108,7 @@ class Experiment:
       chain.append(mapped_x)
     return (
         jnp.array(chain),
-        jnp.array(state),
+        state,
     )
 
   def _get_mapped_samples(self, samples, x0_ess):
