@@ -30,13 +30,6 @@ class AbstractSampler(abc.ABC):
     """
     pass
 
-  def make_init_state(self, rng):
+  def make_init_state(self):
     """Init sampler state."""
-    _ = rng
     return {'num_ll_calls': jnp.zeros(shape=(), dtype=jnp.int32)}
-
-  def get_neighbor_fn(self, x, neighbhor_idx):
-    raise NotImplementedError
-
-  def logratio_in_neighborhood(self, params, x):
-    raise NotImplementedError

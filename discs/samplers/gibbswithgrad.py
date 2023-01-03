@@ -24,10 +24,11 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
     self.balancing_fn_type = config.sampler.balancing_fn_type
 
-  def make_init_state(self, rnd):
-    """Returns expected number of flips(hamming distance)."""
-    num_log_like_calls = 0
-    return jnp.array([1.0, num_log_like_calls])
+  def make_init_state(self):
+    """Returns expected number of flips(hamming distance) and the number ."""
+    state = super().make_init_state()
+    state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
+    return state
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
@@ -130,7 +131,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
       """
       loglike_delta_x = compute_loglike_delta(x, model, model_param)
       loglike_delta_x = get_balancing_fn(loglike_delta_x)
-      radius = state[0]
+      radius = state['radius']
       sampled_index_flatten_x = sample_index(rnd, loglike_delta_x, radius)
       # in binary case is the same
       sampled_index_flatten_y = sampled_index_flatten_x
@@ -187,7 +188,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
         i_flatten_y,
         state,
     ):
-      expected_flips = state[0]
+      expected_flips = state['radius']
       accept_ratio, state = get_ratio(
           model, model_param, x, y, i_flatten_x, i_flatten_y, state
       )
@@ -232,7 +233,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
 
       loglikelihood_x = model.forward(model_param, x)
       loglikelihood_y = model.forward(model_param, y)
-      state = state.at[1].set(state[1] + 4)
+      state['num_ll_calls'] += 4
 
       return (
           jnp.exp(

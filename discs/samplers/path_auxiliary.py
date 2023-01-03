@@ -62,8 +62,8 @@ class PAFSNoReplacement(PathAuxiliarySampler):
       new_state['radius'] = jnp.clip(r, a_min=1, a_max=math.prod(y.shape[1:]))
     return y, new_state
 
-  def make_init_state(self, rng):
-    state = super().make_init_state(rng)
+  def make_init_state(self):
+    state = super().make_init_state()
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32) * self.num_flips
     return state
 

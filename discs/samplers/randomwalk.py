@@ -17,12 +17,11 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
 
-  def make_init_state(self, rnd):
-    """Returns expected number of flips(hamming distance)."""
-    num_log_like_calls = 0
-    return jnp.array(
-        [1.0, num_log_like_calls]
-    )  #random.uniform(rnd, shape=(1, 1), minval=1, maxval=self.sample_shape).at[0, 0].get()
+  def make_init_state(self):
+    """Returns expected number of flips(hamming distance) and the number ."""
+    state = super().make_init_state()
+    state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
+    return state
 
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
@@ -63,8 +62,8 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       return (flipping_value + x) % self.num_categories
 
     def select_new_samples(model, model_param, x, y, state):
-      expected_flips = state[0]
-      num_log_like_calls = state[1]
+      expected_flips = state['radius']
+      num_log_like_calls = state['num_ll_calls']
       accept_ratio, num_log_like_calls = get_ratio(model, model_param, x, y,
                                                    num_log_like_calls)
       accepted = is_accepted(rnd_acceptance, accept_ratio)
@@ -74,8 +73,8 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       expected_flips = jnp.where(self.adaptive,
                                  update_state(accept_ratio, expected_flips, x),
                                  expected_flips)
-      state = state.at[0].set(expected_flips)
-      state = state.at[1].set(num_log_like_calls)
+      state['radius'] = expected_flips
+      state['num_ll_calls'] = num_log_like_calls
       return new_x, state
 
     def get_ratio(model, model_param, x, y, num_log_like_calls):
@@ -99,7 +98,7 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
 
     rnd_new_sample, rnd_acceptance = random.split(rnd)
     del rnd
-    y = generate_new_samples(rnd_new_sample, x, state[0])
+    y = generate_new_samples(rnd_new_sample, x, state['radius'])
     assert y.shape == x.shape
     new_x, new_state = select_new_samples(model, model_param, x, y, state)
     assert new_x.shape == x.shape

@@ -1,8 +1,8 @@
 """Experiment class that runs sampler on the model to generate chains."""
 import jax
 import jax.numpy as jnp
-import tqdm
 from ml_collections import config_dict
+import tqdm
 
 
 class Experiment:
@@ -75,11 +75,7 @@ class Experiment:
           (samples.shape[0], self.config.batch_size) + sample_shape
       )
       state = state[0]
-    if isinstance(state, dict):
-      num_ll_calls = state['num_ll_calls']
-    else:
-      num_ll_calls = state[1]
-    return chain, num_ll_calls, model_params
+    return chain, state['num_ll_calls'], model_params
 
   def _compute_chain(
       self,
