@@ -9,7 +9,7 @@ import ml_collections
 
 
 class RandomWalkSampler(abstractsampler.AbstractSampler):
-  """Random Walk Sampler Class."""
+  """Random Walk Sampler Base Class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.adaptive = config.sampler.adaptive
