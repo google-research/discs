@@ -10,6 +10,11 @@ import ml_collections
 class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
   """Gibbs With Grad Sampler Class."""
 
+  def make_init_state(self):
+    state = super().make_init_state()
+    state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
+    return state
+  
   def step(self, model, rng, x, model_param, state, x_mask=None):
     """Given the current sample, returns the next sample of the chain.
 
@@ -46,7 +51,6 @@ class BinaryGWGSampler(GibbsWithGradSampler):
 
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
-    self.num_flips = config.sampler.get('num_flips', 1)
 
   def select_sample(self, rng, log_acc,
                     current_sample, new_sample, sampler_state):
@@ -71,7 +75,7 @@ class BinaryGWGSampler(GibbsWithGradSampler):
 
   def sample_from_proposal(self, rng, x, dist_x, state):
     idx = math.multinomial(
-        rng, dist_x, num_samples=self.num_flips, replacement=True)
+        rng, dist_x, num_samples=state['radius'], replacement=True)
     x_shape = x.shape
     x = jnp.reshape(x, (x_shape[0], -1))
     rows = jnp.expand_dims(jnp.arange(idx.shape[0]), axis=1)
@@ -86,11 +90,6 @@ class AdaptiveGWGSampler(BinaryGWGSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
-
-  def make_init_state(self):
-    state = super().make_init_state()
-    state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
-    return state
 
   def select_sample(self, rng, log_acc,
                     current_sample, new_sample, sampler_state):
