@@ -207,7 +207,7 @@ class GibbsWithGradSampler(abstractsampler.AbstractSampler):
           update_state(accept_ratio, expected_flips, x),
           expected_flips,
       )
-      state = state.at[0].set(expected_flips)
+      state['radius'] = expected_flips
       return new_x, state
 
     def logsumexp(values):
