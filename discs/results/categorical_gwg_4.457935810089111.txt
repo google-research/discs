@@ -1,0 +1,33 @@
+Mean ESS: 68.46147155761719 
+ESS M-H Steps: 0.1369229406118393 
+ESS over time: 30.714426040649414 
+ESS over loglike calls: 0.06846147030591965 
+Running time: 4.457935810089111 s 
+experiment:
+  batch_size: 3
+  chain_length: 1000
+  ess_ratio: 0.5
+  fig_folder: ''
+  log_every_steps: 1
+  plot_every_steps: 10
+  run_parallel: false
+  save_every_steps: 100
+  save_root: .
+  shuffle_buffer_size: 0
+  window_size: 10
+  window_stride: 10
+model:
+  init_sigma: 1.5
+  name: categorical
+  num_categories: 4
+  shape: !!python/tuple
+  - 2
+  - 2
+sampler:
+  adaptive: false
+  balancing_fn_type: !!python/object/apply:discs.samplers.locallybalanced.LBWeightFn
+  - 1
+  name: gwg
+  num_flips: 1
+  replacement: false
+  target_acceptance_rate: 0.574

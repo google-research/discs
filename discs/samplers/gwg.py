@@ -91,6 +91,10 @@ class BinaryGWGSampler(GibbsWithGradSampler):
 class AdaptiveGWGSampler(BinaryGWGSampler):
   """Adaptive GWG for binary data."""
 
+  def __init__(self, config: ml_collections.ConfigDict):
+    super().__init__(config)
+    self.target_acceptance_rate = config.sampler.target_acceptance_rate
+
   def make_init_state(self):
     state = super().make_init_state()
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
