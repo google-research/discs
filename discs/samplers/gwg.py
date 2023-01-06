@@ -51,10 +51,8 @@ class BinaryGWGSampler(GibbsWithGradSampler):
   def select_sample(self, rng, log_acc,
                     current_sample, new_sample, sampler_state):
     y, acc = math.mh_step(rng, log_acc, current_sample, new_sample)
-    sampler_state = {
-        'num_ll_calls': sampler_state['num_ll_calls'] + 2,
-        'acceptance_rate': jnp.mean(acc.astype(jnp.float32))
-    }
+    sampler_state['num_ll_calls'] += 2
+    sampler_state['acceptance_rate'] = jnp.mean(acc.astype(jnp.float32))
     return y.astype(jnp.int32), sampler_state
 
   def get_ll_onestep(self, dist, src, dst, aux):
@@ -89,8 +87,8 @@ class AdaptiveGWGSampler(BinaryGWGSampler):
     super().__init__(config)
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
 
-  def make_init_state(self, rng):
-    state = super().make_init_state(rng)
+  def make_init_state(self):
+    state = super().make_init_state()
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
     return state
 

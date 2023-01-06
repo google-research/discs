@@ -19,10 +19,6 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     self.random_order = config.sampler.random_order
     self.block_size = config.sampler.block_size
 
-  def make_init_state(self, rnd):
-    num_log_like_calls = 0
-    return jnp.array([1, num_log_like_calls])
-
   def step(self, model, rnd, x, model_param, state):
     """Given the current sample, returns the next sample of the chain.
 
@@ -58,7 +54,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
 
     def select_new_samples(model, model_param, x, y, rnd_categorical, state):
       loglikelihood = model.forward(model_param, y)
-      state = state.at[1].set(state[1] + 1)
+      state['num_ll_calls'] += 1
       loglikelihood = loglikelihood.reshape(
           -1, self.num_categories**self.block_size
       )
