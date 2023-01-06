@@ -100,10 +100,6 @@ class AdaptiveGWGSampler(BinaryGWGSampler):
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
     return state
 
-  def __init__(self, config: ml_collections.ConfigDict):
-    super().__init__(config)
-    self.target_acceptance_rate = config.sampler.target_acceptance_rate
-
   def select_sample(
       self, rng, log_acc, current_sample, new_sample, sampler_state
   ):

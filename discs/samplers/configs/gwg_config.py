@@ -8,7 +8,7 @@ def get_config():
   model_config = dict(
       name='gwg',
       num_flips=1,
-      adaptive=False,
+      adaptive=True,
       replacement=False,
       target_acceptance_rate=0.574,
       balancing_fn_type=LBWeightFn.SQRT,
