@@ -9,7 +9,6 @@ def get_config():
       name='gwg',
       num_flips=1,
       adaptive=True,
-      replacement=False,
       target_acceptance_rate=0.574,
       balancing_fn_type=LBWeightFn.SQRT,
   )
