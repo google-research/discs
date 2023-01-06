@@ -147,7 +147,7 @@ class CategoricalGWGSampler(GibbsWithGradSampler):
 
   # TODO: kati using mask
   def get_dist_at(self, x, grad_x, x_mask):
-    ll_delta = (jnp.ones(x.shape) - x) * grad_x
+    ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
     score_change_x = self.apply_weight_function_logscale(ll_delta)
     score_change_x = score_change_x - x * 1e9
     score_change_x = jnp.reshape(score_change_x, (score_change_x.shape[0], -1))
