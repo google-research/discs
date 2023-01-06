@@ -11,11 +11,6 @@ import pdb
 class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
   """Gibbs With Grad Sampler Class."""
 
-  def make_init_state(self):
-    state = super().make_init_state()
-    state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
-    return state
-
   def select_sample(
       self, rng, log_acc, current_sample, new_sample, sampler_state
   ):
@@ -96,6 +91,11 @@ class BinaryGWGSampler(GibbsWithGradSampler):
 class AdaptiveGWGSampler(BinaryGWGSampler):
   """Adaptive GWG for binary data."""
 
+  def make_init_state(self):
+    state = super().make_init_state()
+    state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
+    return state
+
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
@@ -147,7 +147,6 @@ class CategoricalGWGSampler(GibbsWithGradSampler):
 
   # TODO: kati using mask
   def get_dist_at(self, x, grad_x, x_mask):
-    # ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
     ll_delta = (jnp.ones(x.shape) - x) * grad_x
     score_change_x = self.apply_weight_function_logscale(ll_delta)
     score_change_x = score_change_x - x * 1e9
@@ -173,9 +172,6 @@ class CategoricalGWGSampler(GibbsWithGradSampler):
     idx_y2x = idx_i * self.num_categories + idx_y2x_c
     y_int = jnp.reshape(y_int, x_shape)
     y = jax.nn.one_hot(y_int, self.num_categories, dtype=jnp.float32)
-
-    # idx_y2x = jnp.where((y - x).reshape(y.shape[0], -1) == -1)[1]
-
     return y, {'x2y': idx, 'y2x': idx_y2x}
 
   def get_ll_onestep(self, dist, aux, src_to_dst):
