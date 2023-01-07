@@ -95,8 +95,8 @@ class AdaptiveGWGSampler(BinaryGWGSampler):
     super().__init__(config)
     self.target_acceptance_rate = config.sampler.target_acceptance_rate
 
-  def make_init_state(self):
-    state = super().make_init_state()
+  def make_init_state(self, rng):
+    state = super().make_init_state(rng)
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
     return state
 
