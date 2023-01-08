@@ -99,13 +99,13 @@ class BinaryDLMC(DLMCSampler):
   def get_dist_at(self, log_tau, log_rate_x):
     if self.solver == 'interpolate':
       log_nu_x = jax.nn.log_sigmoid(log_rate_x)
-      threashold_x = log_nu_x + math.log1mexp(
+      threshold_x = log_nu_x + math.log1mexp(
           -jnp.exp(log_tau + log_rate_x - log_nu_x))
     elif self.solver == 'euler_forward':
-      threashold_x = log_tau + log_rate_x
+      threshold_x = log_tau + log_rate_x
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
-    return jnp.exp(jnp.clip(threashold_x, a_max=0.0))
+    return jnp.exp(jnp.clip(threshold_x, a_max=0.0))
 
   def sample_from_proposal(self, rng, x, dist_x):
     flip = jax.random.bernoulli(rng, p=dist_x)
