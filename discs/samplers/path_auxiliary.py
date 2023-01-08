@@ -29,12 +29,10 @@ class PathAuxiliarySampler(locallybalanced.LocallyBalancedSampler):
 
   def select_sample(self, rng, num_calls, log_acc,
                     current_sample, new_sample, sampler_state):
-    y, acc = math.mh_step(rng, log_acc, current_sample, new_sample)
-    sampler_state = {
-        'num_ll_calls': sampler_state['num_ll_calls'] + num_calls,
-        'acceptance_rate': jnp.mean(acc.astype(jnp.float32))
-    }
-    return y.astype(jnp.int32), sampler_state
+    y, new_state = super().select_sample(
+        rng, log_acc, current_sample, new_sample, sampler_state)
+    sampler_state['num_ll_calls'] += num_calls
+    return y, sampler_state
 
 
 class PASTrajectory(PathAuxiliarySampler):

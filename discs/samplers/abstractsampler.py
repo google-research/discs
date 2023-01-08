@@ -33,4 +33,9 @@ class AbstractSampler(abc.ABC):
   def make_init_state(self, rng):
     """Init sampler state."""
     _ = rng
-    return {'num_ll_calls': jnp.zeros(shape=(), dtype=jnp.int32)}
+    return {'num_ll_calls': jnp.zeros(shape=(), dtype=jnp.int32),
+            'steps': jnp.zeros(shape=(), dtype=jnp.int32)}
+
+  def update_sampler_state(self, sampler_state):
+    sampler_state['steps'] += 1
+    return sampler_state

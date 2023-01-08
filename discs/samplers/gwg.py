@@ -14,10 +14,10 @@ class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
   def select_sample(
       self, rng, log_acc, current_sample, new_sample, sampler_state
   ):
-    y, acc = math.mh_step(rng, log_acc, current_sample, new_sample)
+    y, new_state = super().select_sample(
+        rng, log_acc, current_sample, new_sample, sampler_state)
     sampler_state['num_ll_calls'] += 2
-    sampler_state['acceptance_rate'] = jnp.mean(acc.astype(jnp.float32))
-    return y.astype(jnp.int32), sampler_state
+    return y, sampler_state
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
     """Given the current sample, returns the next sample of the chain.
@@ -142,8 +142,7 @@ class CategoricalGWGSampler(GibbsWithGradSampler):
     y, new_state = super().select_sample(
         rng, log_acc, current_sample, new_sample, sampler_state
     )
-    y = jnp.argmax(y, axis=-1)  # onehot to int-tensor
-    return y.astype(jnp.int32), new_state
+    return y, new_state
 
   # TODO: kati using mask
   def get_dist_at(self, x, grad_x, x_mask):

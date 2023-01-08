@@ -1,6 +1,8 @@
 """Locally Balanced Informed Sampler Class."""
 
 import enum
+from discs.common import math
+from discs.common import utils
 from discs.samplers import abstractsampler
 import jax
 import jax.numpy as jnp
@@ -22,6 +24,17 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
     self.balancing_fn_type = config.sampler.balancing_fn_type
+
+  def select_sample(
+      self, rng, log_acc, current_sample, new_sample, sampler_state):
+    y, acc = math.mh_step(rng, log_acc, current_sample, new_sample)
+    if self.num_categories == 2:
+      y = y.astype(jnp.int32)
+    else:
+      y = jnp.argmax(y, axis=-1)
+    sampler_state = utils.copy_pytree(sampler_state)
+    super().update_sampler_state(sampler_state)
+    return y, sampler_state
 
   def apply_weight_function(self, t):
     """Apply locally balanced weight function."""
