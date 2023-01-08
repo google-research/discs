@@ -17,12 +17,12 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     if not self.adaptive:
       return
     if self.reset_z_est > 0:
-      cur_step = state['steps']
       log_z = jnp.where(cur_step % self.reset_z_est == 0,
                         local_stats['log_z'], state['log_z'])
     else:
       log_z = jnp.where(
-          state['steps'] == 1, local_stats['log_z'], state['log_z'])
+          cur_step == 1, local_stats['log_z'], state['log_z'])
+    log_z = log_z * self.logz_ema + (1.0 - self.logz_ema) * local_stats['log_z']
     n = jnp.exp(state['log_tau'] + log_z)
     n = jnp.clip(n + 3 * (acc - self.target_acceptance_rate),
                  a_min=1, a_max=math.prod(self.sample_shape))
@@ -59,6 +59,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     self.adaptive = config.sampler.adaptive
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
+      self.logz_ema = config.sampler.logz_ema
     self.reset_z_est = config.sampler.get('reset_z_est', -1)
     self.solver = config.sampler.get('solver', 'interpolate')
 
@@ -101,7 +102,7 @@ class BinaryDLMC(DLMCSampler):
       threashold_x = log_nu_x + math.log1mexp(
           -jnp.exp(log_tau + log_rate_x - log_nu_x))
     elif self.solver == 'euler_forward':
-      threshold_x = log_tau + log_rate_x
+      threashold_x = log_tau + log_rate_x
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
     return jnp.exp(jnp.clip(threashold_x, a_max=0.0))
