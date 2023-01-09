@@ -5,8 +5,11 @@ import jax
 import jax.numpy as jnp
 
 
-def prod(*args, **kwargs):
-  return math.prod(*args, **kwargs)
+def prod(it):
+  base = 1
+  for v in it:
+    base *= v
+  return v
 
 
 def log(x):
