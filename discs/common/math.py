@@ -9,6 +9,10 @@ def prod(*args, **kwargs):
   return math.prod(*args, **kwargs)
 
 
+def log(x):
+  return math.log(x)
+
+
 def gumbel(rng, loc):
   uniform_sample = jax.random.uniform(
       rng, shape=loc.shape, minval=0.0, maxval=1.0
