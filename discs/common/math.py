@@ -9,7 +9,7 @@ def prod(it):
   base = 1
   for v in it:
     base *= v
-  return v
+  return base
 
 
 def log(x):
