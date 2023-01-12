@@ -70,7 +70,7 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
         model_param, x)
     logits = self.apply_weight_function_logscale(logratio)
     sampled_idx = jax.random.categorical(rng, logits)
-    new_x = fn_get_neighbor(x, sampled_idx)
+    new_x = fn_get_neighbor(model_param, x, sampled_idx)
     new_state = {
         'num_ll_calls': state['num_ll_calls'] + num_calls,
     }
