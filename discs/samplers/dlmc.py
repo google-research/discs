@@ -52,8 +52,8 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
       ll_delta = (1 - 2 * x) * grad_x
     else:
       ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
-    log_rate_x = self.apply_weight_function_logscale(ll_delta)
-    return ll_x, log_rate_x
+    log_weight_x = self.apply_weight_function_logscale(ll_delta)
+    return ll_x, {'weights': log_weight_x, 'delta': ll_delta}
 
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
@@ -77,16 +77,16 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
     ll_x, log_rate_x = self.get_value_and_rates(model, model_param, x)
-    local_stats = self.reset_stats(log_rate_x)
+    local_stats = self.reset_stats(log_rate_x['weights'])
     log_tau = jnp.where(
         state['steps'] == 0, local_stats['log_tau'], state['log_tau'])
 
-    dist_x = self.get_dist_at(log_tau, log_rate_x)
+    dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, x)
-    dist_y = self.get_dist_at(log_tau, log_rate_y)
+    dist_y = self.get_dist_at(y, log_tau, log_rate_y)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
@@ -96,14 +96,16 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
 
 class BinaryDLMC(DLMCSampler):
   """DLMC sampler in biary case."""
-  
-  def get_dist_at(self, log_tau, log_rate_x):
+
+  def get_dist_at(self, x, log_tau, log_rate_x):
+    _ = x
+    log_weight_x = log_rate_x['weights']
     if self.solver == 'interpolate':
-      log_nu_x = jax.nn.log_sigmoid(log_rate_x)
+      log_nu_x = jax.nn.log_sigmoid(log_rate_x['delta'])
       threshold_x = log_nu_x + math.log1mexp(
-          -jnp.exp(log_tau + log_rate_x - log_nu_x))
+          -jnp.exp(log_tau + log_weight_x - log_nu_x))
     elif self.solver == 'euler_forward':
-      threshold_x = log_tau + log_rate_x
+      threshold_x = log_tau + log_weight_x
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
     return jnp.exp(jnp.clip(threshold_x, a_max=0.0))
@@ -119,6 +121,39 @@ class BinaryDLMC(DLMCSampler):
         axis=range(1, dist.ndim))
 
 
+class CategoricalDLMC(DLMCSampler):
+  """DLMC sampler in categorical case."""
+
+  def get_dist_at(self, x, log_tau, log_rate_x):
+    log_weight_x = log_rate_x['weights']
+    if self.solver == 'interpolate':
+      log_nu_x = jax.nn.log_softmax(log_rate_x['delta'], axis=-1)
+      log_posterior_x = log_nu_x + math.log1mexp(
+          -jnp.exp(log_tau + log_weight_x - log_nu_x))
+    elif self.solver == 'euler_forward':
+      log_posterior_x = log_tau + log_weight_x
+    else:
+      raise ValueError('Unknown solver for DLMC: %s' % self.solver)
+    log_posterior_x = (
+        log_posterior_x * (1 - x) + x * jnp.log1p(
+            -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
+                              axis=-1, keepdims=True), a_max=1-1e-12))
+        )
+    return log_posterior_x
+
+  def sample_from_proposal(self, rng, x, dist_x):
+    y = jax.random.categorical(rng, logits=dist_x)
+    y = jax.nn.one_hot(y, self.num_categories, dtype=jnp.float32)
+    return y, y
+
+  def get_ll_onestep(self, dist, aux):
+    dist_ll = jax.nn.log_softmax(dist)
+    ll_aux = jnp.sum(dist_ll * aux, axis=range(1, dist.ndim))
+    return ll_aux
+
+
 def build_sampler(config):
   if config.model.num_categories == 2:
     return BinaryDLMC(config)
+  else:
+    return CategoricalDLMC(config)
