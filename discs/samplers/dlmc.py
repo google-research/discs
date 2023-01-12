@@ -52,8 +52,8 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
       ll_delta = (1 - 2 * x) * grad_x
     else:
       ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
-    log_rate_x = self.apply_weight_function_logscale(ll_delta)
-    return ll_x, log_rate_x
+    log_weight_x = self.apply_weight_function_logscale(ll_delta)
+    return ll_x, {'weights': log_weight_x, 'delta': ll_delta}
 
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
@@ -77,7 +77,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
     ll_x, log_rate_x = self.get_value_and_rates(model, model_param, x)
-    local_stats = self.reset_stats(log_rate_x)
+    local_stats = self.reset_stats(log_rate_x['weights'])
     log_tau = jnp.where(
         state['steps'] == 0, local_stats['log_tau'], state['log_tau'])
 
@@ -99,12 +99,13 @@ class BinaryDLMC(DLMCSampler):
 
   def get_dist_at(self, x, log_tau, log_rate_x):
     _ = x
+    log_weight_x = log_rate_x['weights']
     if self.solver == 'interpolate':
-      log_nu_x = jax.nn.log_sigmoid(log_rate_x)
+      log_nu_x = jax.nn.log_sigmoid(log_rate_x['delta'])
       threshold_x = log_nu_x + math.log1mexp(
-          -jnp.exp(log_tau + log_rate_x - log_nu_x))
+          -jnp.exp(log_tau + log_weight_x - log_nu_x))
     elif self.solver == 'euler_forward':
-      threshold_x = log_tau + log_rate_x
+      threshold_x = log_tau + log_weight_x
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
     return jnp.exp(jnp.clip(threshold_x, a_max=0.0))
@@ -124,12 +125,13 @@ class CategoricalDLMC(DLMCSampler):
   """DLMC sampler in categorical case."""
 
   def get_dist_at(self, x, log_tau, log_rate_x):
+    log_weight_x = log_rate_x['weights']
     if self.solver == 'interpolate':
-      log_nu_x = jax.nn.log_softmax(log_rate_x, axis=-1)
+      log_nu_x = jax.nn.log_softmax(log_rate_x['delta'], axis=-1)
       log_posterior_x = log_nu_x + math.log1mexp(
-          -jnp.exp(log_tau + log_rate_x - log_nu_x))
+          -jnp.exp(log_tau + log_weight_x - log_nu_x))
     elif self.solver == 'euler_forward':
-      log_posterior_x = log_tau + log_rate_x
+      log_posterior_x = log_tau + log_weight_x
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
     log_posterior_x = (
