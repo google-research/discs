@@ -44,20 +44,8 @@ def main(_):
   ess_metrcis = evaluator.get_effective_sample_size_metrics(
       chain, running_time, num_loglike_calls
   )
-
-  if not os.path.isdir(_SAVE_DIR.value):
-    os.makedirs(_SAVE_DIR.value)
-
-  with open(
-      f'{_SAVE_DIR.value}/{config.model.name}_{config.sampler.name}_{running_time}.txt',
-      'w',
-  ) as f:
-    f.write('Mean ESS: {} \n'.format(ess_metrcis[0]))
-    f.write('ESS M-H Steps: {} \n'.format(ess_metrcis[1]))
-    f.write('ESS over time: {} \n'.format(ess_metrcis[2]))
-    f.write('ESS over loglike calls: {} \n'.format(ess_metrcis[3]))
-    f.write('Running time: {} s \n'.format(running_time))
-    f.write(str(config))
+  
+  evaluator.save_results(_SAVE_DIR.value, ess_metrcis, running_time)
 
 
 if __name__ == '__main__':

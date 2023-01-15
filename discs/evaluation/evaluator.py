@@ -6,6 +6,8 @@ import jax
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import tensorflow_probability as tfp
+import os
+import csv
 
 
 class Evaluator():
@@ -14,13 +16,13 @@ class Evaluator():
     self.config = config
 
   def _get_ess_over_num_loglike_calls(self, ess, num_loglike_calls):
-    return ess / (num_loglike_calls * self.config.ess_ratio)
+    return ess / (num_loglike_calls * self.config.experiment.ess_ratio)
 
   def _get_ess_over_mh_step(self, ess, mh_steps):
-    return ess / (mh_steps * self.config.ess_ratio)
+    return ess / (mh_steps * self.config.experiment.ess_ratio)
 
   def _get_ess_over_time(self, ess, time):
-    return ess / (time * self.config.ess_ratio)
+    return ess / (time * self.config.experiment.ess_ratio)
 
   def _get_mapped_samples(self, rnd_ess, samples):
     vec_shape = jnp.array(samples.shape)[2:]
@@ -50,7 +52,7 @@ class Evaluator():
         mean_ess, num_loglike_calls
     )
     ess_over_mh_steps = self._get_ess_over_mh_step(
-        mean_ess, self.config.chain_length
+        mean_ess, self.config.experiment.chain_length
     )
     ess_over_time = self._get_ess_over_time(mean_ess, running_time)
     return mean_ess, ess_over_mh_steps, ess_over_time, ess_over_loglike_calls
@@ -127,10 +129,10 @@ class Evaluator():
     """Plots the error over window of samples of chains over time."""
     mean_errors = []
     max_mean_errors = []
-    for start in range(0, len(chain), self.config.window_stride):
-      if (len(chain) - start) < self.config.window_size:
+    for start in range(0, len(chain), self.config.experiment.window_stride):
+      if (len(chain) - start) < self.config.experiment.window_size:
         break
-      samples = chain[start : start + self.config.window_size]
+      samples = chain[start : start + self.config.experiment.window_size]
       avg_mean_error, max_mean_error, _, _ = self._compute_error(
           model, params, samples
       )
@@ -148,6 +150,62 @@ class Evaluator():
     plt.title('Max Mean Error Over Chains for {}!'.format(config_main.sampler))
     plt.savefig('MixingTimeMaxMean_{}'.format(config_main.sampler))
 
+  def save_results(self, save_dir, ess_metrcis, running_time):
+    """Saving the Evaluation Results in txt and CSV file."""
+    if not os.path.isdir(save_dir):
+      os.makedirs(save_dir)
+
+    results = {}
+    results['sampler'] = self.config.sampler.name
+    if 'adaptive' in self.config.sampler.keys():
+      results['sampler'] = f'a_{self.config.sampler.name}'
+
+    if 'balancing_fn_type' in self.config.sampler.keys():
+      if self.config.sampler.balancing_fn_type == 2:
+        results['sampler'] = results['sampler'] + '(frac)'
+      elif self.config.sampler.balancing_fn_type == 3:
+        results['sampler'] = results['sampler'] + '(and)'
+      elif self.config.sampler.balancing_fn_type == 4:
+        results['sampler'] = results['sampler'] + '(or)'
+      else:
+        results['sampler'] = results['sampler'] + '(sqrt)'
+
+    ess_metrcis = jnp.array(ess_metrcis)
+    results['model'] = self.config.model.name
+    results['num_categories'] = self.config.model.num_categories
+    results['shape'] = self.config.model.shape
+    results['ESS'] = ess_metrcis[0]
+    results['ESS_M-H'] = ess_metrcis[1]
+    results['ESS_T'] = ess_metrcis[2]
+    results['ESS_EE'] = ess_metrcis[3]
+    results['Time'] = running_time
+    results['batch_size'] = self.config.experiment.batch_size
+    results['chain_length'] = self.config.experiment.chain_length
+    results['ess_ratio'] = self.config.experiment.ess_ratio
+
+    csv_path = f'{save_dir}/results.csv'
+    if not os.path.exists(csv_path):
+      with open(f'{save_dir}/results.csv', 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=list(results.keys()))
+        writer.writeheader()
+        writer.writerow(results)
+        csvfile.close()
+    else:
+      with open(f'{save_dir}/results.csv', 'a') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=list(results.keys()))
+        writer.writerow(results)
+        csvfile.close()
+
+    with open(
+        f'{save_dir}/{self.config.model.name}_{self.config.sampler.name}_{running_time}.txt',
+        'w',
+    ) as f:
+      f.write('Mean ESS: {} \n'.format(ess_metrcis[0]))
+      f.write('ESS M-H Steps: {} \n'.format(ess_metrcis[1]))
+      f.write('ESS over time: {} \n'.format(ess_metrcis[2]))
+      f.write('ESS over loglike calls: {} \n'.format(ess_metrcis[3]))
+      f.write('Running time: {} s \n'.format(running_time))
+      f.write(str(self.config))
 
 def build_evaluator(config):
-  return Evaluator(config.experiment)
+  return Evaluator(config)
