@@ -1,7 +1,7 @@
-#!/bin/bash
+i!/bin/bash
 
-models="bernoulli"
-samplers="randomwalk gwg path_auxiliary dlmc"
+models="bernoulli categorical"
+samplers="randomwalk path_auxiliary dlmc gwg"
 
 for model in $models
 do
