@@ -13,11 +13,11 @@ class Experiment:
     self.config = config
 
   def _initialize_model_and_sampler(self, rnd, model, sampler):
-    rng_param, rng_x0, rng_x0_ess = jax.random.split(rnd, num=3)
+    rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
     params = model.make_init_params(rng_param)
     x0 = model.get_init_samples(rng_x0, self.config.batch_size)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
-    state = sampler.make_init_state()
+    state = sampler.make_init_state(rng_state)
     return params, x0, state, x0_ess
 
   def _split(self, arr, n_devices):
