@@ -45,7 +45,7 @@ def main(_):
       chain, running_time, num_loglike_calls
   )
   
-  evaluator.save_results(_SAVE_DIR.value, ess_metrcis, running_time)
+  evaluator.save_results(_SAVE_DIR.value +'_'+config.model.name, ess_metrcis, running_time)
 
 
 if __name__ == '__main__':
