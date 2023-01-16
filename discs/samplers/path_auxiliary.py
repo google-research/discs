@@ -51,6 +51,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
     self.num_flips = config.sampler.get('num_flips', 1)
+    self.approx_with_grad = config.sampler.get('approx_with_grad', True)
 
   def select_sample(self, rng, num_calls, log_acc,
                     current_sample, new_sample, sampler_state):
@@ -68,12 +69,17 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     return state
 
   def get_local_dist(self, model, x, model_param, x_mask):
-    ll_x, grad_x = model.get_value_and_grad(model_param, x)
-    if self.num_categories != 2:
-      logratio = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
+    if self.approx_with_grad:
+      ll_x, grad_x = model.get_value_and_grad(model_param, x)
+      if self.num_categories != 2:
+        logratio = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
+      else:
+        logratio = (1 - 2 * x) * grad_x
+      num_calls = 1
     else:
-      logratio = (1 - 2 * x) * grad_x
-    num_calls = 1
+      ll_x, logratio, num_calls, _ = model.logratio_in_neighborhood(
+          model_param, x)
+      assert logratio.shape == x.shape
     logits = self.apply_weight_function_logscale(logratio)
     if x_mask is not None:
       logits = logits * x_mask + -1e9 * (1 - x_mask)

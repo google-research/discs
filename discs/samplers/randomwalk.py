@@ -17,9 +17,9 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
 
-  def make_init_state(self):
+  def make_init_state(self, rng):
     """Returns expected number of flips(hamming distance) and the number ."""
-    state = super().make_init_state()
+    state = super().make_init_state(rng)
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
     return state
 
