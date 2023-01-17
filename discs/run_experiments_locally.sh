@@ -1,4 +1,4 @@
-i!/bin/bash
+#!/bin/bash
 
 models="bernoulli categorical"
 samplers="path_auxiliary dlmc gwg randomwalk"
