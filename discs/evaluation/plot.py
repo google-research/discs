@@ -1,6 +1,7 @@
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+import pdb
 
 # open the file in read mode
 filename = open('./results.csv', 'r')
@@ -12,13 +13,15 @@ samplers = []
 ess_ee = []
 ess_clock = []
 for col in file:
+  model = col['model']
   samplers.append( col['sampler'])
-  ess_ee.append( col['ESS_EE'] )
-  ess_clock.append(col['ESS_T'])
+  ess_ee.append( float(col['ESS_EE'])*50000 )
+  ess_clock.append(float(col['ESS_T']) )
 
+ess_ee = np.sort(np.array(ess_ee))
+ess_clock = np.sort(np.array(ess_clock))
 x_pos = 0.3 * np.arange(len(samplers))
-c = np.arange(0, 1, 1/len(samplers))
-
+c = ['green', 'red', 'red', 'saddlebrown', 'saddlebrown', 'pink', 'pink'][0:len(x_pos)]
 fig = plt.figure(figsize = (10, 6))
 plt.yscale('log')
 plt.bar(x_pos, ess_ee, width = 0.2, color=c)
@@ -26,7 +29,7 @@ plt.xticks(x_pos, samplers)
 
 plt.xlabel("Samplers")
 plt.ylabel("ESS (high temp)")
-plt.title("ESS w.r.t. Energy Evaluations on Bernoulli")
+plt.title(f'ESS w.r.t. Energy Evaluations on {model}')
 plt.show()
 plt.savefig('EssEE.png')
 
@@ -39,7 +42,6 @@ plt.xticks(x_pos, samplers)
  
 plt.xlabel("Samplers")
 plt.ylabel("ESS (high temp)")
-plt.title("ESS w.r.t. Wall Clock Time on Bernoulli")
+plt.title(f'ESS w.r.t. Wall Clock Time on {model}')
 plt.show()
 plt.savefig('EssClock.png')
-

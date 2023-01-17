@@ -8,7 +8,9 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 import os
 import csv
+import pdb
 
+from discs.samplers.locallybalanced import LBWeightFn
 
 class Evaluator():
 
@@ -161,12 +163,12 @@ class Evaluator():
       results['sampler'] = f'a_{self.config.sampler.name}'
 
     if 'balancing_fn_type' in self.config.sampler.keys():
-      if self.config.sampler.balancing_fn_type == 2:
-        results['sampler'] = results['sampler'] + '(frac)'
-      elif self.config.sampler.balancing_fn_type == 3:
-        results['sampler'] = results['sampler'] + '(and)'
-      elif self.config.sampler.balancing_fn_type == 4:
-        results['sampler'] = results['sampler'] + '(or)'
+      if self.config.sampler.balancing_fn_type == LBWeightFn.RATIO:
+        results['sampler'] = results['sampler'] + '(ratio)'
+      elif self.config.sampler.balancing_fn_type == LBWeightFn.MAX:
+        results['sampler'] = results['sampler'] + '(max)'
+      elif self.config.sampler.balancing_fn_type == LBWeightFn.MIN:
+        results['sampler'] = results['sampler'] + '(min)'
       else:
         results['sampler'] = results['sampler'] + '(sqrt)'
 
