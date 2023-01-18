@@ -13,7 +13,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
 
   def update_sampler_state(self, state, acc, local_stats):
     cur_step = state['steps']
-    state['num_ll_calls'] += 2
+    state['num_ll_calls'] += 4
     if not self.adaptive:
       return
     if self.reset_z_est > 0:

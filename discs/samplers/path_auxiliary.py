@@ -75,7 +75,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
         logratio = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
       else:
         logratio = (1 - 2 * x) * grad_x
-      num_calls = 1
+      num_calls = 2
     else:
       ll_x, logratio, num_calls, _ = model.logratio_in_neighborhood(
           model_param, x)

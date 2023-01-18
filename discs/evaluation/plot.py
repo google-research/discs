@@ -9,13 +9,11 @@ import PIL
 
 def np_tile_imgs(imgs, *, pad_pixels=1, pad_val=255, num_col=0):
   """NumPy utility: tile a batch of images into a single image.
-
   Args:
     imgs: np.ndarray: a uint8 array of images of shape [n, h, w, c]
     pad_pixels: int: number of pixels of padding to add around each image
     pad_val: int: padding value
     num_col: int: number of columns in the tiling; defaults to a square
-
   Returns:
     np.ndarray: one tiled image: a uint8 array of shape [H, W, c]
   """
