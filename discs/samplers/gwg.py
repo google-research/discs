@@ -16,7 +16,7 @@ class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
   ):
     y, new_state = super().select_sample(
         rng, log_acc, current_sample, new_sample, sampler_state)
-    sampler_state['num_ll_calls'] += 2
+    sampler_state['num_ll_calls'] += 4
     return y, sampler_state
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
