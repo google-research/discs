@@ -66,7 +66,7 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
     _ = x_mask
     if not hasattr(model, 'logratio_in_neighborhood'):
       raise ValueError('model does not have logratio_in_neighborhood function.')
-    logratio, num_calls, fn_get_neighbor = model.logratio_in_neighborhood(
+    _, logratio, num_calls, fn_get_neighbor = model.logratio_in_neighborhood(
         model_param, x)
     logits = self.apply_weight_function_logscale(logratio)
     sampled_idx = jax.random.categorical(rng, logits)
