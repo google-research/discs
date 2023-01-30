@@ -83,6 +83,8 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     logits = self.apply_weight_function_logscale(logratio)
     if x_mask is not None:
       logits = logits * x_mask + -1e9 * (1 - x_mask)
+    if self.num_categories != 2:
+      logits = logits * (1 - x) + x * -1e9
     log_prob = jax.nn.log_softmax(jnp.reshape(logits, (x.shape[0], -1)), -1)
     return ll_x, log_prob, num_calls
 
