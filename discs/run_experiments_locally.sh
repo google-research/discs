@@ -1,7 +1,7 @@
 #!/bin/bash
 
-models="bernoulli categorical"
-samplers="path_auxiliary dlmc gwg randomwalk"
+models="categorical bernoulli"
+samplers="path_auxiliary dlmc randomwalk gwg"
 weight_fns="SQRT RATIO"
 
 for model in $models
