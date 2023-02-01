@@ -14,6 +14,13 @@ class Ising(abstractmodel.AbstractModel):
     self.lambdaa = config.lambdaa
     self.external_field_type = config.external_field_type
     self.init_sigma = config.init_sigma
+    self.mu = config.mu
+
+  def inner_or_outter(self, n, shape):
+    if (n[0] / shape - 0.5) ** 2 + (n[1] / shape - 0.5) ** 2 < 0.5 / jnp.pi:
+      return 1
+    else:
+      return -1
 
   def make_init_params(self, rnd):
     # connectivity strength
@@ -23,7 +30,12 @@ class Ising(abstractmodel.AbstractModel):
     # TODO: Enums
     # external force (default value is zero)
     if self.external_field_type == 1:
-      params_b = jax.random.normal(rnd, shape=self.shape) * self.init_sigma
+      params_b = (2*jax.random.uniform(rnd, shape=self.shape) - 1)*self.init_sigma
+      dim = self.shape[0]
+      for i in range(dim):
+        for j in range(dim):
+          params_b[i, j] += self.inner_or_outter((i, j), dim) * self.mu
+      params_b = -1 * params_b
       return jnp.array([params_weight_h, params_weight_v, params_b])
 
     return jnp.array([params_weight_h, params_weight_v])

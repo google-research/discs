@@ -6,7 +6,8 @@ def get_config():
       shape=(2, 2),
       num_categories=2,
       lambdaa=0.1,
-      external_field_type=0,
+      external_field_type=1,
+      mu=0.5,
       init_sigma=1.0,
       name='ising',
   )
