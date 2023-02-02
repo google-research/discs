@@ -34,7 +34,7 @@ class Ising(abstractmodel.AbstractModel):
       dim = self.shape[0]
       for i in range(dim):
         for j in range(dim):
-          params_b[i, j] += self.inner_or_outter((i, j), dim) * self.mu
+          params_b = params_b.at[i, j].set( params_b[i, j] + self.inner_or_outter((i, j), dim) * self.mu )
       params_b = -1 * params_b
       return jnp.array([params_weight_h, params_weight_v, params_b])
 
