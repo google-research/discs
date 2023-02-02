@@ -12,6 +12,12 @@ def sort_dict(x):
   }
 
 
+color_map = {}
+color_map['ran'] = 'green'
+color_map['dlm'] = 'pink'
+color_map['pat'] = 'saddlebrown'
+color_map['gwg'] = 'red'
+
 def main():
   results_dir = './discs/'
   all_dirs = os.listdir(results_dir)
@@ -45,14 +51,20 @@ def main():
       values_clock = np.array(list(dict_clock.values()))
 
       x_pos = 0.5 * np.arange(len(keys_ee))
-      c = ['green', 'red', 'red', 'saddlebrown', 'saddlebrown', 'pink', 'pink'][
-          0 : len(keys_ee)
-      ]
+      c = []
+      for key in keys_ee:
+          splits = str.split(key, '_')
+          if splits[0][0] != 'a':
+            alg = splits[0][0:3]
+          else:
+            alg = splits[1][0:3]
+          c.append(color_map[alg])
       fig = plt.figure(figsize=(10, 6))
       plt.yscale('log')
       plt.bar(x_pos, values_ee, width=0.2, color=c)
       plt.xticks(x_pos, keys_ee)
 
+      plt.grid()
       plt.xlabel('Samplers')
       plt.ylabel('ESS (high temp)')
       plt.title(f'ESS w.r.t. Energy Evaluations on {model}')
@@ -60,12 +72,21 @@ def main():
       plt.savefig(curr_path + f'/EssEE_{model}.png')
 
       #########
+      c = []
+      for key in keys_clock:
+          splits = str.split(key, '_')
+          if splits[0][0] != 'a':
+            alg = splits[0][0:3]
+          else:
+            alg = splits[1][0:3]
+          c.append(color_map[alg])
 
       fig = plt.figure(figsize=(10, 6))
       plt.yscale('log')
       plt.bar(x_pos, values_clock, width=0.2, color=c)
       plt.xticks(x_pos, keys_clock)
 
+      plt.grid()
       plt.xlabel('Samplers')
       plt.ylabel('ESS (high temp)')
       plt.title(f'ESS w.r.t. Wall Clock Time on {model}')
