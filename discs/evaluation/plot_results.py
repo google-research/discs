@@ -91,7 +91,7 @@ def main():
       plt.ylabel('ESS (high temp)')
       plt.title(f'ESS w.r.t. Energy Evaluations on {model}')
       plt.show()
-      plt.savefig(curr_path + f'/EssEE_{model}.png')
+      plt.savefig(curr_path + f'/EssEE_{model}.png', bbox_inches='tight')
 
       #########
       c = []
@@ -113,7 +113,7 @@ def main():
       plt.ylabel('ESS (high temp)')
       plt.title(f'ESS w.r.t. Wall Clock Time on {model}')
       plt.show()
-      plt.savefig(curr_path + f'/EssClock_{model}.png')
+      plt.savefig(curr_path + f'/EssClock_{model}.png', bbox_inches='tight')
 
 
 main()
