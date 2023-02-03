@@ -39,7 +39,7 @@ def main(_):
           config.sampler['balancing_fn_type'] = LBWeightFn.MIN
       else:
           config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
-  
+
   logging.info(config)      
   sampler = sampler_mod.build_sampler(config)
   experiment = experiment_mod.build_experiment(config)
@@ -56,8 +56,22 @@ def main(_):
   ess_metrcis = evaluator.get_effective_sample_size_metrics(
       chain, running_time, num_loglike_calls
   )
-  
-  evaluator.save_results(_SAVE_DIR.value +'_'+config.model.name, ess_metrcis, running_time)
+
+  if config.model.name == 'potts':
+      dir_name = f'potts_{config.model.num_categories}'
+  elif config.model.name == 'ising':
+      if config.model.mu == 0.5:
+        dir_name = 'ising_hightemp'
+      elif config.model.mu == 1:
+          dir_name = 'ising_lowtemp'
+      else:
+          dir_name = 'ising'
+  elif config.model.name == 'categorical':
+      dir_name = f'categorical_{config.model.num_categories}'
+  else:
+      dir_name = config.model.name
+
+  evaluator.save_results(_SAVE_DIR.value +'_'+dir_name, ess_metrcis, running_time)
 
 
 if __name__ == '__main__':

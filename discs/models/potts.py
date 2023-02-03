@@ -4,7 +4,6 @@ from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
-import pdb
 
 
 class Potts(abstractmodel.AbstractModel):
@@ -15,11 +14,37 @@ class Potts(abstractmodel.AbstractModel):
     self.lambdaa = config.lambdaa
     self.num_categories = config.num_categories
     self.shape = self.sample_shape + (self.num_categories,)
+    self.mu = config.mu
+    self.external_field_type = config.external_field_type
+    self.init_sigma = config.init_sigma
+
+  def inner_or_outter(self, n, shape):
+    if (n[0] / shape - 0.5) ** 2 + (n[1] / shape - 0.5) ** 2 < 0.5 / jnp.pi:
+      return 1
+    else:
+      return -1
 
   def make_init_params(self, rnd):
     # connectivity strength
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
+
+    if self.external_field_type == 1:
+      params_b = (
+          2 * jax.random.uniform(rnd, shape=self.shape) - 1
+      ) * self.init_sigma
+      indices = jnp.indices(self.shape)
+      inner_outter = self.mu * jnp.where(
+          (indices[0] / self.shape[0] - 0.5) ** 2
+          + (indices[1] / self.shape[1] - 0.5) ** 2
+          < 0.5 / jnp.pi,
+          1,
+          -1,
+      )
+
+      params_b += inner_outter
+      params_b = -1 * params_b
+      return jnp.array([params_weight_h, params_weight_v, params_b])
 
     return jnp.array([params_weight_h, params_weight_v])
 
@@ -53,6 +78,10 @@ class Potts(abstractmodel.AbstractModel):
     loglikelihood = loglikelihood.at[:, 1:, :].set(
         loglikelihood[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v
     )  # up
+
+    if self.external_field_type == 1:
+      w_b = params[2]
+      loglikelihood += w_b * x
     
     
     return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
