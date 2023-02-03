@@ -4,7 +4,6 @@ from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
-import pdb
 
 
 class Potts(abstractmodel.AbstractModel):
@@ -31,11 +30,19 @@ class Potts(abstractmodel.AbstractModel):
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
 
     if self.external_field_type == 1:
-      params_b = (2*jax.random.uniform(rnd, shape=self.shape) - 1)*self.init_sigma
-      dim = self.shape[0]
-      for i in range(dim):
-        for j in range(dim):
-          params_b = params_b.at[i, j].set( params_b[i, j] + self.inner_or_outter((i, j), dim) * self.mu )
+      params_b = (
+          2 * jax.random.uniform(rnd, shape=self.shape) - 1
+      ) * self.init_sigma
+      indices = jnp.indices(self.shape)
+      inner_outter = self.mu * jnp.where(
+          (indices[0] / self.shape[0] - 0.5) ** 2
+          + (indices[1] / self.shape[1] - 0.5) ** 2
+          < 0.5 / jnp.pi,
+          1,
+          -1,
+      )
+
+      params_b += inner_outter
       params_b = -1 * params_b
       return jnp.array([params_weight_h, params_weight_v, params_b])
 

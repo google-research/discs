@@ -5,7 +5,6 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 
-
 class Ising(abstractmodel.AbstractModel):
   """Ising Distribution with Cyclic 2D Lattice."""
 
@@ -27,7 +26,6 @@ class Ising(abstractmodel.AbstractModel):
       params_b = (
           2 * jax.random.uniform(rnd, shape=self.shape) - 1
       ) * self.init_sigma
-      pdb.set_trace()
       indices = jnp.indices(self.shape)
       inner_outter = self.mu * jnp.where(
           (indices[0] / self.shape[0] - 0.5) ** 2
