@@ -6,7 +6,6 @@ import jax
 import jax.numpy as jnp
 from jax.scipy import special
 import ml_collections
-import pdb
 
 
 class PathAuxiliarySampler(locallybalanced.LocallyBalancedSampler):
@@ -24,7 +23,7 @@ class PathAuxiliarySampler(locallybalanced.LocallyBalancedSampler):
     ll_x2y = trajectory['ll_x2y']
     ll_y, ll_y2x, num_calls_backward = self.ll_y2x(
         model, x, model_param, trajectory, y, x_mask)
-    
+
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
         rng_acceptance, num_calls_forward + num_calls_backward,
@@ -62,7 +61,8 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     if self.adaptive:
       acc = jnp.mean(jnp.exp(jnp.clip(log_acc, a_max=0.0)))
       r = sampler_state['radius'] + acc - self.target_acceptance_rate
-      new_state['radius'] = jnp.clip(r, a_min=1, a_max=math.prod(self.sample_shape))
+      new_state['radius'] = jnp.clip(
+          r, a_min=1, a_max=math.prod(self.sample_shape))
     return y, new_state
 
   def make_init_state(self, rng):
@@ -135,7 +135,6 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     trajectory = {
         'll_x2y': jnp.sum(ll_selected, axis=-1),
         'selected_idx': selected_idx,
-        'newval_candidates': new_val
     }
     return ll_x, y, trajectory, num_calls
 
@@ -143,7 +142,6 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     ll_y, log_prob, num_calls = self.get_local_dist(
         model, y, model_param, x_mask)
     if self.num_categories > 2:
-      forward_newval = forward_trajectory['newval_candidates']
       log_prob_all = jnp.reshape(log_prob,
                                  [log_prob.shape[0], -1, self.num_categories])
       log_prob = special.logsumexp(log_prob_all, axis=-1)
@@ -167,10 +165,13 @@ class PAFSNoReplacement(PathAuxiliarySampler):
       if self.num_categories > 2:
         val_logprob = log_prob_all[
             jnp.expand_dims(jnp.arange(x.shape[0]), axis=1), reverse_idx_traj]
-        ll_val = jnp.sum(forward_newval * val_logprob, axis=-1)
+        x = jnp.reshape(x, [x.shape[0], -1, self.num_categories])
+        orig_val = x[jnp.expand_dims(jnp.arange(x.shape[0]), axis=1),
+                     reverse_idx_traj]
+        ll_val = jnp.sum(orig_val * val_logprob, axis=-1)
       ll_y2x = jnp.sum(ll_y2x_traj, axis=-1)
     if self.num_categories > 2:
-      ll_y2x = ll_y2x  + jnp.sum(ll_val, axis=-1)
+      ll_y2x = ll_y2x + jnp.sum(ll_val, axis=-1)
     return ll_y, ll_y2x, num_calls
 
 
