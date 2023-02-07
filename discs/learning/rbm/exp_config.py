@@ -1,7 +1,6 @@
 """Config file for rbms."""
 
 from discs.common import configs
-from discs.models.configs import rbm_config as model_config
 from ml_collections import config_dict
 
 
@@ -23,8 +22,9 @@ def get_config(rbm_config):
   config.experiment.save_every_steps = 100
   config.experiment.plot_every_steps = 10
   config.experiment.dataset = dataset
-  config.model = model_config.get_config()
   config.model.num_hidden = num_hidden
+  config.model.train = True
+  config.model.name = 'rbm'
   config.sampler = config_dict.ConfigDict(dict(
       name='blockgibbs',
       subclass='rbm'

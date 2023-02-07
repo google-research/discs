@@ -154,6 +154,22 @@ class Evaluator():
 
   def save_results(self, save_dir, ess_metrcis, running_time):
     """Saving the Evaluation Results in txt and CSV file."""
+    
+    if self.config.model.name == 'potts':
+        dir_name = f'potts_{config.model.num_categories}'
+    elif self.config.model.name == 'ising':
+      if self.config.model.mu == 0.5:
+        dir_name = 'ising_hightemp'
+      elif self.config.model.mu == 1:
+          dir_name = 'ising_lowtemp'
+      else:
+          dir_name = 'ising'
+    elif self.config.model.name == 'categorical':
+      dir_name = f'categorical_{config.model.num_categories}'
+    else:
+      dir_name = self.config.model.name
+
+    save_dir = f'{save_dir}_{dir_name}'
     if not os.path.isdir(save_dir):
       os.makedirs(save_dir)
 

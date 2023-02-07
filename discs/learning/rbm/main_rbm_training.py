@@ -19,6 +19,11 @@ from ml_collections import config_flags
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import pickle
+import pdb
+physical_devices = tf.config.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
+tf.config.experimental.set_memory_growth(physical_devices[1], True)
 
 
 _CONFIG = config_flags.DEFINE_config_file('config')
@@ -104,9 +109,7 @@ def get_data_mean(dataset):
   return data_mean.tolist()
 
 
-def main(argv: Sequence[str]) -> None:
-  if len(argv) > 1:
-    raise app.UsageError('Too many command-line arguments.')
+def main(_):
   config = _CONFIG.value
   config.experiment.save_root = os.path.join(
       FLAGS.save_root, config.experiment.rbm_config)
@@ -118,7 +121,7 @@ def main(argv: Sequence[str]) -> None:
     f.write(config.to_yaml())
 
   global_key = jax.random.PRNGKey(FLAGS.seed)
-  model = rbm.build_model(config.model)
+  model = rbm.build_model(config)
   sampler = RBMBlockGibbsSampler(config.sampler)
 
   trainer = RBMTrainer(config, model, sampler)
@@ -129,9 +132,18 @@ def main(argv: Sequence[str]) -> None:
       train_dataset, config=config.experiment, fn_preprocess=data_preprocess,
       drop_remainder=True, repeat=False)
   train_loader = data_loader.numpy_iter(train_loader)
-  trainer.train_loop(
+  final_state = trainer.train_loop(
       logger, global_key, global_state, local_state, train_loader,
       fn_plot=trainer.plot_batch)
+
+  results = {}
+  results['params'] = final_state.params
+  results['data_mean'] = config.model.data_mean
+  results['num_visible'] = config.model.num_visible
+  results['num_hidden'] = config.model.num_hidden
+  results['num_categories'] = config.model.num_categories
+  with open(os.path.join(config.experiment.save_root, 'rbm.pkl'), 'wb') as f:
+      pickle.dump(results, f, pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':

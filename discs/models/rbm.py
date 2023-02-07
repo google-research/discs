@@ -8,7 +8,8 @@ from flax.linen import initializers
 import jax
 import jax.numpy as jnp
 import ml_collections
-
+import pickle
+import pdb
 
 class NNBinary(nn.Module):
   """Network of binary RBM."""
@@ -85,6 +86,18 @@ class RBM(abstractmodel.AbstractModel):
   def forward(self, params, x):
     return self.net.apply({'params': params}, v=x)
 
+
+  def get_value_and_grad(self, params, x):
+    x = x.astype(jnp.float32)  # int tensor is not differentiable
+
+    def fun(z):
+      loglikelihood = self.forward(params, z)
+      return jnp.sum(loglikelihood), loglikelihood
+
+    (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
+
+    return loglikelihood, grad
+
   def step_h(self, params, rng, v):
     return self.net.apply({'params': params}, rng=rng, v=v,
                           method=self.net.step_h)
@@ -117,7 +130,7 @@ class CategoricalRBM(RBM):
   def __init__(self, config: ml_collections.ConfigDict):
     super(CategoricalRBM, self).__init__(config)
     self.net = NNCategorical(num_visible=self.num_visible,
-                             num_hidden=self.num_hidden,
+                             num_hidden=self.num_hidden, 
                              num_categories=self.num_categories)
 
   def build_init_dist(self, data_mean):
@@ -126,8 +139,10 @@ class CategoricalRBM(RBM):
 
 
 def build_model(config):
-  if config.num_categories == 2:
-    return BinaryRBM(config)
+    
+  config_model = config.model
+  if config_model.num_categories == 2:
+    return BinaryRBM(config_model)
   else:
-    assert config.num_categories > 2
-    return CategoricalRBM(config)
+    assert config_model.num_categories > 2
+    return CategoricalRBM(config_model)

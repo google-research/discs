@@ -146,3 +146,4 @@ class Trainer(abc.ABC):
         if step % exp_config.save_every_steps == 0:
           save_model(shared_state, step)
     logging.info('done training!')
+    return shared_state

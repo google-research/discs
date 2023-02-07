@@ -11,6 +11,7 @@ from discs.experiment import experiment as experiment_mod
 from discs.evaluation import evaluator as evaluator_mod
 import time
 import os
+import pickle
 import pdb
 
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
@@ -26,6 +27,13 @@ def main(_):
   config.sampler.update(_SAMPLER_CONFIG.value)
 
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
+  if config.model.name == 'rbm':
+    model_path = f'{config.model.model_dir}/{config.model.dataset}-{config.model.num_categories}-{config.model.num_hidden}/rbm.pkl'
+    model = pickle.load(open(model_path, 'rb'))
+    config.model.num_visible = model['num_visible']
+    config.model.data_mean = model['data_mean']
+    config.model.shape = (model['num_visible'],)
+
   model = model_mod.build_model(config)
   sampler_mod = importlib.import_module(
       'discs.samplers.%s' % config.sampler.name
@@ -57,21 +65,7 @@ def main(_):
       chain, running_time, num_loglike_calls
   )
 
-  if config.model.name == 'potts':
-      dir_name = f'potts_{config.model.num_categories}'
-  elif config.model.name == 'ising':
-      if config.model.mu == 0.5:
-        dir_name = 'ising_hightemp'
-      elif config.model.mu == 1:
-          dir_name = 'ising_lowtemp'
-      else:
-          dir_name = 'ising'
-  elif config.model.name == 'categorical':
-      dir_name = f'categorical_{config.model.num_categories}'
-  else:
-      dir_name = config.model.name
-
-  evaluator.save_results(_SAVE_DIR.value +'_'+dir_name, ess_metrcis, running_time)
+  evaluator.save_results(_SAVE_DIR.value, ess_metrcis, running_time)
 
 
 if __name__ == '__main__':
