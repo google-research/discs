@@ -10,8 +10,6 @@ def get_config():
           num_hidden=200,
           name='rbm',
           train=False,
-          model_dir = './experiment/'
-          #model_dir = './discs/storage/models/rbm/'
+          model_dir = './discs/storage/models/rbm/'
           )
-  print("Loading the model from:", model_config['model_dir'])
   return config_dict.ConfigDict(model_config)
