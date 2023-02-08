@@ -27,12 +27,14 @@ def main(_):
   config.sampler.update(_SAMPLER_CONFIG.value)
 
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
+  logging.info(config)
   if config.model.name == 'rbm':
     model_path = f'{config.model.model_dir}/{config.model.dataset}-{config.model.num_categories}-{config.model.num_hidden}/rbm.pkl'
     model = pickle.load(open(model_path, 'rb'))
     config.model.num_visible = model['num_visible']
     config.model.data_mean = model['data_mean']
     config.model.shape = (model['num_visible'],)
+    config.model.params = model['params']
 
   model = model_mod.build_model(config)
   sampler_mod = importlib.import_module(
@@ -47,8 +49,7 @@ def main(_):
           config.sampler['balancing_fn_type'] = LBWeightFn.MIN
       else:
           config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
-
-  logging.info(config)      
+    
   sampler = sampler_mod.build_sampler(config)
   experiment = experiment_mod.build_experiment(config)
   evaluator = evaluator_mod.build_evaluator(config)
