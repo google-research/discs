@@ -29,7 +29,9 @@ class NNBinary(nn.Module):
       #b_v = jnp.log(data_mean / (1. - data_mean))
       b_v = self.params['b_v']
       b_h = self.params['b_h']
-      w = jnp.transpose(self.params['w'])
+      w = self.params['w']
+      if w.shape[0] != self.num_visible:
+          w = jnp.transpose(w)
       bv_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
       bh_init = lambda _, shape, dtype: jnp.reshape(b_h, shape).astype(dtype)
       w_init = lambda _, shape, dtype: jnp.reshape(w, shape).astype(dtype)
