@@ -166,6 +166,14 @@ class Evaluator():
           dir_name = 'ising'
     elif self.config.model.name == 'categorical':
       dir_name = f'categorical_{config.model.num_categories}'
+    elif self.config.model.name == 'rbm':
+        if self.config.model.num_categories == 2:
+            if self.config.model.num_hidden == 200:
+                dir_name = 'rbm_lowtemp'
+            else:
+                dir_name = 'rbm_hightemp'
+        else:
+            dir_name = f'rbm_{self.config.model.num_categories}'
     else:
       dir_name = self.config.model.name
 
