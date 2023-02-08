@@ -151,7 +151,7 @@ class Evaluator:
     plt.savefig('MixingTimeMaxMean_{}'.format(config_main.sampler))
 
   def plot_acc_ratio(self, save_dir, acc_ratio):
-    plt.plot(jnp.arange(1, 1 + len(acc_ratio)), acc_ratio, '--bo')
+    plt.plot(jnp.arange(1, 1 + len(acc_ratio)), acc_ratio, '--b')
     plt.xlabel('Steps')
     plt.ylabel('Acc Ratio')
     plt.title(
