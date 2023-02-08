@@ -156,11 +156,11 @@ class Evaluator:
     plt.ylabel('Acc Ratio')
     plt.title(
         'Acc Ratio for sampler {} on model {}!'.format(
-            self.config_main.sampler.name, config_main.model.name
+            self.config.sampler.name, self.config.model.name
         )
     )
     
-    path = f'{save_dir}/AccRatio_{self.config_main.sampler.name,}_{self.config_main.model.name}'
+    path = f'{save_dir}/AccRatio_{self.config.sampler.name}_{self.config.model.name}'
     plt.savefig(path)
 
   def save_results(self, save_dir, ess_metrcis, running_time):
