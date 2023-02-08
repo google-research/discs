@@ -39,7 +39,7 @@ class Experiment:
       compiled_step = jax.jit(sampler.step, static_argnums=0)
     else:
       compiled_step = jax.pmap(sampler.step, static_broadcasted_argnums=[0])
-    return compiled_step
+    return sampler.step #compiled_step
 
   def _setup_num_devices(self):
     if not self.config.run_parallel:
@@ -91,6 +91,7 @@ class Experiment:
   ):
     """Generates the chain of samples."""
     chain = []
+    acc_rate = []
     for _ in tqdm.tqdm(range(self.config.chain_length)):
       if self.config.run_parallel:
         rng_sampler_step_p = jax.random.split(
@@ -98,7 +99,8 @@ class Experiment:
         )
       else:
         rng_sampler_step_p = rng_sampler_step
-      x, state = sampler_step(model, rng_sampler_step_p, x, params, state)
+      x, state, acc = sampler_step(model, rng_sampler_step_p, x, params, state)
+      acc_rate.append(acc)
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
       if self.config.run_parallel:

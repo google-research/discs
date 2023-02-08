@@ -91,7 +91,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
         rng_acceptance, local_stats, log_acc, x, y, state)
-    return new_x, new_state
+    return new_x, new_state, log_acc
 
 
 class BinaryDLMC(DLMCSampler):
