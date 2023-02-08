@@ -45,7 +45,7 @@ class GibbsSampler(abstractsampler.AbstractSampler):
     sampler_state = {
         'num_ll_calls': state['num_ll_calls'] + num_calls,
     }
-    return y, sampler_state, 0
+    return y, sampler_state, 1
 
 
 def build_sampler(config):

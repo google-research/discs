@@ -12,7 +12,8 @@ import pdb
 
 from discs.samplers.locallybalanced import LBWeightFn
 
-class Evaluator():
+
+class Evaluator:
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.config = config
@@ -79,15 +80,13 @@ class Evaluator():
     return jnp.mean(samples, axis=0)
 
   def _get_population_mean_and_var(self, model, params):
-    """Gets the population mean and var from the model(specific to Bernoulli model with closed form solution).
-    """
+    """Gets the population mean and var from the model(specific to Bernoulli model with closed form solution)."""
     mean_p = model.get_expected_val(params)
     var_p = model.get_var(params)
     return mean_p, var_p
 
   def _compute_error(self, model, params, samples):
-    """Computes the average/max of mean and var error over the batch of chains.
-    """
+    """Computes the average/max of mean and var error over the batch of chains."""
     mean_p, var_p = self._get_population_mean_and_var(model, params)
     mean_s_batch = self._get_sample_mean(samples)
     avg_mean_error = self._get_mse(mean_s_batch, mean_p)
@@ -98,8 +97,7 @@ class Evaluator():
     return avg_mean_error, max_mean_error, avg_var_error, max_var_error
 
   def compute_error_across_chain_and_batch(self, model, params, samples):
-    """Computes the error over chains and the combined last sample of all chains.
-    """
+    """Computes the error over chains and the combined last sample of all chains."""
 
     (
         avg_mean_error,
@@ -151,6 +149,19 @@ class Evaluator():
     plt.ylabel('Max Mean Error')
     plt.title('Max Mean Error Over Chains for {}!'.format(config_main.sampler))
     plt.savefig('MixingTimeMaxMean_{}'.format(config_main.sampler))
+
+  def plot_acc_ratio(self, save_dir, acc_ratio):
+    plt.plot(jnp.arange(1, 1 + len(acc_ratio)), acc_ratio, '--bo')
+    plt.xlabel('Steps')
+    plt.ylabel('Acc Ratio')
+    plt.title(
+        'Acc Ratio for sampler {} on model {}!'.format(
+            self.config_main.sampler.name, config_main.model.name
+        )
+    )
+    
+    path = f'{save_dir}/AccRatio_{self.config_main.sampler.name,}_{self.config_main.model.name}'
+    plt.savefig(path)
 
   def save_results(self, save_dir, ess_metrcis, running_time):
     """Saving the Evaluation Results in txt and CSV file."""
@@ -208,6 +219,7 @@ class Evaluator():
       f.write('ESS over loglike calls: {} \n'.format(ess_metrcis[3]))
       f.write('Running time: {} s \n'.format(running_time))
       f.write(str(self.config))
+
 
 def build_evaluator(config):
   return Evaluator(config)
