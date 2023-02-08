@@ -131,8 +131,9 @@ for i, member in enumerate(tar.getmembers()):
         model = catRBM(n_visible=784, n_hidden=50, n=num_categs[i%2], data_mean=data_mean)
     model.load_state_dict(torch.load(f, map_location=torch.device('cpu')))
     results = {}
-    results['params'] = {'w':model.W, 'b_h':model.b_h, 'b_v':model.b_v}
-    results['data_mean'] = np.array(model.data_mean)
+
+    results['params'] = {'w':model.W.detach().numpy(), 'b_h':model.b_h.detach().numpy(), 'b_v':model.b_v.detach().numpy()}
+    results['data_mean'] = model.data_mean.detach().numpy()
     results['num_visible'] = model.n_visible
     results['num_hidden'] = model.n_hidden
     results['num_categories'] = model.num_categories
