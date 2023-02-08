@@ -154,6 +154,7 @@ class Evaluator:
     plt.plot(jnp.arange(1, 1 + len(acc_ratio)), acc_ratio, '--b')
     plt.xlabel('Steps')
     plt.ylabel('Acc Ratio')
+    plt.ylim((-0.1,1.1))
     plt.title(
         'Acc Ratio for sampler {} on model {}!'.format(
             self.config.sampler.name, self.config.model.name
@@ -162,6 +163,21 @@ class Evaluator:
     
     path = f'{save_dir}/AccRatio_{self.config.sampler.name}_{self.config.model.name}'
     plt.savefig(path)
+    plt.close()
+
+  def plot_hops(self, save_dir, hops):
+    plt.plot(jnp.arange(1, 1 + len(hops)), hops, '--b')
+    plt.xlabel('Steps')
+    plt.ylabel('Hops')
+    plt.title(
+        'Hops for sampler {} on model {}!'.format(
+            self.config.sampler.name, self.config.model.name
+        )
+    )
+
+    path = f'{save_dir}/Hops_{self.config.sampler.name}_{self.config.model.name}'
+    plt.savefig(path)
+    plt.close()
 
   def save_results(self, save_dir, ess_metrcis, running_time):
     """Saving the Evaluation Results in txt and CSV file."""

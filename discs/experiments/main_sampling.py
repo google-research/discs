@@ -77,6 +77,7 @@ def main(_):
   save_path = _SAVE_DIR.value + '_' + dir_name
   evaluator.save_results(save_path, ess_metrcis, running_time)
   evaluator.plot_acc_ratio(save_path, acc_ratio)
+  evaluator.plot_hops(save_path, hops)
 
 
 if __name__ == '__main__':
