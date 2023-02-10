@@ -87,7 +87,7 @@ def main(_):
               dir_name = 'rbm_hightemp'
       else:
           dir_name = f'rbm_{self.config.model.num_categories}' 
- else:
+  else:
       dir_name = config.model.name
 
   evaluator.save_results(_SAVE_DIR.value+'_'+dir_name, ess_metrcis, running_time)
