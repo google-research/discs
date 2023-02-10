@@ -1,6 +1,6 @@
 """Training RBM."""
 
-from collections.abc import Sequence
+from typing import Sequence
 import functools
 import os
 from absl import app
