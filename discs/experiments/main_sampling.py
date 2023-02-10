@@ -90,7 +90,7 @@ def main(_):
  else:
       dir_name = config.model.name
 
-  evaluator.save_results(_SAVE_DIR.value, ess_metrcis, running_time)
+  evaluator.save_results(_SAVE_DIR.value+'_'+dir_name, ess_metrcis, running_time)
 
 
 if __name__ == '__main__':
