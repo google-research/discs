@@ -34,6 +34,8 @@ def main(_):
     config.model.num_visible = model['num_visible']
     config.model.data_mean = model['data_mean']
     config.model.shape = (model['num_visible'],)
+    if model['params']['w'].shape[0] != model['num_visible']:
+        model['params']['w'] = jnp.transpose(model['params']['w'])
     config.model.params = model['params']
 
   model = model_mod.build_model(config)
