@@ -68,6 +68,28 @@ def main(_):
       chain, running_time, num_loglike_calls
   )
 
+  if config.model.name == 'potts':
+      dir_name = f'potts_{config.model.num_categories}'
+  elif config.model.name == 'ising':
+      if config.model.mu == 0.5:
+        dir_name = 'ising_hightemp'
+      elif config.model.mu == 1:
+          dir_name = 'ising_lowtemp'
+      else:
+          dir_name = 'ising'
+  elif config.model.name == 'categorical':
+      dir_name = f'categorical_{config.model.num_categories}'
+  elif self.config.model.name == 'rbm':
+      if self.config.model.num_categories == 2:
+          if self.config.model.num_hidden == 200:
+              dir_name = 'rbm_lowtemp'
+          else:
+              dir_name = 'rbm_hightemp'
+      else:
+          dir_name = f'rbm_{self.config.model.num_categories}' 
+ else:
+      dir_name = config.model.name
+
   evaluator.save_results(_SAVE_DIR.value, ess_metrcis, running_time)
 
 
