@@ -12,6 +12,7 @@ from discs.evaluation import evaluator as evaluator_mod
 import time
 import os
 import pickle
+import jax.numpy as jnp
 import pdb
 
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')

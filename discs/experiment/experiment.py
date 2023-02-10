@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from ml_collections import config_dict
 import tqdm
 import pdb
-
+import flax
 
 class Experiment:
   """Experiment class that generates chains of samples."""
@@ -18,7 +18,7 @@ class Experiment:
     if self.config_model.name != 'rbm':
         params = model.make_init_params(rng_param)
     else:
-        params = self.config_model.params
+        params = flax.core.frozen_dict.freeze(self.config_model.params)
     x0 = model.get_init_samples(rng_x0, self.config.batch_size)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
     state = sampler.make_init_state(rng_state)
