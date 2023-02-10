@@ -20,7 +20,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pickle
-import pdb
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 tf.config.experimental.set_memory_growth(physical_devices[1], True)
@@ -109,7 +108,9 @@ def get_data_mean(dataset):
   return data_mean.tolist()
 
 
-def main(_):
+def main(argv: Sequence[str]) -> None:
+  if len(argv) > 1:
+    raise app.UsageError('Too many command-line arguments.')
   config = _CONFIG.value
   config.experiment.save_root = os.path.join(
       FLAGS.save_root, config.experiment.rbm_config)
