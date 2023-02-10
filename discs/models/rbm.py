@@ -18,17 +18,15 @@ class NNBinary(nn.Module):
   data_mean: Any = None
 
   def setup(self):
-
     if self.data_mean is None:
       bv_init = initializers.zeros
     else:
       data_mean = jnp.array(self.data_mean, dtype=jnp.float32)
       b_v = jnp.log(data_mean / (1. - data_mean))
       bv_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
-
     self.b_v = self.param('b_v', bv_init,
                           (self.num_visible,), jnp.float32)
-    self.b_h = self.param('b_h', initializer.zeros,
+    self.b_h = self.param('b_h', initializers.zeros,
                           (self.num_hidden,), jnp.float32)
     self.w = self.param('w', initializers.glorot_uniform(),
                         (self.num_visible, self.num_hidden), jnp.float32)
@@ -116,8 +114,7 @@ class BinaryRBM(RBM):
     super(BinaryRBM, self).__init__(config)
     self.net = NNBinary(num_visible=self.num_visible,
                         num_hidden=self.num_hidden,
-                        data_mean=config.get('data_mean', None),
-                        params=config.get('params', None) )
+                        data_mean=config.get('data_mean', None))
 
   def build_init_dist(self, data_mean):
     if data_mean is None:
