@@ -80,9 +80,9 @@ def main(_):
           dir_name = 'ising'
   elif config.model.name == 'categorical':
       dir_name = f'categorical_{config.model.num_categories}'
-  elif self.config.model.name == 'rbm':
-      if self.config.model.num_categories == 2:
-          if self.config.model.num_hidden == 200:
+  elif config.model.name == 'rbm':
+      if config.model.num_categories == 2:
+          if config.model.num_hidden == 200:
               dir_name = 'rbm_lowtemp'
           else:
               dir_name = 'rbm_hightemp'
