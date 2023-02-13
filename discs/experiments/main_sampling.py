@@ -30,13 +30,7 @@ def main(_):
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
   logging.info(config)
   if config.model.name == 'rbm':
-    model_path = f'{config.model.model_dir}/{config.model.dataset}-{config.model.num_categories}-{config.model.num_hidden}/rbm.pkl'
-    model = pickle.load(open(model_path, 'rb'))
-    config.model.num_visible = model['num_visible']
-    config.model.data_mean = model['data_mean']
-    config.model.shape = (model['num_visible'],)
-    if model['params']['w'].shape[0] != model['num_visible']:
-        model['params']['w'] = jnp.transpose(model['params']['w'])
+    model = pickle.load(open(config.model.model_path, 'rb'))
     config.model.params = model['params']
 
   model = model_mod.build_model(config)
@@ -69,29 +63,7 @@ def main(_):
       chain, running_time, num_loglike_calls
   )
 
-  if config.model.name == 'potts':
-      dir_name = f'potts_{config.model.num_categories}'
-  elif config.model.name == 'ising':
-      if config.model.mu == 0.5:
-        dir_name = 'ising_hightemp'
-      elif config.model.mu == 1:
-          dir_name = 'ising_lowtemp'
-      else:
-          dir_name = 'ising'
-  elif config.model.name == 'categorical':
-      dir_name = f'categorical_{config.model.num_categories}'
-  elif config.model.name == 'rbm':
-      if config.model.num_categories == 2:
-          if config.model.num_hidden == 200:
-              dir_name = 'rbm_lowtemp'
-          else:
-              dir_name = 'rbm_hightemp'
-      else:
-          dir_name = f'rbm_{self.config.model.num_categories}' 
-  else:
-      dir_name = config.model.name
-
-  evaluator.save_results(_SAVE_DIR.value+'_'+dir_name, ess_metrcis, running_time)
+  evaluator.save_results(_SAVE_DIR.value+'_'+config.model.save_dir_name, ess_metrcis, running_time)
 
 
 if __name__ == '__main__':

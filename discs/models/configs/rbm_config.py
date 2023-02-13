@@ -7,9 +7,12 @@ def get_config():
   model_config = dict(
           dataset='mnist',
           num_categories=2,
-          num_hidden=200,
+          num_hidden=25,
+          num_visible=784,
+          shape=(784,)
           name='rbm',
           train=False,
-          model_dir = './discs/storage/models/rbm/'
+          save_dir_name='rbm_lowtemp',
+          model_path='./discs/storage/models/rbm/mnist-2-200/rbm.pkl'
           )
   return config_dict.ConfigDict(model_config)
