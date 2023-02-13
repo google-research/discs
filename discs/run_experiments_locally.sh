@@ -1,6 +1,6 @@
 #!/bin/bash
 
-models="ising categorical"
+models="categorical"
 samplers="path_auxiliary dlmc randomwalk gwg"
 weight_fns="SQRT RATIO"
 

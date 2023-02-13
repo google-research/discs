@@ -29,7 +29,8 @@ class PathAuxiliarySampler(locallybalanced.LocallyBalancedSampler):
         rng_acceptance, num_calls_forward + num_calls_backward,
         log_acc, x, y, state)
 
-    return new_x, new_state
+    acc = jnp.mean(jnp.clip(jnp.exp(log_acc), a_max=1))
+    return new_x, new_state, acc
 
   def select_sample(self, rng, num_calls, log_acc,
                     current_sample, new_sample, sampler_state):

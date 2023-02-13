@@ -18,7 +18,8 @@ _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 
 FLAGS = flags.FLAGS
 _SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
-_WEIGHT_FN = flags.DEFINE_string('weight_fn','SQRT', 'Balancing FN TYPE') 
+_WEIGHT_FN = flags.DEFINE_string('weight_fn', 'SQRT', 'Balancing FN TYPE')
+
 
 def main(_):
   config = common_configs.get_config()
@@ -31,22 +32,24 @@ def main(_):
       'discs.samplers.%s' % config.sampler.name
   )
   if 'balancing_fn_type' in config.sampler.keys():
-      if _WEIGHT_FN.value == 'RATIO':
-          config.sampler['balancing_fn_type'] = LBWeightFn.RATIO
-      elif _WEIGHT_FN.value == 'MAX':
-          config.sampler['balancing_fn_type'] = LBWeightFn.MAX
-      elif _WEIGHT_FN.value == 'MIN':
-          config.sampler['balancing_fn_type'] = LBWeightFn.MIN
-      else:
-          config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
+    if _WEIGHT_FN.value == 'RATIO':
+      config.sampler['balancing_fn_type'] = LBWeightFn.RATIO
+    elif _WEIGHT_FN.value == 'MAX':
+      config.sampler['balancing_fn_type'] = LBWeightFn.MAX
+    elif _WEIGHT_FN.value == 'MIN':
+      config.sampler['balancing_fn_type'] = LBWeightFn.MIN
+    else:
+      config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
 
-  logging.info(config)      
+  logging.info(config)
   sampler = sampler_mod.build_sampler(config)
   experiment = experiment_mod.build_experiment(config)
   evaluator = evaluator_mod.build_evaluator(config)
 
   start_time = time.time()
-  chain, num_loglike_calls, _ = experiment.get_batch_of_chains(model, sampler)
+  chain, num_loglike_calls, acc_ratio, hops, _ = experiment.get_batch_of_chains(
+      model, sampler
+  )
   running_time = time.time() - start_time
 
   chain = chain[
@@ -58,20 +61,23 @@ def main(_):
   )
 
   if config.model.name == 'potts':
-      dir_name = f'potts_{config.model.num_categories}'
+    dir_name = f'potts_{config.model.num_categories}'
   elif config.model.name == 'ising':
-      if config.model.mu == 0.5:
-        dir_name = 'ising_hightemp'
-      elif config.model.mu == 1:
-          dir_name = 'ising_lowtemp'
-      else:
-          dir_name = 'ising'
+    if config.model.mu == 0.5:
+      dir_name = 'ising_hightemp'
+    elif config.model.mu == 1:
+      dir_name = 'ising_lowtemp'
+    else:
+      dir_name = 'ising'
   elif config.model.name == 'categorical':
-      dir_name = f'categorical_{config.model.num_categories}'
+    dir_name = f'categorical_{config.model.num_categories}'
   else:
-      dir_name = config.model.name
+    dir_name = config.model.name
 
-  evaluator.save_results(_SAVE_DIR.value +'_'+dir_name, ess_metrcis, running_time)
+  save_path = _SAVE_DIR.value + '_' + dir_name
+  evaluator.save_results(save_path, ess_metrcis, running_time)
+  evaluator.plot_acc_ratio(save_path, acc_ratio)
+  evaluator.plot_hops(save_path, hops)
 
 
 if __name__ == '__main__':

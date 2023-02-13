@@ -62,7 +62,7 @@ class Experiment:
           params, x, state, n_rand_split
       )
     compiled_step = self._compile_sampler_step(sampler)
-    chain, state = self._compute_chain(
+    chain, state, acc_ratios, hops = self._compute_chain(
         model,
         compiled_step,
         state,
@@ -76,7 +76,7 @@ class Experiment:
       num_ll_calls = state['num_ll_calls'][0]
     else:
       num_ll_calls = state['num_ll_calls']
-    return chain, num_ll_calls, model_params
+    return chain, num_ll_calls, acc_ratios, hops, model_params
 
   def _compute_chain(
       self,
@@ -91,6 +91,8 @@ class Experiment:
   ):
     """Generates the chain of samples."""
     chain = []
+    acc_ratios = []
+    hops = []
     for _ in tqdm.tqdm(range(self.config.chain_length)):
       if self.config.run_parallel:
         rng_sampler_step_p = jax.random.split(
@@ -98,19 +100,20 @@ class Experiment:
         )
       else:
         rng_sampler_step_p = rng_sampler_step
-      x, state = sampler_step(model, rng_sampler_step_p, x, params, state)
+      new_x, state, acc = sampler_step(
+          model, rng_sampler_step_p, x, params, state
+      )
+      acc_ratios.append(acc)
+      hop = jnp.sum(abs(x - new_x)) / self.config.batch_size
+      hops.append(hop)
+      x = new_x
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
       if self.config.run_parallel:
-        x_ = x.reshape((self.config.batch_size,) + params[0].shape)
-      else:
-        x_ = x
-      mapped_x = self._get_mapped_samples(x_, x0_ess)
+        new_x = new_x.reshape((self.config.batch_size,) + params[0].shape)
+      mapped_x = self._get_mapped_samples(new_x, x0_ess)
       chain.append(mapped_x)
-    return (
-        jnp.array(chain),
-        state,
-    )
+    return (jnp.array(chain), state, jnp.array(acc_ratios), jnp.array(hops))
 
   def _get_mapped_samples(self, samples, x0_ess):
     samples = samples.reshape(samples.shape[0], -1)
