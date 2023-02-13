@@ -8,6 +8,7 @@ def get_config():
       shape=(10000,),
       num_categories=2,
       init_sigma=0.5,
+      save_dir_name='bernoulli_hightemp',
       name='bernoulli',
   )
   return config_dict.ConfigDict(model_config)

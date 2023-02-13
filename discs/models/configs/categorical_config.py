@@ -6,6 +6,7 @@ def get_config():
       shape=(2000,),
       num_categories=4,
       init_sigma=1.5,
+      save_dir_name='categorical_4'
       name='categorical',
   )
   return config_dict.ConfigDict(model_config)

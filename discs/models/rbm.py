@@ -8,7 +8,7 @@ from flax.linen import initializers
 import jax
 import jax.numpy as jnp
 import ml_collections
-
+import pdb
 
 class NNBinary(nn.Module):
   """Network of binary RBM."""
