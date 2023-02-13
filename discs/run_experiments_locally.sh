@@ -1,6 +1,6 @@
 #!/bin/bash
 
-models="rbm ising categorical"
+models="rbm potts ising categorical"
 samplers="path_auxiliary dlmc randomwalk gwg"
 weight_fns="SQRT RATIO"
 

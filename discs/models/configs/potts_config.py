@@ -11,6 +11,6 @@ def get_config():
       mu=0.5,
       name='potts',
   )
-  model_config['save_dir_name'] = 'potts_'+model_config['num_categories']
+  model_config['save_dir_name'] = 'potts_'+str(model_config['num_categories'])
 
   return config_dict.ConfigDict(model_config)
