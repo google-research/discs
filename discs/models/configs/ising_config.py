@@ -9,7 +9,11 @@ def get_config():
       external_field_type=1,
       mu=0.5,
       init_sigma=1.5,
-      save_dir_name='ising_hightemp',
       name='ising',
   )
+  if model_config['lambdaa'] == 0.5:
+    model_config['save_dir_name'] = 'ising_hightemp'
+  else:
+    model_config['save_dir_name'] = 'ising_lowtemp'
+
   return config_dict.ConfigDict(model_config)

@@ -9,7 +9,8 @@ def get_config():
       num_categories=4,
       external_field_type=1,
       mu=0.5,
-      save_dir_name='potts_4'
       name='potts',
   )
+  model_config['save_dir_name'] = 'potts_'+model_config['num_categories']
+
   return config_dict.ConfigDict(model_config)

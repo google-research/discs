@@ -4,15 +4,19 @@ from ml_collections import config_dict
 
 
 def get_config():
-  model_config = dict(
+  c = dict(
           dataset='mnist',
           num_categories=2,
           num_hidden=200,
           num_visible=784,
-          shape=(784,),
           name='rbm',
           train=False,
-          save_dir_name='rbm_lowtemp',
-          model_path='./RBM_Haoran/mnist-2-200/rbm.pkl'
+          model_path='./RBM_Haoran/'
           )
-  return config_dict.ConfigDict(model_config)
+  c['model_path'] = c['model_path']+ c['dataset']+'-'+str(c['num_categories'])+'-'+str(c['num_hidden'])+'/rbm.pkl'
+  c['shape'] = (c['num_visible'], )
+  if c['num_hidden'] == 200:
+      c['save_dir_name'] = 'rbm_lowtemp'
+  else:
+      c['save_dir_name'] = 'rbm_hightemp'
+  return config_dict.ConfigDict(c)
