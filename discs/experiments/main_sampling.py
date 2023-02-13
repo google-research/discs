@@ -20,7 +20,8 @@ _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 
 FLAGS = flags.FLAGS
 _SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
-_WEIGHT_FN = flags.DEFINE_string('weight_fn','SQRT', 'Balancing FN TYPE') 
+_WEIGHT_FN = flags.DEFINE_string('weight_fn', 'SQRT', 'Balancing FN TYPE')
+
 
 def main(_):
   config = common_configs.get_config()
@@ -38,21 +39,23 @@ def main(_):
       'discs.samplers.%s' % config.sampler.name
   )
   if 'balancing_fn_type' in config.sampler.keys():
-      if _WEIGHT_FN.value == 'RATIO':
-          config.sampler['balancing_fn_type'] = LBWeightFn.RATIO
-      elif _WEIGHT_FN.value == 'MAX':
-          config.sampler['balancing_fn_type'] = LBWeightFn.MAX
-      elif _WEIGHT_FN.value == 'MIN':
-          config.sampler['balancing_fn_type'] = LBWeightFn.MIN
-      else:
-          config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
-    
+    if _WEIGHT_FN.value == 'RATIO':
+      config.sampler['balancing_fn_type'] = LBWeightFn.RATIO
+    elif _WEIGHT_FN.value == 'MAX':
+      config.sampler['balancing_fn_type'] = LBWeightFn.MAX
+    elif _WEIGHT_FN.value == 'MIN':
+      config.sampler['balancing_fn_type'] = LBWeightFn.MIN
+    else:
+      config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
+
   sampler = sampler_mod.build_sampler(config)
   experiment = experiment_mod.build_experiment(config)
   evaluator = evaluator_mod.build_evaluator(config)
 
   start_time = time.time()
-  chain, num_loglike_calls, _ = experiment.get_batch_of_chains(model, sampler)
+  chain, num_loglike_calls, acc_ratio, hops, _ = experiment.get_batch_of_chains(
+      model, sampler
+  )
   running_time = time.time() - start_time
 
   chain = chain[
@@ -63,7 +66,10 @@ def main(_):
       chain, running_time, num_loglike_calls
   )
 
-  evaluator.save_results(_SAVE_DIR.value+'_'+config.model.save_dir_name, ess_metrcis, running_time)
+  save_path = _SAVE_DIR.value + '_' + config.model.save_dir_name
+  evaluator.save_results(save_path, ess_metrcis, running_time)
+  evaluator.plot_acc_ratio(save_path, acc_ratio)
+  evaluator.plot_hops(save_path, hops)
 
 
 if __name__ == '__main__':

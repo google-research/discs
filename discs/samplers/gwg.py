@@ -47,7 +47,9 @@ class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux, src_to_dst='y2x')
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(rng_acceptance, log_acc, x, y, state)
-    return new_x, new_state
+    
+    acc = jnp.mean(jnp.clip(jnp.exp(log_acc), a_max=1))
+    return new_x, new_state, acc
 
 
 class BinaryGWGSampler(GibbsWithGradSampler):
