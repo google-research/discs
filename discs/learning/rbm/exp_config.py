@@ -7,13 +7,13 @@ from ml_collections import config_dict
 
 def get_config(rbm_config):
   """Get config for rbm learning/sampling."""
+  config = configs.get_config()
   config.model = model_config.get_config()
   dataset = config.model.dataset
   vocab_size = config.model.num_categories
   num_hidden = config.model.num_hidden
   vocab_size = int(vocab_size)
   num_hidden = int(num_hidden)
-  config = configs.get_config()
   config.experiment.update(configs.get_common_train_config())
   config.experiment.learning_rate = 1e-3
   config.experiment.optimizer = 'adam'
