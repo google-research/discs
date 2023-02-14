@@ -1,8 +1,8 @@
 #!/bin/bash
 
 models="categorical"
-samplers="path_auxiliary dlmc randomwalk gwg"
-weight_fns="SQRT RATIO"
+samplers="dlmc"
+weight_fns="SQRT"
 
 for model in $models
 do

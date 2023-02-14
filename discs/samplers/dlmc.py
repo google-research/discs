@@ -53,7 +53,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     else:
       ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
     log_weight_x = self.apply_weight_function_logscale(ll_delta)
-    return ll_x, {'weights': log_weight_x, 'delta': ll_delta}
+    return ll_x, {'weights': log_weight_x, 'delta': ll_delta}, ll_delta
 
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
@@ -76,7 +76,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
       x = jax.nn.one_hot(x, self.num_categories, dtype=jnp.float32)
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
-    ll_x, log_rate_x = self.get_value_and_rates(model, model_param, x)
+    ll_x, log_rate_x, grad_x = self.get_value_and_rates(model, model_param, x)
     local_stats = self.reset_stats(log_rate_x['weights'])
     log_tau = jnp.where(
         state['steps'] == 0, local_stats['log_tau'], state['log_tau'])
@@ -85,12 +85,23 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
-    ll_y, log_rate_y = self.get_value_and_rates(model, model_param, x)
+    ll_y, log_rate_y, _ = self.get_value_and_rates(model, model_param, y)
     dist_y = self.get_dist_at(y, log_tau, log_rate_y)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
         rng_acceptance, local_stats, log_acc, x, y, state)
+
+    if new_state['num_ll_calls']/4 > 999:
+        print("grad_x")
+        print(grad_x[0])
+        print("*******************************")
+        print("soft of grad x")
+        print(jax.nn.softmax(grad_x[0]))
+        print("*******************************")
+        print("proposal dist")
+        print(jax.nn.softmax(dist_x[0]))
+
     acc = jnp.mean(jnp.clip(jnp.exp(log_acc), a_max=1))
     return new_x, new_state, acc
 

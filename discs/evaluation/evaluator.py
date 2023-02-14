@@ -50,7 +50,10 @@ class Evaluator:
     """Computes ESS over time, M-H step and calls of loglike function."""
     rnd = jax.random.PRNGKey(0)
     ess_of_chains = self._get_ess(rnd, samples)
+    print(ess_of_chains)
     mean_ess = jnp.mean(ess_of_chains)
+    print("mean: ", mean_ess)
+    print("var: ", jnp.sqrt(jnp.var(ess_of_chains)) )
     ess_over_loglike_calls = self._get_ess_over_num_loglike_calls(
         mean_ess, num_loglike_calls
     )

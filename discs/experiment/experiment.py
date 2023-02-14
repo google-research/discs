@@ -39,7 +39,7 @@ class Experiment:
       compiled_step = jax.jit(sampler.step, static_argnums=0)
     else:
       compiled_step = jax.pmap(sampler.step, static_broadcasted_argnums=[0])
-    return compiled_step
+    return sampler.step #compiled_step
 
   def _setup_num_devices(self):
     if not self.config.run_parallel:
