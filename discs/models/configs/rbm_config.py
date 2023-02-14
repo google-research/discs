@@ -11,7 +11,7 @@ def get_config():
           num_visible=784,
           name='rbm',
           train=False,
-          model_path='./RBM_Haoran/'
+          model_path='./discs/storage/models/rbm/'
           )
   c['model_path'] = c['model_path']+ c['dataset']+'-'+str(c['num_categories'])+'-'+str(c['num_hidden'])+'/rbm.pkl'
   c['shape'] = (c['num_visible'], )

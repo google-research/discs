@@ -1,8 +1,5 @@
 #!/bin/bash
 
-dataset=mnist
-num_categories=2
-num_hidden=200
 # SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # save_root=${SCRIPT_DIR}/../../../storage/models/rbm
 save_root=./discs/storage/models/rbm
