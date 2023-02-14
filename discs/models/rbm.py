@@ -71,7 +71,11 @@ class RBM(abstractmodel.AbstractModel):
     self.num_hidden = config.num_hidden
     self.num_categories = config.num_categories
     self.net = None
-    data_mean = config.get('data_mean', None)
+    params = config.get('params', None)
+    if params is None:
+        data_mean = None
+    else:
+        data_mean = params['data_mean']
     self.init_dist = self.build_init_dist(data_mean)
 
   def get_init_samples(self, rng, num_samples: int):

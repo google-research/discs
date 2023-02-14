@@ -12,6 +12,7 @@ from discs.evaluation import plot
 from discs.learning import train
 from discs.models import rbm
 from discs.samplers.blockgibbs import RBMBlockGibbsSampler
+from flax.core.frozen_dict import unfreeze
 
 import jax
 import jax.numpy as jnp
@@ -138,8 +139,8 @@ def main(argv: Sequence[str]) -> None:
       fn_plot=trainer.plot_batch)
 
   results = {}
-  results['params'] = final_state.params
-  results['data_mean'] = config.model.data_mean
+  results['params'] = unfreeze(final_state.params)
+  results['params']['data_mean'] = config.model.data_mean
   results['num_visible'] = config.model.num_visible
   results['num_hidden'] = config.model.num_hidden
   results['num_categories'] = config.model.num_categories
