@@ -1,19 +1,15 @@
 """Config file for rbms."""
 
 from discs.common import configs
-from discs.models.configs import rbm_config as model_config
 from ml_collections import config_dict
 
 
 def get_config(rbm_config):
   """Get config for rbm learning/sampling."""
-  config = configs.get_config()
-  config.model = model_config.get_config()
-  dataset = config.model.dataset
-  vocab_size = config.model.num_categories
-  num_hidden = config.model.num_hidden
+  dataset, vocab_size, num_hidden = rbm_config.split('-')
   vocab_size = int(vocab_size)
   num_hidden = int(num_hidden)
+  config = configs.get_config()
   config.experiment.update(configs.get_common_train_config())
   config.experiment.learning_rate = 1e-3
   config.experiment.optimizer = 'adam'
@@ -33,7 +29,10 @@ def get_config(rbm_config):
       subclass='rbm'
   ))
 
-  if dataset not in ['mnist', 'fashion_mnist']:
+  if dataset in ['mnist', 'fashion_mnist']:
+    config.model.num_visible = 784
+  else:
     raise ValueError('Unknown dataset %s' % dataset)
+  config.model.num_categories = vocab_size
   config.experiment.rbm_config = rbm_config
   return config
