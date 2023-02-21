@@ -31,7 +31,7 @@ def get_config():
           fig_folder='',
           run_parallel=False,
           batch_size=100,
-          chain_length=1000,
+          chain_length=100000,
           window_size=10,
           window_stride=10,
           shuffle_buffer_size=0,

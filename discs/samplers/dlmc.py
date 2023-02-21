@@ -25,8 +25,8 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     # TODO: add scheduling of logz_ema
     log_z = log_z * self.logz_ema + (1.0 - self.logz_ema) * local_stats['log_z']
     state['log_tau'] = jnp.log(jnp.clip(jnp.exp(state['log_tau']) +
-                                        (acc - self.target_acceptance_rate) / log_z.exp() /
-                                        (1 + state['num_ll_calls']) ** 0.2, min=1e-9))
+                                        (acc - self.target_acceptance_rate) / jnp.exp(log_z) /
+                                        (1 + state['num_ll_calls']) ** 0.2, a_min=1e-9))
     state['log_z'] = log_z
 
   def select_sample(
@@ -90,17 +90,6 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
         rng_acceptance, local_stats, log_acc, x, y, state)
-
-    if new_state['num_ll_calls']/4 > 999:
-        print("grad_x")
-        print(grad_x[0])
-        print("*******************************")
-        print("soft of grad x")
-        print(jax.nn.softmax(grad_x[0]))
-        print("*******************************")
-        print("proposal dist")
-        print(jax.nn.softmax(dist_x[0]))
-
     acc = jnp.mean(jnp.clip(jnp.exp(log_acc), a_max=1))
     return new_x, new_state, acc
 
