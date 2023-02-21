@@ -22,12 +22,11 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     else:
       log_z = jnp.where(
           cur_step == 1, local_stats['log_z'], state['log_z'])
-    #TODO: add scheduling of logz_ema
+    # TODO: add scheduling of logz_ema
     log_z = log_z * self.logz_ema + (1.0 - self.logz_ema) * local_stats['log_z']
-    n = jnp.exp(state['log_tau'] + log_z)
-    n = jnp.clip(n + 3 * (acc - self.target_acceptance_rate),
-                 a_min=1, a_max=math.prod(self.sample_shape))
-    state['log_tau'] = jnp.log(n) - log_z
+    state['log_tau'] = jnp.log(jnp.clip(jnp.exp(state['log_tau']) +
+                                        (acc - self.target_acceptance_rate) / log_z.exp() /
+                                        (1 + state['num_ll_calls']) ** 0.2, min=1e-9))
     state['log_z'] = log_z
 
   def select_sample(
