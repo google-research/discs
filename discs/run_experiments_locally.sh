@@ -1,4 +1,4 @@
-i!/bin/bash
+#!/bin/bash
 
 models="categorical ising potts bernoulli"
 samplers="dlmc path_auxiliary randomwalk gwg"
