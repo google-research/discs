@@ -6,10 +6,29 @@ import jax
 import jax.numpy as jnp
 from jax.scipy import special
 import ml_collections
-
+import pdb
 
 class DLMCSampler(locallybalanced.LocallyBalancedSampler):
   """DLMC sampler."""
+
+  #def update_sampler_state(self, state, acc, local_stats):
+    #pdb.set_trace()
+    #cur_step = state['steps']
+    #state['num_ll_calls'] += 4
+    #if not self.adaptive:
+    #  return
+    #if self.reset_z_est > 0:
+    #  log_z = jnp.where(cur_step % self.reset_z_est == 0,
+    #                    local_stats['log_z'], state['log_z'])
+    #else:
+    #  log_z = jnp.where(
+    #      cur_step == 1, local_stats['log_z'], state['log_z'])
+    # TODO: add scheduling of logz_ema
+    #log_z = log_z * self.logz_ema + (1.0 - self.logz_ema) * local_stats['log_z']
+    #state['log_tau'] = jnp.log(jnp.clip(jnp.exp(state['log_tau']) +
+    #                                    (acc - self.target_acceptance_rate) / jnp.exp(log_z) /
+    #                                    (1 + state['num_ll_calls']) ** 0.2, a_min=1e-9))
+    #state['log_z'] = log_z
 
   def update_sampler_state(self, state, acc, local_stats):
     cur_step = state['steps']
@@ -22,11 +41,13 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     else:
       log_z = jnp.where(
           cur_step == 1, local_stats['log_z'], state['log_z'])
-    # TODO: add scheduling of logz_ema
-    log_z = log_z * self.logz_ema + (1.0 - self.logz_ema) * local_stats['log_z']
-    state['log_tau'] = jnp.log(jnp.clip(jnp.exp(state['log_tau']) +
-                                        (acc - self.target_acceptance_rate) / jnp.exp(log_z) /
-                                        (1 + state['num_ll_calls']) ** 0.2, a_min=1e-9))
+    #TODO: add scheduling of logz_ema
+    self.logs_ema = jnp.where(cur_step < 200, 0, 1)
+    log_z = (self.logs_ema * log_z) + ( (1 - self.logs_ema)*local_stats['log_z'])
+    n = jnp.exp(state['log_tau'] + log_z)
+    n = jnp.clip(n + 3 * (acc - self.target_acceptance_rate),
+                 a_min=1, a_max=math.prod(self.sample_shape))
+    state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
     state['log_z'] = log_z
 
   def select_sample(
@@ -129,7 +150,7 @@ class CategoricalDLMC(DLMCSampler):
     if self.solver == 'interpolate':
       log_nu_x = jax.nn.log_softmax(log_rate_x['delta'], axis=-1)
       log_posterior_x = log_nu_x + math.log1mexp(
-          -jnp.exp(log_tau + log_weight_x - log_nu_x))
+          -jnp.exp(jnp.clip(log_tau + log_weight_x - log_nu_x, a_max=4) ))
     elif self.solver == 'euler_forward':
       log_posterior_x = log_tau + log_weight_x
     else:
