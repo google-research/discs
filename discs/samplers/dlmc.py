@@ -11,25 +11,6 @@ import pdb
 class DLMCSampler(locallybalanced.LocallyBalancedSampler):
   """DLMC sampler."""
 
-  #def update_sampler_state(self, state, acc, local_stats):
-    #pdb.set_trace()
-    #cur_step = state['steps']
-    #state['num_ll_calls'] += 4
-    #if not self.adaptive:
-    #  return
-    #if self.reset_z_est > 0:
-    #  log_z = jnp.where(cur_step % self.reset_z_est == 0,
-    #                    local_stats['log_z'], state['log_z'])
-    #else:
-    #  log_z = jnp.where(
-    #      cur_step == 1, local_stats['log_z'], state['log_z'])
-    # TODO: add scheduling of logz_ema
-    #log_z = log_z * self.logz_ema + (1.0 - self.logz_ema) * local_stats['log_z']
-    #state['log_tau'] = jnp.log(jnp.clip(jnp.exp(state['log_tau']) +
-    #                                    (acc - self.target_acceptance_rate) / jnp.exp(log_z) /
-    #                                    (1 + state['num_ll_calls']) ** 0.2, a_min=1e-9))
-    #state['log_z'] = log_z
-
   def update_sampler_state(self, state, acc, local_stats):
     #pdb.set_trace()
     cur_step = state['steps']
@@ -46,11 +27,9 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     self.logs_ema = jnp.where(cur_step < 200, 0, 1)
     log_z = (self.logs_ema * log_z) + ( (1 - self.logs_ema)*local_stats['log_z'])
     
-    #n = jnp.exp(state['log_tau'] + log_z)
-    #n = n + 3 * (acc - self.target_acceptance_rate)
-    #state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
-
-    state['log_tau'] = jnp.clip(jnp.log(jnp.exp(state['log_tau'] + log_z) + 3 * (acc - self.target_acceptance_rate)) - log_z, a_min=-log_z)
+    n = jnp.exp(state['log_tau'] + log_z)
+    n = n + 3 * (acc - self.target_acceptance_rate)
+    state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
     state['log_z'] = log_z
 
   def select_sample(
@@ -110,7 +89,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
 
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
     dist_y = self.get_dist_at(y, log_tau, log_rate_y)
-    ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
+    ll_y2x = self.get_ll_onestep(dist_y, aux=x)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
         rng_acceptance, local_stats, log_acc, x, y, state)
