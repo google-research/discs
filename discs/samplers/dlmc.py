@@ -31,6 +31,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     #state['log_z'] = log_z
 
   def update_sampler_state(self, state, acc, local_stats):
+    #pdb.set_trace()
     cur_step = state['steps']
     state['num_ll_calls'] += 4
     if not self.adaptive:
@@ -44,10 +45,12 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     #TODO: add scheduling of logz_ema
     self.logs_ema = jnp.where(cur_step < 200, 0, 1)
     log_z = (self.logs_ema * log_z) + ( (1 - self.logs_ema)*local_stats['log_z'])
-    n = jnp.exp(state['log_tau'] + log_z)
-    n = jnp.clip(n + 3 * (acc - self.target_acceptance_rate),
-                 a_min=1, a_max=math.prod(self.sample_shape))
-    state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
+    
+    #n = jnp.exp(state['log_tau'] + log_z)
+    #n = n + 3 * (acc - self.target_acceptance_rate)
+    #state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
+
+    state['log_tau'] = jnp.clip(jnp.log(jnp.exp(state['log_tau'] + log_z) + 3 * (acc - self.target_acceptance_rate)) - log_z, a_min=-log_z)
     state['log_z'] = log_z
 
   def select_sample(
