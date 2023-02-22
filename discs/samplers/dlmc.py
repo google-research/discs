@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 from jax.scipy import special
 import ml_collections
-import pdb
+
 
 class DLMCSampler(locallybalanced.LocallyBalancedSampler):
   """DLMC sampler."""
