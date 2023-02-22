@@ -132,7 +132,7 @@ class CategoricalDLMC(DLMCSampler):
     if self.solver == 'interpolate':
       log_nu_x = jax.nn.log_softmax(log_rate_x['delta'], axis=-1)
       log_posterior_x = log_nu_x + math.log1mexp(
-          -jnp.exp(jnp.clip(log_tau + log_weight_x - log_nu_x, a_max=4) ))
+          -jnp.exp(log_tau + log_weight_x - log_nu_x))
     elif self.solver == 'euler_forward':
       log_posterior_x = log_tau + log_weight_x
     else:
