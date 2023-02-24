@@ -23,6 +23,7 @@ def get_config(rbm_config):
   config.experiment.plot_every_steps = 10
   config.experiment.dataset = dataset
   config.model.num_hidden = num_hidden
+  config.model.name = 'rbm'
   config.model.train = True
   config.sampler = config_dict.ConfigDict(dict(
       name='blockgibbs',
@@ -35,4 +36,10 @@ def get_config(rbm_config):
     raise ValueError('Unknown dataset %s' % dataset)
   config.model.num_categories = vocab_size
   config.experiment.rbm_config = rbm_config
+  config.model.shape = (config.model.num_visible,)
+  if config.model.num_hidden == 200:
+      config.model.save_dir_name = 'rbm_lowtemp'
+  elif config.model.num_hidden == 25:
+      config.model.save_dir_name  = 'rbm_hightemp'
+
   return config

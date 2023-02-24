@@ -144,7 +144,7 @@ def main(argv: Sequence[str]) -> None:
   results['num_visible'] = config.model.num_visible
   results['num_hidden'] = config.model.num_hidden
   results['num_categories'] = config.model.num_categories
-  with open(os.path.join(config.experiment.save_root, 'rbm.pkl'), 'wb') as f:
+  with open(os.path.join(config.experiment.save_root, 'params.pkl'), 'wb') as f:
       pickle.dump(results, f, pickle.HIGHEST_PROTOCOL)
 
 

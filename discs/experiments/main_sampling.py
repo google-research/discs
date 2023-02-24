@@ -13,6 +13,7 @@ import time
 import os
 import pickle
 import jax.numpy as jnp
+import yaml
 import pdb
 
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
@@ -31,8 +32,11 @@ def main(_):
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
   logging.info(config)
   if config.model.name == 'rbm':
-    model = pickle.load(open(config.model.model_path, 'rb'))
+    model = pickle.load(open(config.model.data_path + 'params.pkl', 'rb'))
     config.model.params = model['params']
+    config.model.train = False
+    model_c = yaml.unsafe_load(open(config.model.data_path+ 'config.yaml', 'r'))
+    config.model.update(model_c.model)
 
   model = model_mod.build_model(config)
   sampler_mod = importlib.import_module(
