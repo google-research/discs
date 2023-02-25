@@ -72,11 +72,12 @@ class RBM(abstractmodel.AbstractModel):
     self.num_categories = config.num_categories
     self.net = None
     params = config.get('params', None)
-    if params is None:
-        data_mean = None
-    else:
+    if params is not None:
         data_mean = params['data_mean']
+    else:
+        data_mean = config.get('data_mean', None)
     self.init_dist = self.build_init_dist(data_mean)
+    self.data_mean = data_mean
 
   def get_init_samples(self, rng, num_samples: int):
     return self.init_dist(key=rng, shape=(num_samples, self.num_visible))
@@ -117,7 +118,7 @@ class BinaryRBM(RBM):
     super(BinaryRBM, self).__init__(config)
     self.net = NNBinary(num_visible=self.num_visible,
                         num_hidden=self.num_hidden,
-                        data_mean=config.get('data_mean', None))
+                        data_mean=self.data_mean)
 
   def build_init_dist(self, data_mean):
     if data_mean is None:

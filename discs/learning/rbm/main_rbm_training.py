@@ -139,7 +139,11 @@ def main(argv: Sequence[str]) -> None:
       fn_plot=trainer.plot_batch)
 
   results = {}
-  results['params'] = unfreeze(final_state.params)
+  learned_params = unfreeze(final_state.params)
+  results['params'] = {}
+  results['params']['b_h'] = learned_params['b_h'][0]
+  results['params']['b_v'] = learned_params['b_v'][0]
+  results['params']['w'] = learned_params['w'][0]
   results['params']['data_mean'] = config.model.data_mean
   results['num_visible'] = config.model.num_visible
   results['num_hidden'] = config.model.num_hidden

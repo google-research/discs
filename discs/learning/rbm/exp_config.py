@@ -24,7 +24,6 @@ def get_config(rbm_config):
   config.experiment.dataset = dataset
   config.model.num_hidden = num_hidden
   config.model.name = 'rbm'
-  config.model.train = True
   config.sampler = config_dict.ConfigDict(dict(
       name='blockgibbs',
       subclass='rbm'
