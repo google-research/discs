@@ -11,6 +11,9 @@ from discs.experiment import experiment as experiment_mod
 from discs.evaluation import evaluator as evaluator_mod
 import time
 import os
+import pickle
+import jax.numpy as jnp
+import yaml
 import pdb
 
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
@@ -27,6 +30,13 @@ def main(_):
   config.sampler.update(_SAMPLER_CONFIG.value)
 
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
+  logging.info(config)
+  if config.model.name == 'rbm':
+    model = pickle.load(open(config.model.data_path + 'params.pkl', 'rb'))
+    config.model.params = model['params']
+    model_c = yaml.unsafe_load(open(config.model.data_path+ 'config.yaml', 'r'))
+    config.model.update(model_c.model)
+
   model = model_mod.build_model(config)
   sampler_mod = importlib.import_module(
       'discs.samplers.%s' % config.sampler.name
@@ -41,7 +51,6 @@ def main(_):
     else:
       config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
 
-  logging.info(config)
   sampler = sampler_mod.build_sampler(config)
   experiment = experiment_mod.build_experiment(config)
   evaluator = evaluator_mod.build_evaluator(config)
@@ -60,21 +69,7 @@ def main(_):
       chain, running_time, num_loglike_calls
   )
 
-  if config.model.name == 'potts':
-    dir_name = f'potts_{config.model.num_categories}'
-  elif config.model.name == 'ising':
-    if config.model.mu == 0.5:
-      dir_name = 'ising_hightemp'
-    elif config.model.mu == 1:
-      dir_name = 'ising_lowtemp'
-    else:
-      dir_name = 'ising'
-  elif config.model.name == 'categorical':
-    dir_name = f'categorical_{config.model.num_categories}'
-  else:
-    dir_name = config.model.name
-
-  save_path = _SAVE_DIR.value + '_' + dir_name
+  save_path = _SAVE_DIR.value + '_' + config.model.save_dir_name
   evaluator.save_results(save_path, ess_metrcis, running_time)
   evaluator.plot_acc_ratio(save_path, acc_ratio)
   evaluator.plot_hops(save_path, hops)

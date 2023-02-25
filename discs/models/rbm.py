@@ -8,7 +8,7 @@ from flax.linen import initializers
 import jax
 import jax.numpy as jnp
 import ml_collections
-
+import pdb
 
 class NNBinary(nn.Module):
   """Network of binary RBM."""
@@ -71,8 +71,13 @@ class RBM(abstractmodel.AbstractModel):
     self.num_hidden = config.num_hidden
     self.num_categories = config.num_categories
     self.net = None
-    data_mean = config.get('data_mean', None)
+    params = config.get('params', None)
+    if params is not None:
+        data_mean = params['data_mean']
+    else:
+        data_mean = config.get('data_mean', None)
     self.init_dist = self.build_init_dist(data_mean)
+    self.data_mean = data_mean
 
   def get_init_samples(self, rng, num_samples: int):
     return self.init_dist(key=rng, shape=(num_samples, self.num_visible))
@@ -84,6 +89,18 @@ class RBM(abstractmodel.AbstractModel):
 
   def forward(self, params, x):
     return self.net.apply({'params': params}, v=x)
+
+
+  def get_value_and_grad(self, params, x):
+    x = x.astype(jnp.float32)  # int tensor is not differentiable
+
+    def fun(z):
+      loglikelihood = self.forward(params, z)
+      return jnp.sum(loglikelihood), loglikelihood
+
+    (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
+
+    return loglikelihood, grad
 
   def step_h(self, params, rng, v):
     return self.net.apply({'params': params}, rng=rng, v=v,
@@ -101,7 +118,7 @@ class BinaryRBM(RBM):
     super(BinaryRBM, self).__init__(config)
     self.net = NNBinary(num_visible=self.num_visible,
                         num_hidden=self.num_hidden,
-                        data_mean=config.get('data_mean', None))
+                        data_mean=self.data_mean)
 
   def build_init_dist(self, data_mean):
     if data_mean is None:
@@ -117,7 +134,7 @@ class CategoricalRBM(RBM):
   def __init__(self, config: ml_collections.ConfigDict):
     super(CategoricalRBM, self).__init__(config)
     self.net = NNCategorical(num_visible=self.num_visible,
-                             num_hidden=self.num_hidden,
+                             num_hidden=self.num_hidden, 
                              num_categories=self.num_categories)
 
   def build_init_dist(self, data_mean):
@@ -126,8 +143,10 @@ class CategoricalRBM(RBM):
 
 
 def build_model(config):
-  if config.num_categories == 2:
-    return BinaryRBM(config)
+    
+  config_model = config.model
+  if config_model.num_categories == 2:
+    return BinaryRBM(config_model)
   else:
-    assert config.num_categories > 2
-    return CategoricalRBM(config)
+    assert config_model.num_categories > 2
+    return CategoricalRBM(config_model)

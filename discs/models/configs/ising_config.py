@@ -11,4 +11,9 @@ def get_config():
       init_sigma=1.5,
       name='ising',
   )
+  if model_config['lambdaa'] == 0.5:
+    model_config['save_dir_name'] = 'ising_hightemp'
+  else:
+    model_config['save_dir_name'] = 'ising_lowtemp'
+
   return config_dict.ConfigDict(model_config)

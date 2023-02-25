@@ -88,7 +88,7 @@ def main():
 
       plt.grid()
       plt.xlabel('Samplers')
-      plt.ylabel('ESS (high temp)')
+      plt.ylabel('ESS')
       plt.title(f'ESS w.r.t. Energy Evaluations on {model}')
       plt.show()
       plt.savefig(curr_path + f'/EssEE_{model}.png', bbox_inches='tight')
@@ -110,7 +110,7 @@ def main():
 
       plt.grid()
       plt.xlabel('Samplers')
-      plt.ylabel('ESS (high temp)')
+      plt.ylabel('ESS')
       plt.title(f'ESS w.r.t. Wall Clock Time on {model}')
       plt.show()
       plt.savefig(curr_path + f'/EssClock_{model}.png', bbox_inches='tight')

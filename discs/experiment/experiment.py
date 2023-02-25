@@ -4,17 +4,21 @@ import jax.numpy as jnp
 from ml_collections import config_dict
 import tqdm
 import pdb
-
+import flax
 
 class Experiment:
   """Experiment class that generates chains of samples."""
 
   def __init__(self, config):
-    self.config = config
+    self.config = config.experiment
+    self.config_model = config.model
 
   def _initialize_model_and_sampler(self, rnd, model, sampler):
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
-    params = model.make_init_params(rng_param)
+    if self.config_model.name != 'rbm':
+        params = model.make_init_params(rng_param)
+    else:
+        params = flax.core.frozen_dict.freeze(self.config_model.params)
     x0 = model.get_init_samples(rng_x0, self.config.batch_size)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
     state = sampler.make_init_state(rng_state)
@@ -122,4 +126,4 @@ class Experiment:
 
 
 def build_experiment(config: config_dict):
-  return Experiment(config.experiment)
+  return Experiment(config)
