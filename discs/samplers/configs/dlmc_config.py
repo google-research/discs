@@ -10,7 +10,8 @@ def get_config():
       adaptive=True,
       target_acceptance_rate=0.574,
       balancing_fn_type=LBWeightFn.SQRT,
-      logz_ema=0,
+      schedule_step=200,
       reset_z_est=20,
+      solver='interpolate',
   )
   return config_dict.ConfigDict(model_config)
