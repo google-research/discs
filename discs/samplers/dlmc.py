@@ -12,6 +12,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
   """DLMC sampler."""
 
   def update_sampler_state(self, state, acc, local_stats):
+    #pdb.set_trace()
     cur_step = state['steps']
     state['num_ll_calls'] += 4
     if not self.adaptive:
@@ -23,11 +24,12 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
       log_z = jnp.where(
           cur_step == 1, local_stats['log_z'], state['log_z'])
     #TODO: add scheduling of logz_ema
-    log_z = log_z * self.logz_ema + (1.0 - self.logz_ema) * local_stats['log_z']
+    logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
+    log_z = (logs_ema * log_z) + ( (1 - logs_ema)*local_stats['log_z'])
+    
     n = jnp.exp(state['log_tau'] + log_z)
-    n = jnp.clip(n + 3 * (acc - self.target_acceptance_rate),
-                 a_min=1, a_max=math.prod(self.sample_shape))
-    state['log_tau'] = jnp.log(n) - log_z
+    n = n + 3 * (acc - self.target_acceptance_rate)
+    state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
     state['log_z'] = log_z
 
   def select_sample(
@@ -60,7 +62,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     self.adaptive = config.sampler.adaptive
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
-      self.logz_ema = config.sampler.logz_ema
+      self.schedule_step = config.sampler.schedule_step
     self.reset_z_est = config.sampler.get('reset_z_est', -1)
     self.solver = config.sampler.get('solver', 'interpolate')
 
@@ -85,8 +87,9 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
-    ll_y, log_rate_y = self.get_value_and_rates(model, model_param, x)
+    ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
     dist_y = self.get_dist_at(y, log_tau, log_rate_y)
+    aux = jnp.where(self.num_categories > 2, x, aux)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
