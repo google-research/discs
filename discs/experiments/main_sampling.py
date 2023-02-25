@@ -34,7 +34,6 @@ def main(_):
   if config.model.name == 'rbm':
     model = pickle.load(open(config.model.data_path + 'params.pkl', 'rb'))
     config.model.params = model['params']
-    config.model.train = False
     model_c = yaml.unsafe_load(open(config.model.data_path+ 'config.yaml', 'r'))
     config.model.update(model_c.model)
 
