@@ -1,7 +1,7 @@
 #!/bin/bash
 
 models="rbm potts ising categorical"
-samplers="path_auxiliary dlmc randomwalk gwg"
+samplers="dlmc path_auxiliary randomwalk gwg"
 weight_fns="SQRT RATIO"
 
 for model in $models
