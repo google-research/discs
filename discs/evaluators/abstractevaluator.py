@@ -5,6 +5,7 @@ import ml_collections
 import pdb
 
 class AbstractEvaluator(abc.ABC):
+  """Abstract evaluator class: needs to be extended by any new objective function."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.config = config
@@ -19,7 +20,7 @@ class AbstractEvaluator(abc.ABC):
     return eval_val / (time * self.config.ess_ratio)
 
   def get_eval_metrics(self, eval_val, running_time, num_ll_calls):
-    """Computes ESS over time, M-H step and calls of loglike function."""
+    """Computes objective value  over time, M-H step and calls of loglike function."""
 
     ess_over_mh_steps = self._eval_over_mh_step(
         eval_val, self.config.chain_length
