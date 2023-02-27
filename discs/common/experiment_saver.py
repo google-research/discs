@@ -1,5 +1,6 @@
 """Evaluator Class."""
 
+from discs.samplers.locallybalanced import LBWeightFn
 import ml_collections
 import jax
 import jax.numpy as jnp

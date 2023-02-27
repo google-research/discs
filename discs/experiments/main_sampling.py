@@ -68,11 +68,10 @@ def main(_):
   evaluator = evaluator_mod.build_evaluator(config)
   saver = saver_mod.build_saver(get_save_dir(config), config)
 
-  metrcis, running_time, acc_ratio, hops = experiment.get_results(
+  metrics, running_time, acc_ratio, hops = experiment.get_results(
       model, sampler, evaluator
   )
-  pdb.set_trace()
-  saver.save_results(acc_ratio, hops, metrcis, running_time)
+  saver.save_results(acc_ratio, hops, metrics, running_time)
 
 
 if __name__ == '__main__':

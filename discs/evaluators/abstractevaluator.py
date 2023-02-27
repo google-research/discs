@@ -26,7 +26,7 @@ class AbstractEvaluator(abc.ABC):
     )
     ess_over_time = self._eval_over_time(eval_val, running_time)
     ess_over_ll_calls = self._eval_over_num_ll_calls(eval_val, num_ll_calls)
-    return ess_over_mh_steps, ess_over_time, ess_over_ll_calls
+    return eval_val, ess_over_mh_steps, ess_over_time, ess_over_ll_calls
 
   @abc.abstractmethod
   def evaluate(self, samples, *args, **kwargs):

@@ -62,8 +62,6 @@ class Experiment:
     return n_rand_split
 
   def get_results(self, model, sampler, evaluator):
-    pdb.set_trace()
-    
     num_ll_calls, acc_ratios, hops, evals, running_time, _ = (
         self._get_chains_and_evaluations(model, sampler, evaluator)
     )
@@ -72,8 +70,6 @@ class Experiment:
 
   def _get_chains_and_evaluations(self, model, sampler, evaluator):
     """Sets up the model and the samlping alg and gets the chain of samples."""
-    pdb.set_trace()
-    
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
         rnd, model, sampler
@@ -116,8 +112,6 @@ class Experiment:
       x0_ess,
   ):
     """Generates the chain of samples."""
-    pdb.set_trace()
-    
     chain = []
     acc_ratios = []
     hops = []
@@ -138,15 +132,16 @@ class Experiment:
       running_time += time.time() - start
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
-      if self.config.obj_fn == 'CO':
+      if self.config.evaluator == 'co_eval':
         evaluation = evaluator_fn(new_x, model, params)
         evaluations.append(evaluation)
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
       x = new_x
       chain.append(self._get_mapped_samples(new_x, x0_ess, params))
-    if self.config.obj_fn == 'ESS':
+    if self.config.evaluator == 'ess_eval':
       chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
+      chain = jnp.array(chain)
       evaluation = evaluator_fn(chain, rng_sampler_step)
       evaluations.append(evaluation)
     return (
