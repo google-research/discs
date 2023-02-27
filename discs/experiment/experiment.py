@@ -5,6 +5,8 @@ from ml_collections import config_dict
 import tqdm
 import pdb
 import flax
+import time
+
 
 class Experiment:
   """Experiment class that generates chains of samples."""
@@ -16,9 +18,9 @@ class Experiment:
   def _initialize_model_and_sampler(self, rnd, model, sampler):
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
     if self.config_model.name != 'rbm':
-        params = model.make_init_params(rng_param)
+      params = model.make_init_params(rng_param)
     else:
-        params = flax.core.frozen_dict.freeze(self.config_model.params)
+      params = flax.core.frozen_dict.freeze(self.config_model.params)
     x0 = model.get_init_samples(rng_x0, self.config.batch_size)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
     state = sampler.make_init_state(rng_state)
@@ -45,6 +47,13 @@ class Experiment:
       compiled_step = jax.pmap(sampler.step, static_broadcasted_argnums=[0])
     return compiled_step
 
+  def _compile_evaluator(self, evaluator):
+    if not self.config.run_parallel:
+      compiled_evaluator = jax.jit(evaluator.evaluate)
+    else:
+      compiled_evaluator = jax.pmap(evaluator.evaluate)
+    return compiled_evaluator
+
   def _setup_num_devices(self):
     if not self.config.run_parallel:
       n_rand_split = 2
@@ -52,23 +61,35 @@ class Experiment:
       n_rand_split = jax.local_device_count()
     return n_rand_split
 
-  def get_batch_of_chains(self, model, sampler):
+  def get_results(self, model, sampler, evaluator):
+    pdb.set_trace()
+    
+    num_ll_calls, acc_ratios, hops, evals, running_time, _ = (
+        self._get_chains_and_evaluations(model, sampler, evaluator)
+    )
+    metrcis = evaluator.get_eval_metrics(evals[-1], running_time, num_ll_calls)
+    return metrcis, running_time, acc_ratios, hops
+
+  def _get_chains_and_evaluations(self, model, sampler, evaluator):
     """Sets up the model and the samlping alg and gets the chain of samples."""
+    pdb.set_trace()
+    
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
         rnd, model, sampler
     )
     model_params = params
-    sample_shape = x.shape[1:]
     n_rand_split = self._setup_num_devices()
     if self.config.run_parallel:
       params, x, state = self._prepare_data_for_parallel(
           params, x, state, n_rand_split
       )
     compiled_step = self._compile_sampler_step(sampler)
-    chain, state, acc_ratios, hops = self._compute_chain(
+    compiled_evaluator = self._compile_evaluator(evaluator)
+    state, acc_ratios, hops, evals, running_time = self._compute_chain(
         model,
         compiled_step,
+        compiled_evaluator,
         state,
         params,
         rnd,
@@ -80,12 +101,13 @@ class Experiment:
       num_ll_calls = state['num_ll_calls'][0]
     else:
       num_ll_calls = state['num_ll_calls']
-    return chain, num_ll_calls, acc_ratios, hops, model_params
+    return num_ll_calls, acc_ratios, hops, evals, running_time, model_params
 
   def _compute_chain(
       self,
       model,
       sampler_step,
+      evaluator_fn,
       state,
       params,
       rng_sampler_step,
@@ -94,9 +116,13 @@ class Experiment:
       x0_ess,
   ):
     """Generates the chain of samples."""
+    pdb.set_trace()
+    
     chain = []
     acc_ratios = []
     hops = []
+    evaluations = []
+    running_time = 0
     for _ in tqdm.tqdm(range(self.config.chain_length)):
       if self.config.run_parallel:
         rng_sampler_step_p = jax.random.split(
@@ -104,25 +130,42 @@ class Experiment:
         )
       else:
         rng_sampler_step_p = rng_sampler_step
+
+      start = time.time()
       new_x, state, acc = sampler_step(
           model, rng_sampler_step_p, x, params, state
       )
-      acc_ratios.append(acc)
-      hop = jnp.sum(abs(x - new_x)) / self.config.batch_size
-      hops.append(hop)
-      x = new_x
+      running_time += time.time() - start
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
-      if self.config.run_parallel:
-        new_x = new_x.reshape((self.config.batch_size,) + params[0].shape)
-      mapped_x = self._get_mapped_samples(new_x, x0_ess)
-      chain.append(mapped_x)
-    return (jnp.array(chain), state, jnp.array(acc_ratios), jnp.array(hops))
+      if self.config.obj_fn == 'CO':
+        evaluation = evaluator_fn(new_x, model, params)
+        evaluations.append(evaluation)
+      acc_ratios.append(acc)
+      hops.append(self._get_hop(x, new_x))
+      x = new_x
+      chain.append(self._get_mapped_samples(new_x, x0_ess, params))
+    if self.config.obj_fn == 'ESS':
+      chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
+      evaluation = evaluator_fn(chain, rng_sampler_step)
+      evaluations.append(evaluation)
+    return (
+        state,
+        jnp.array(acc_ratios),
+        jnp.array(hops),
+        jnp.array(evaluations),
+        running_time,
+    )
 
-  def _get_mapped_samples(self, samples, x0_ess):
+  def _get_mapped_samples(self, samples, x0_ess, params):
+    if self.config.run_parallel:
+      samples = samples.reshape((self.config.batch_size,) + params[0].shape)
     samples = samples.reshape(samples.shape[0], -1)
     x0_ess = x0_ess.reshape(x0_ess.shape[0], -1)
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
+
+  def _get_hop(self, x, new_x):
+    return jnp.sum(abs(x - new_x)) / self.config.batch_size
 
 
 def build_experiment(config: config_dict):
