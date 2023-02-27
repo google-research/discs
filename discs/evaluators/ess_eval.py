@@ -11,7 +11,7 @@ import pdb
 class ESSevaluator(abstractevaluator.AbstractEvaluator):
   """ESS evaluator class."""
 
-  def _get_ess(self, rnd_ess, mapped_samples):)
+  def _get_ess(self, rnd_ess, mapped_samples):
     mapped_samples = mapped_samples.astype(jnp.float32)
     tf.config.experimental.enable_tensor_float_32_execution(False)
     ess_of_chains = tfp.substrates.jax.mcmc.effective_sample_size(mapped_samples)

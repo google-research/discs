@@ -129,7 +129,7 @@ class Experiment:
       new_x, state, acc = sampler_step(
           model, rng_sampler_step_p, x, params, state
       )
-      running_time += time.time() - start
+      running_time += (time.time() - start)
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
       if self.config.evaluator == 'co_eval':
