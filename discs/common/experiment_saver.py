@@ -1,4 +1,4 @@
-"""Evaluator Class."""
+"""Saver Class."""
 
 from discs.samplers.locallybalanced import LBWeightFn
 import ml_collections
