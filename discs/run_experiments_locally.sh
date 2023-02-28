@@ -1,6 +1,6 @@
 #!/bin/bash
 
-models="rbm potts ising categorical"
+models="categorical rbm potts ising bernoulli"
 samplers="dlmc path_auxiliary randomwalk gwg"
 weight_fns="SQRT RATIO"
 

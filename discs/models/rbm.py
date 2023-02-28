@@ -10,8 +10,10 @@ import jax.numpy as jnp
 import ml_collections
 import pdb
 
+
 class NNBinary(nn.Module):
   """Network of binary RBM."""
+
   num_visible: int
   num_hidden: int
   data_mean: Any = None
@@ -21,20 +23,25 @@ class NNBinary(nn.Module):
       bv_init = initializers.zeros
     else:
       data_mean = jnp.array(self.data_mean, dtype=jnp.float32)
-      b_v = jnp.log(data_mean / (1. - data_mean))
+      b_v = jnp.log(data_mean / (1.0 - data_mean))
       bv_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
-    self.b_v = self.param('b_v', bv_init,
-                          (self.num_visible,), jnp.float32)
-    self.b_h = self.param('b_h', initializers.zeros,
-                          (self.num_hidden,), jnp.float32)
-    self.w = self.param('w', initializers.glorot_uniform(),
-                        (self.num_visible, self.num_hidden), jnp.float32)
+    self.b_v = self.param('b_v', bv_init, (self.num_visible,), jnp.float32)
+    self.b_h = self.param(
+        'b_h', initializers.zeros, (self.num_hidden,), jnp.float32
+    )
+    self.w = self.param(
+        'w',
+        initializers.glorot_uniform(),
+        (self.num_visible, self.num_hidden),
+        jnp.float32,
+    )
 
   def __call__(self, v):
     """Un-normalized log-likelihood.
 
     Args:
       v: float tensor of size [batch_size, num_visible]
+
     Returns:
       ll: tensor of size [batch_size,]
     """
@@ -53,6 +60,7 @@ class NNBinary(nn.Module):
 
 class NNCategorical(nn.Module):
   """Network of categorical RBM."""
+
   num_visible: int
   num_hidden: int
   num_categories: int
@@ -66,16 +74,15 @@ class RBM(abstractmodel.AbstractModel):
   """RBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-
     self.num_visible = config.num_visible
     self.num_hidden = config.num_hidden
     self.num_categories = config.num_categories
     self.net = None
     params = config.get('params', None)
     if params is not None:
-        data_mean = params['data_mean']
+      data_mean = params['data_mean']
     else:
-        data_mean = config.get('data_mean', None)
+      data_mean = config.get('data_mean', None)
     self.init_dist = self.build_init_dist(data_mean)
     self.data_mean = data_mean
 
@@ -90,7 +97,6 @@ class RBM(abstractmodel.AbstractModel):
   def forward(self, params, x):
     return self.net.apply({'params': params}, v=x)
 
-
   def get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
@@ -103,12 +109,14 @@ class RBM(abstractmodel.AbstractModel):
     return loglikelihood, grad
 
   def step_h(self, params, rng, v):
-    return self.net.apply({'params': params}, rng=rng, v=v,
-                          method=self.net.step_h)
+    return self.net.apply(
+        {'params': params}, rng=rng, v=v, method=self.net.step_h
+    )
 
   def step_v(self, params, rng, h):
-    return self.net.apply({'params': params}, rng=rng, h=h,
-                          method=self.net.step_v)
+    return self.net.apply(
+        {'params': params}, rng=rng, h=h, method=self.net.step_v
+    )
 
 
 class BinaryRBM(RBM):
@@ -116,16 +124,19 @@ class BinaryRBM(RBM):
 
   def __init__(self, config: ml_collections.ConfigDict):
     super(BinaryRBM, self).__init__(config)
-    self.net = NNBinary(num_visible=self.num_visible,
-                        num_hidden=self.num_hidden,
-                        data_mean=self.data_mean)
+    self.net = NNBinary(
+        num_visible=self.num_visible,
+        num_hidden=self.num_hidden,
+        data_mean=self.data_mean,
+    )
 
   def build_init_dist(self, data_mean):
     if data_mean is None:
       return functools.partial(jax.random.bernoulli, p=0.5)
     else:
-      return functools.partial(jax.random.bernoulli,
-                               p=jnp.array(data_mean, dtype=jnp.float32))
+      return functools.partial(
+          jax.random.bernoulli, p=jnp.array(data_mean, dtype=jnp.float32)
+      )
 
 
 class CategoricalRBM(RBM):
@@ -133,9 +144,11 @@ class CategoricalRBM(RBM):
 
   def __init__(self, config: ml_collections.ConfigDict):
     super(CategoricalRBM, self).__init__(config)
-    self.net = NNCategorical(num_visible=self.num_visible,
-                             num_hidden=self.num_hidden, 
-                             num_categories=self.num_categories)
+    self.net = NNCategorical(
+        num_visible=self.num_visible,
+        num_hidden=self.num_hidden,
+        num_categories=self.num_categories,
+    )
 
   def build_init_dist(self, data_mean):
     if data_mean is None:
@@ -143,7 +156,6 @@ class CategoricalRBM(RBM):
 
 
 def build_model(config):
-    
   config_model = config.model
   if config_model.num_categories == 2:
     return BinaryRBM(config_model)

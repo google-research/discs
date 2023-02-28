@@ -39,6 +39,7 @@ def get_config():
           plot_every_steps=10,
           save_every_steps=100,
           ess_ratio=0.5,
+          evaluator= 'ess_eval', # ess_eval or co_eval
       ),
   )
   return config_dict.ConfigDict(general_config)
