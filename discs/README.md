@@ -24,8 +24,9 @@ above.
 
 ## Sampling
 
-Update `data_path` value with the saved directory in the correspinding model
-config file. As an example in the case of RBM, set the `data_path` in
+Update `data_path` value with the trained model saved directory in the
+correspinding model config file located at `./discs/models/configs/`. As an
+example in the case of RBM, set the `data_path` in
 `./discs/models/configs/rbm_config.py` with the location where the `params.pkl`
 and `config.yaml` files were dumped from the learning step.
 
