@@ -19,7 +19,7 @@ class ESSevaluator(abstractevaluator.AbstractEvaluator):
     mean_ess = jnp.mean(ess_of_chains)
     return mean_ess
 
-  def evaluate(self, samples, rnd):
+  def evaluate_chain(self, samples, rnd):
     return self._get_ess(rnd, samples)
 
 

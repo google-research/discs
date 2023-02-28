@@ -30,5 +30,9 @@ class AbstractEvaluator(abc.ABC):
     return (eval_val, ess_over_mh_steps, ess_over_time, ess_over_ll_calls)
 
   @abc.abstractmethod
-  def evaluate(self, samples, *args, **kwargs):
+  def evaluate_step(self, samples, model, params):
+    pass
+  
+  @abc.abstractmethod
+  def evaluate_chain(self, samples, rnd):
     pass

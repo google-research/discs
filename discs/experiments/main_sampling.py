@@ -33,16 +33,17 @@ def update_sampler_cfg(config):
 
 
 def update_model_cfg(config):
-  if config.model.name == 'rbm':
+  if not config.model.get('data_path', None):
     path = config.model.data_path
     model = pickle.load(open(path + 'params.pkl', 'rb'))
     config.model.params = model['params']
-    model_c = yaml.unsafe_load(open(path + 'config.yaml', 'r'))
-    config.model.update(model_c.model)
+    model_config = yaml.unsafe_load(open(path + 'config.yaml', 'r'))
+    config.model.update(model_config.model)
 
 
 def get_save_dir(config):
-  return _SAVE_DIR.value + '_' + config.model.save_dir_name
+  save_folder = config.model.get('save_dir_name', config.model.name)
+  return _SAVE_DIR.value + '_' + save_folder
 
 
 def main(_):

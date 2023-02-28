@@ -17,7 +17,7 @@ class Experiment:
 
   def _initialize_model_and_sampler(self, rnd, model, sampler):
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
-    if self.config_model.name != 'rbm':
+    if self.config_model.get('data_path', None) is None:
       params = model.make_init_params(rng_param)
     else:
       params = flax.core.frozen_dict.freeze(self.config_model.params)
@@ -49,10 +49,13 @@ class Experiment:
 
   def _compile_evaluator(self, evaluator):
     if not self.config.run_parallel:
-      compiled_evaluator = jax.jit(evaluator.evaluate)
+      compiled_eval_step = jax.jit(evaluator.evaluate_step)
+      compiled_eval_chain = jax.jit(evaluator.evaluate_chain)
+
     else:
-      compiled_evaluator = jax.pmap(evaluator.evaluate)
-    return compiled_evaluator
+      compiled_eval_step = jax.pmap(evaluator.evaluate_step)
+      compiled_eval_chain = jax.pmap(evaluator.evaluate_chain)
+    return compiled_eval_step, compiled_eval_chain
 
   def _setup_num_devices(self):
     if not self.config.run_parallel:
@@ -81,11 +84,12 @@ class Experiment:
           params, x, state, n_rand_split
       )
     compiled_step = self._compile_sampler_step(sampler)
-    compiled_evaluator = self._compile_evaluator(evaluator)
+    compiled_eval_step, compiled_eval_chain = self._compile_evaluator(evaluator)
     state, acc_ratios, hops, evals, running_time = self._compute_chain(
         model,
         compiled_step,
-        compiled_evaluator,
+        compiled_eval_step,
+        compiled_eval_chain,
         state,
         params,
         rnd,
@@ -103,7 +107,8 @@ class Experiment:
       self,
       model,
       sampler_step,
-      evaluator_fn,
+      eval_step_fn,
+      eval_chain_fn,
       state,
       params,
       rng_sampler_step,
@@ -129,20 +134,20 @@ class Experiment:
       new_x, state, acc = sampler_step(
           model, rng_sampler_step_p, x, params, state
       )
-      running_time += (time.time() - start)
+      running_time += time.time() - start
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
-      if self.config.evaluator == 'co_eval':
-        evaluation = evaluator_fn(new_x, model, params)
-        evaluations.append(evaluation)
+      if eval_step_fn is not None:
+        evaluations.append(eval_step_fn(new_x, model, params))
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
+      chain.append(self._get_mapped_samples(new_x, x0_ess))
       x = new_x
-      chain.append(self._get_mapped_samples(new_x, x0_ess, params))
-    if self.config.evaluator == 'ess_eval':
+
+    if eval_chain_fn is not None:
       chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
       chain = jnp.array(chain)
-      evaluation = evaluator_fn(chain, rng_sampler_step)
+      evaluation = eval_chain_fn(chain, rng_sampler_step)
       evaluations.append(evaluation)
     return (
         state,
@@ -152,10 +157,8 @@ class Experiment:
         running_time,
     )
 
-  def _get_mapped_samples(self, samples, x0_ess, params):
-    if self.config.run_parallel:
-      samples = samples.reshape((self.config.batch_size,) + params[0].shape)
-    samples = samples.reshape(samples.shape[0], -1)
+  def _get_mapped_samples(self, samples, x0_ess):
+    samples = samples.reshape((self.config.batch_size, -1))
     x0_ess = x0_ess.reshape(x0_ess.shape[0], -1)
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
 
