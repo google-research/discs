@@ -12,7 +12,7 @@ required config values in the model's corresponding training run script and run
 the script
 
 As an example, in the case of RBM, set your desired training parameters in
-#./discs/learning/rbm/run_rbm_training.sh and then run
+*./discs/learning/rbm/run_rbm_training.sh* and then run
 
 ```
 ./discs/learning/rbm/run_rbm_training.sh
