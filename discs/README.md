@@ -1,7 +1,7 @@
-# Energy Based Models Learning and Sampling
+# Deep Energy Based Models Learning and Sampling
 
-Below, we will explain how to train the energy based models and how to perform
-sampling on the learned model. Note that, we have picked RBM model as an
+Below, we will explain how to train the deep energy based models and how to
+perform sampling on the learned model. Note that, we have picked RBM model as an
 example.
 
 ## Learning
