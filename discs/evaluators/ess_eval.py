@@ -22,6 +22,9 @@ class ESSevaluator(abstractevaluator.AbstractEvaluator):
   def evaluate_chain(self, samples, rnd):
     return self._get_ess(rnd, samples)
 
+  def evaluate_step(self, samples, model, params):
+    return None
+
 
 def build_evaluator(config):
   return ESSevaluator(config.experiment)

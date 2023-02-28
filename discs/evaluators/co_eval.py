@@ -9,6 +9,9 @@ class COevaluator(abstractevaluator.AbstractEvaluator):
   def evaluate_step(self, samples, model, params):
     return model.forward(params, samples) * params['temperature']
 
+  def evaluate_chain(self, samples, rnd):
+    return None
+
 
 def build_evaluator(config):
   return COevaluator(config.experiment)

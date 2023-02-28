@@ -12,6 +12,7 @@ from discs.experiment import experiment as experiment_mod
 from discs.samplers.locallybalanced import LBWeightFn
 from ml_collections import config_flags
 import yaml
+import pdb
 
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
@@ -33,7 +34,7 @@ def update_sampler_cfg(config):
 
 
 def update_model_cfg(config):
-  if not config.model.get('data_path', None):
+  if config.model.get('data_path', None):
     path = config.model.data_path
     model = pickle.load(open(path + 'params.pkl', 'rb'))
     config.model.params = model['params']

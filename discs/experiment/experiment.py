@@ -17,7 +17,7 @@ class Experiment:
 
   def _initialize_model_and_sampler(self, rnd, model, sampler):
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
-    if self.config_model.get('data_path', None) is None:
+    if not self.config_model.get('data_path', None):
       params = model.make_init_params(rng_param)
     else:
       params = flax.core.frozen_dict.freeze(self.config_model.params)
@@ -49,12 +49,12 @@ class Experiment:
 
   def _compile_evaluator(self, evaluator):
     if not self.config.run_parallel:
-      compiled_eval_step = jax.jit(evaluator.evaluate_step)
+      compiled_eval_step = jax.jit(evaluator.evaluate_step, static_argnums=1)
       compiled_eval_chain = jax.jit(evaluator.evaluate_chain)
 
     else:
       compiled_eval_step = jax.pmap(evaluator.evaluate_step)
-      compiled_eval_chain = jax.pmap(evaluator.evaluate_chain)
+      compiled_eval_chain = jax.pmap(evaluator.evaluate_chain, static_broadcasted_argnums=[1])
     return compiled_eval_step, compiled_eval_chain
 
   def _setup_num_devices(self):
@@ -137,18 +137,18 @@ class Experiment:
       running_time += time.time() - start
       del rng_sampler_step_p
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
-      if eval_step_fn is not None:
-        evaluations.append(eval_step_fn(new_x, model, params))
+      eval_val = eval_step_fn(new_x, model, params)
+      if eval_val:
+        evaluations.append(eval_val)
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
       chain.append(self._get_mapped_samples(new_x, x0_ess))
       x = new_x
-
-    if eval_chain_fn is not None:
-      chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
-      chain = jnp.array(chain)
-      evaluation = eval_chain_fn(chain, rng_sampler_step)
-      evaluations.append(evaluation)
+    chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
+    chain = jnp.array(chain)
+    eval_val = eval_chain_fn(chain, rng_sampler_step)
+    if eval_val:
+      evaluations.append(eval_val)
     return (
         state,
         jnp.array(acc_ratios),
