@@ -39,7 +39,12 @@ def get_config():
           plot_every_steps=10,
           save_every_steps=100,
           ess_ratio=0.5,
-          evaluator= 'ess_eval', # ess_eval or co_eval
+          evaluator='ess_eval',  # ess_eval or co_eval
       ),
   )
+
+  general_config.experiment.update(get_co_default_config())
   return config_dict.ConfigDict(general_config)
+
+
+
