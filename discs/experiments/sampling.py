@@ -43,13 +43,13 @@ def solve_dataset(config, global_key, logger,
   assert is_local  # TODO(x): test it for multi-process case
   exp_config = config.experiment
 
-  if exp_config.batch_size > jax.local_device_count():
-    assert exp_config.batch_size % jax.local_device_count() == 0
-    num_instances_per_device = exp_config.batch_size // jax.local_device_count()
+  if exp_config.num_models > jax.local_device_count():
+    assert exp_config.num_models % jax.local_device_count() == 0
+    num_instances_per_device = exp_config.num_models // jax.local_device_count()
     batch_repeat = 1
   else:
-    assert jax.local_device_count() % exp_config.batch_size == 0
-    batch_repeat = jax.local_device_count() // exp_config.batch_size
+    assert jax.local_device_count() % exp_config.num_models == 0
+    batch_repeat = jax.local_device_count() // exp_config.num_models
     num_instances_per_device = 1
 
   sampler_init_fn = jax.vmap(sampler.make_init_state)
@@ -70,7 +70,7 @@ def solve_dataset(config, global_key, logger,
     else:
       step0_fn = jax.pmap(step0_fn, axis_name='shard')
   fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
-  num_samples = exp_config.batch_size * exp_config.samples_per_instance
+  num_samples = exp_config.num_models * exp_config.batch_size
   sample_bshape = bshape + (num_samples // math.prod(bshape),)
 
   init_temperature = jnp.ones(bshape, dtype=jnp.float32)
@@ -101,9 +101,9 @@ def solve_dataset(config, global_key, logger,
       if is_local and exp_config.use_tqdm:
         pbar = tqdm.tqdm(pbar)
       flush_every = max(1, config.experiment.chain_length // 1000)
-      best_ratio = np.ones(exp_config.batch_size, dtype=np.float32) * -1e9
+      best_ratio = np.ones(exp_config.num_models, dtype=np.float32) * -1e9
       best_samples = np.zeros(
-          (exp_config.batch_size, samples.shape[-1]), dtype=np.int32)
+          (exp_config.num_models, samples.shape[-1]), dtype=np.int32)
       trajectory = []
       for step in pbar:
         cur_temp = t_schedule(step)
@@ -157,7 +157,7 @@ def solve_dataset(config, global_key, logger,
         for _ in range(exp_config.temp0_steps):
           new_obj, best_samples = step0_fn(params, best_samples)
         best_samples = np.reshape(jax.device_get(best_samples),
-                                  [exp_config.batch_size, -1])
+                                  [exp_config.num_models, -1])
         best_ratio = np.reshape(jax.device_get(new_obj), [-1]) / reference_obj
         print(best_ratio)
         step = exp_config.chain_length + exp_config.temp0_steps
