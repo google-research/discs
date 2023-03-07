@@ -1,9 +1,9 @@
 """Maxcut model."""
 
+from discs.models import comb_ebm
 import jax
 import jax.numpy as jnp
 import ml_collections
-from discs.models import comb_ebm
 
 
 class Maxcut(comb_ebm.BinaryNodeCombEBM):

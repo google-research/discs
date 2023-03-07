@@ -4,7 +4,7 @@ import os
 import jax
 import networkx as nx
 import numpy as np
-import pickle5 as pickle
+import pickle
 from sco.common import utils
 from sco.data_process import common as data_common
 

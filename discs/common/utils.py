@@ -165,3 +165,14 @@ def graph2edges(
       )
   ret['mask'] = None
   return ret
+
+
+def parse_cfg_str(cfg):
+  kv_pairs = cfg.split(',')
+  cfg_dict = {}
+  for kv in kv_pairs:
+    args = kv.split('-')
+    k = args[0]
+    v = '-'.join(args[1:])
+    cfg_dict[k] = v
+  return cfg_dict

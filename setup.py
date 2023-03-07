@@ -11,6 +11,7 @@ setup(name='discs',
           'numpy',
           'matplotlib',
           'tqdm',
-          'tensorflow'
+          'tensorflow',
+          'networkx'
       ]
 )

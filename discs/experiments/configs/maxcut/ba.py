@@ -5,11 +5,11 @@ from ml_collections import config_dict
 from sco.experiments import default_configs
 
 
-def get_config(cfg_str):
+def get_config():
   """Get config."""
   exp_config = dict(
-      batch_size=1024,
-      samples_per_instance=16,
+      num_models=1024,
+      batch_size=16,
       t_schedule='exp_decay',
       chain_length=10000,
       log_every_steps=10,

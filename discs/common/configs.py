@@ -27,24 +27,19 @@ def get_config():
           name='',
       ),
       experiment=dict(
-          save_root='.',
-          fig_folder='',
-          run_parallel=False,
+          num_models=1,
           batch_size=100,
           chain_length=100000,
+          ess_ratio=0.5,
+          run_parallel=False,
           window_size=10,
           window_stride=10,
           shuffle_buffer_size=0,
           log_every_steps=1,
           plot_every_steps=10,
           save_every_steps=100,
-          ess_ratio=0.5,
-          evaluator='ess_eval',  # ess_eval or co_eval
+          save_root='.',
+          fig_folder='',
       ),
   )
-
-  general_config.experiment.update(get_co_default_config())
   return config_dict.ConfigDict(general_config)
-
-
-
