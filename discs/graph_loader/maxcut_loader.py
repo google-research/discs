@@ -5,8 +5,8 @@ import jax
 import networkx as nx
 import numpy as np
 import pickle
-from sco.common import utils
-from sco.data_process import common as data_common
+from discs.common import utils
+from discs.graph_loader import common as data_common
 
 
 class MaxcutGen(data_common.GraphGenerator):
