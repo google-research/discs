@@ -39,8 +39,7 @@ def update_graph_config(config, graphs):
 
 
 def get_datagen(config):
-  pdb.set_trace()
   test_graphs = graph_gen.get_graphs(config)
   update_graph_config(config, test_graphs)
-  datagen = test_graphs.get_iterator('test', config.experiment.batch_size)
+  datagen = test_graphs.get_iterator('test', config.experiment.num_models)
   return datagen
