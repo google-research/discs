@@ -48,6 +48,7 @@ def get_save_dir(config):
 
 
 def main(_):
+  
   config = common_configs.get_config()
   config.model.update(_MODEL_CONFIG.value)
   config.sampler.update(_SAMPLER_CONFIG.value)
@@ -56,10 +57,10 @@ def main(_):
   sampler_mod = importlib.import_module(
       'discs.samplers.%s' % config.sampler.name
   )
-  sampler = sampler_mod.build_sampler(config)
   logging.info(config)
 
   update_model_cfg(config)
+  sampler = sampler_mod.build_sampler(config)
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
   model = model_mod.build_model(config)
 

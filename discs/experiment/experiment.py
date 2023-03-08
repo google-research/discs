@@ -121,13 +121,13 @@ class Experiment:
       saver,
   ):
     """Generates the chain of samples."""
-
+    
     # burn in
-    burn_in_length = int(self.config.chain_length * self.config.ess_ratio)
+    burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
     acc_ratios = []
     hops = []
     evaluations = []
-    for step in tqdm.tqdm(range(burn_in_length)):
+    for step in tqdm.tqdm(range(1, burn_in_length)):
       if self.config.run_parallel:
         rng_sampler_step_p = jax.random.split(
             rng_sampler_step, num=n_rand_split
@@ -138,6 +138,7 @@ class Experiment:
           model, rng_sampler_step_p, x, params, state
       )
       del rng_sampler_step_p
+      rng_sampler_step, rng_randint = jax.random.split(rng_sampler_step)
       eval_val = eval_step_fn(new_x, model, params)
       if eval_val:
         evaluations.append(eval_val)
@@ -146,7 +147,8 @@ class Experiment:
           chosen_sample_idx = jnp.argmax(eval_val)
           sample = new_x[chosen_sample_idx]
         else:
-          sample = new_x[0]
+          chosen_sample_idx = int(jax.random.randint(rng_randint, shape=(1,), minval=0, maxval=x.shape[0])[0])
+          sample = new_x[chosen_sample_idx]
         saver.dump_sample(sample, step, self.config_model.name == 'rbm')
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
@@ -156,7 +158,7 @@ class Experiment:
     # after burn in
     running_time = 0
     chain = []
-    for step in tqdm.tqdm(range(burn_in_length + 1, self.config.chain_length)):
+    for step in tqdm.tqdm(range( burn_in_length, 1 + self.config.chain_length)):
       if self.config.run_parallel:
         rng_sampler_step_p = jax.random.split(
             rng_sampler_step, num=n_rand_split
@@ -169,6 +171,7 @@ class Experiment:
       )
       running_time += time.time() - start
       del rng_sampler_step_p
+      rng_sampler_step, rng_randint = jax.random.split(rng_sampler_step)
       eval_val = eval_step_fn(new_x, model, params)
       if eval_val:
         evaluations.append(eval_val)
@@ -177,11 +180,11 @@ class Experiment:
           chosen_sample_idx = jnp.argmax(eval_val)
           sample = new_x[chosen_sample_idx]
         else:
-          sample = new_x[0]
+          chosen_sample_idx = int(jax.random.randint(rng_randint, shape=(1,), minval=0, maxval=x.shape[0])[0])
+          sample = new_x[chosen_sample_idx]
         saver.dump_sample(sample, step, self.config_model.name == 'rbm')
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
-      rng_sampler_step, _ = jax.random.split(rng_sampler_step)
       x = new_x
       chain.append(self._get_mapped_samples(new_x, x0_ess))
 

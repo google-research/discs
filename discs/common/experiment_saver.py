@@ -5,11 +5,12 @@ import ml_collections
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import os
 import csv
 import pickle
-from PIL import Image
-
+import pdb
+import numpy as np
 
 
 class Saver:
@@ -108,8 +109,11 @@ class Saver:
     self._plot_hops(hops)
     self._save_results(metrcis, running_time)
 
-  def dump_sample(self, sample, step, visualize=Fasle):
-    path = os.path.join(self.save_dir, 'samples.pkl')
+  def dump_sample(self, sample, step, visualize=False):
+    root_path = os.path.join(self.save_dir, self.config.sampler.name)
+    if not os.path.isdir(root_path):
+        os.makedirs(root_path)
+    path = os.path.join(root_path, 'samples.pkl')
     if os.path.exists(path):
       samples = pickle.load(open(path, 'rb'))
       samples[step] = sample
@@ -119,11 +123,10 @@ class Saver:
     with open(path, 'wb') as file:
       pickle.dump(samples, file, protocol=pickle.HIGHEST_PROTOCOL)
     if visualize:
-      size = jnp.sqrt(sample.shape[0])
+      size = int(jnp.sqrt(sample.shape[0]))
       sample = jnp.reshape(sample, (size, size))
-      image_path = os.path.join(self.save_dir, f'sample_{step}.jpeg')
-      im = Image.fromarray(sample)
-      im.save(image_path)
+      image_path = os.path.join(root_path, f'sample_{step}.jpeg')
+      plt.imsave(image_path, np.array(sample), cmap=cm.gray)
 
 
 
