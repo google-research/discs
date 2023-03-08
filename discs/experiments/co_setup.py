@@ -1,7 +1,7 @@
-from discs.graph_loader import graph_gen
 import optax
 from absl import flags
 import pdb
+from discs.graph_loader import graph_gen
 
 flags.DEFINE_integer('seed', 1, 'seed')
 flags.DEFINE_bool('do_eval', False, 'eval?')

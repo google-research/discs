@@ -78,6 +78,7 @@ def solve_dataset(config, global_key, logger,
   results = {'best_ratio': np.zeros((0,), dtype=np.float32),
              'sample_idx': np.zeros((0,), dtype=np.int32),
              'reference_obj': np.zeros((0,), dtype=np.float32)}
+  pdb.set_trace()
   with metric_writers.ensure_flushes(logger):
     for batch_idx, data_list in enumerate(datagen):
       sample_idx, params, reference_obj = zip(*data_list)

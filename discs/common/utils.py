@@ -8,6 +8,7 @@ from clu import metric_writers
 import flax
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 
 @flax.struct.dataclass
@@ -126,21 +127,16 @@ def create_sharded_sampler_state(sampler_key, model, sampler, num_samples):
   return local_state
 
 
-def graph2edges(
-    g,
-    build_bidir_edges=False,
-    padded_num_edges=0,
-    padded_weight=0.0,
-    has_edge_weights=True,
-):
+def graph2edges(g, build_bidir_edges=False,
+                padded_num_edges=0, padded_weight=0.0, has_edge_weights=True):
   """Convert nx graph into param dict."""
   num_edges = len(g.edges())
   if padded_num_edges and padded_num_edges > num_edges:
     num_edges = padded_num_edges
-  edge_from = jnp.zeros((num_edges,), dtype=jnp.int32)
-  edge_to = jnp.zeros((num_edges,), dtype=jnp.int32)
+  edge_from = np.zeros((num_edges,), dtype=np.int32)
+  edge_to = np.zeros((num_edges,), dtype=np.int32)
   if has_edge_weights:
-    edge_weight = jnp.zeros((num_edges,), dtype=jnp.float32) + padded_weight
+    edge_weight = np.zeros((num_edges,), dtype=np.float32) + padded_weight
   for i, e in enumerate(g.edges(data=True)):
     x, y = e[0], e[1]
     edge_from[i] = x
@@ -152,7 +148,7 @@ def graph2edges(
       'num_edges': jnp.array([len(g.edges())], dtype=jnp.int32),
       'edge_from': jnp.array(edge_from),
       'edge_to': jnp.array(edge_to),
-      'edge_mask': jnp.array(edge_mask, dtype=jnp.int32),
+      'edge_mask': jnp.array(edge_mask, dtype=jnp.int32)
   }
   if has_edge_weights:
     ret['edge_weight'] = jnp.array(edge_weight)
@@ -161,11 +157,9 @@ def graph2edges(
     ret['bidir_edge_to'] = jnp.concatenate((ret['edge_to'], ret['edge_from']))
     if has_edge_weights:
       ret['bidir_edge_weight'] = jnp.concatenate(
-          (ret['edge_weight'], ret['edge_weight'])
-      )
+          (ret['edge_weight'], ret['edge_weight']))
   ret['mask'] = None
   return ret
-
 
 def parse_cfg_str(cfg):
   kv_pairs = cfg.split(',')

@@ -7,6 +7,8 @@ import numpy as np
 import pickle
 from discs.common import utils
 from discs.graph_loader import common as data_common
+import pdb
+#from sco.common import utils
 
 
 class MaxcutGen(data_common.GraphGenerator):
