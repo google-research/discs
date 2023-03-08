@@ -7,6 +7,9 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import os
 import csv
+import pickle
+from PIL import Image
+
 
 
 class Saver:
@@ -104,6 +107,24 @@ class Saver:
     self._plot_acc_ratio(acc_ratio)
     self._plot_hops(hops)
     self._save_results(metrcis, running_time)
+
+  def dump_sample(self, sample, step, visualize=Fasle):
+    path = os.path.join(self.save_dir, 'samples.pkl')
+    if os.path.exists(path):
+      samples = pickle.load(open(path, 'rb'))
+      samples[step] = sample
+    else:
+      samples = {}
+      samples[step] = sample
+    with open(path, 'wb') as file:
+      pickle.dump(samples, file, protocol=pickle.HIGHEST_PROTOCOL)
+    if visualize:
+      size = jnp.sqrt(sample.shape[0])
+      sample = jnp.reshape(sample, (size, size))
+      image_path = os.path.join(self.save_dir, f'sample_{step}.jpeg')
+      im = Image.fromarray(sample)
+      im.save(image_path)
+
 
 
 def build_saver(save_dir, config):

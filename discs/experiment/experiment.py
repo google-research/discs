@@ -54,7 +54,9 @@ class Experiment:
 
     else:
       compiled_eval_step = jax.pmap(evaluator.evaluate_step)
-      compiled_eval_chain = jax.pmap(evaluator.evaluate_chain, static_broadcasted_argnums=[1])
+      compiled_eval_chain = jax.pmap(
+          evaluator.evaluate_chain, static_broadcasted_argnums=[1]
+      )
     return compiled_eval_step, compiled_eval_chain
 
   def _setup_num_devices(self):
@@ -64,14 +66,14 @@ class Experiment:
       n_rand_split = jax.local_device_count()
     return n_rand_split
 
-  def get_results(self, model, sampler, evaluator):
+  def get_results(self, model, sampler, evaluator, saver):
     num_ll_calls, acc_ratios, hops, evals, running_time, _ = (
-        self._get_chains_and_evaluations(model, sampler, evaluator)
+        self._get_chains_and_evaluations(model, sampler, evaluator, saver)
     )
     metrcis = evaluator.get_eval_metrics(evals[-1], running_time, num_ll_calls)
     return metrcis, running_time, acc_ratios, hops
 
-  def _get_chains_and_evaluations(self, model, sampler, evaluator):
+  def _get_chains_and_evaluations(self, model, sampler, evaluator, saver):
     """Sets up the model and the samlping alg and gets the chain of samples."""
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
@@ -96,6 +98,7 @@ class Experiment:
         x,
         n_rand_split,
         x0_ess,
+        saver,
     )
     if self.config.run_parallel:
       num_ll_calls = state['num_ll_calls'][0]
@@ -115,36 +118,73 @@ class Experiment:
       x,
       n_rand_split,
       x0_ess,
+      saver,
   ):
     """Generates the chain of samples."""
-    chain = []
+
+    # burn in
+    burn_in_length = int(self.config.chain_length * self.config.ess_ratio)
     acc_ratios = []
     hops = []
     evaluations = []
-    running_time = 0
-    for _ in tqdm.tqdm(range(self.config.chain_length)):
+    for step in tqdm.tqdm(range(burn_in_length)):
       if self.config.run_parallel:
         rng_sampler_step_p = jax.random.split(
             rng_sampler_step, num=n_rand_split
         )
       else:
         rng_sampler_step_p = rng_sampler_step
+      new_x, state, acc = sampler_step(
+          model, rng_sampler_step_p, x, params, state
+      )
+      del rng_sampler_step_p
+      eval_val = eval_step_fn(new_x, model, params)
+      if eval_val:
+        evaluations.append(eval_val)
+      if step % self.config.save_every_steps == 0:
+        if eval_val:
+          chosen_sample_idx = jnp.argmax(eval_val)
+          sample = new_x[chosen_sample_idx]
+        else:
+          sample = new_x[0]
+        saver.dump_sample(sample, step, self.config_model.name == 'rbm')
+      acc_ratios.append(acc)
+      hops.append(self._get_hop(x, new_x))
+      rng_sampler_step, _ = jax.random.split(rng_sampler_step)
+      x = new_x
 
+    # after burn in
+    running_time = 0
+    chain = []
+    for step in tqdm.tqdm(range(burn_in_length + 1, self.config.chain_length)):
+      if self.config.run_parallel:
+        rng_sampler_step_p = jax.random.split(
+            rng_sampler_step, num=n_rand_split
+        )
+      else:
+        rng_sampler_step_p = rng_sampler_step
       start = time.time()
       new_x, state, acc = sampler_step(
           model, rng_sampler_step_p, x, params, state
       )
       running_time += time.time() - start
       del rng_sampler_step_p
-      rng_sampler_step, _ = jax.random.split(rng_sampler_step)
       eval_val = eval_step_fn(new_x, model, params)
       if eval_val:
         evaluations.append(eval_val)
+      if step % self.config.save_every_steps == 0:
+        if eval_val:
+          chosen_sample_idx = jnp.argmax(eval_val)
+          sample = new_x[chosen_sample_idx]
+        else:
+          sample = new_x[0]
+        saver.dump_sample(sample, step, self.config_model.name == 'rbm')
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
-      chain.append(self._get_mapped_samples(new_x, x0_ess))
+      rng_sampler_step, _ = jax.random.split(rng_sampler_step)
       x = new_x
-    chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
+      chain.append(self._get_mapped_samples(new_x, x0_ess))
+
     chain = jnp.array(chain)
     eval_val = eval_chain_fn(chain, rng_sampler_step)
     if eval_val:

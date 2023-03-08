@@ -71,7 +71,7 @@ def main(_):
   saver = saver_mod.build_saver(get_save_dir(config), config)
 
   metrics, running_time, acc_ratio, hops = experiment.get_results(
-      model, sampler, evaluator
+      model, sampler, evaluator, saver
   )
   saver.save_results(acc_ratio, hops, metrics, running_time)
 
