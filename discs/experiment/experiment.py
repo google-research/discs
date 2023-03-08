@@ -9,6 +9,7 @@ import time
 import functools
 from discs.common import utils
 
+
 class Experiment:
   """Experiment class that generates chains of samples."""
 
@@ -20,7 +21,7 @@ class Experiment:
     else:
       self.run_parallel = True
 
-  def _initialize_model_and_sampler(self, rnd, model, sampler, datagen=None):
+  def _initialize_model_and_sampler(self, rnd, model, sampler_init_fn, datagen=None):
     num_samples = self.config.batch_size
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
     if datagen:
@@ -34,7 +35,8 @@ class Experiment:
       params = flax.core.frozen_dict.freeze(self.config_model.params)
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
-    state = sampler.make_init_state(rng_state)
+    state = sampler_init_fn(jax.random.split(rng_state, math.prod(bshape)))
+    
     return params, x0, state, x0_ess
 
   def _split(self, arr, n_devices):
@@ -45,10 +47,17 @@ class Experiment:
       state[key] = jnp.hstack([state[key]] * n_devices)
     return state
 
-  def _prepare_data_for_parallel(self, params, x, state, n_devices):
-    params = jnp.stack([params] * n_devices)
-    state = self._prepare_state(state, n_devices)
-    x = self._split(x, n_devices)
+  def _prepare_data(self, params, x, state, n_devices, fn_breshape):
+    if datagen:
+      params = jax.tree_map(
+          lambda x: jnp.tile(x, [batch_repeat] + [1] * (x.ndim - 1)), params)
+      params = jax.tree_map(fn_breshape, params)
+      state = jax.tree_map(fn_breshape, state)
+      x = jnp.reshape(x, sample_bshape + x.shape[1:])
+    elif self.run_parallel:
+      params = jnp.stack([params] * n_devices)
+      state = self._prepare_state(state, n_devices)
+      x = self._split(x, n_devices)
     return params, x, state
 
   def _compile_sampler_step(self, step_fn):
@@ -91,22 +100,20 @@ class Experiment:
     obj_fn_chain = jax.vmap(evaluator.evaluate_chain)
     return sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain
 
-  def _get_chains_and_evaluations(self, model, sampler, evaluator, datagen=None):
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, datagen=None
+  ):
     """Sets up the model and the samlping alg and gets the chain of samples."""
-    pdb.set_trace()
     sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain = (
         self._get_vmapped_functions(sampler, model, evaluator)
     )
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
-        rnd, model, sampler, datagen
+        rnd, model, sampler_init_fn, datagen
     )
     model_params = params
     n_rand_split = self._setup_num_devices()
-    if self.run_parallel:
-      params, x, state = self._prepare_data_for_parallel(
-          params, x, state, n_rand_split
-      )
+    params, x, state = self._prepare_data(params, x, state, n_rand_split)
     compiled_step = self._compile_sampler_step(step_fn)
     compiled_eval_step, compiled_eval_chain = self._compile_evaluator(
         obj_fn_step, obj_fn_chain
