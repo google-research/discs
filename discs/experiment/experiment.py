@@ -7,7 +7,7 @@ import pdb
 import flax
 import time
 import functools
-
+from discs.common import utils
 
 class Experiment:
   """Experiment class that generates chains of samples."""
@@ -20,21 +20,19 @@ class Experiment:
     else:
       self.run_parallel = True
 
-  def _initialize_model_and_sampler(self, rnd, model, sampler):
+  def _initialize_model_and_sampler(self, rnd, model, sampler, datagen=None):
+    num_samples = self.config.batch_size
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
-    if not self.config_model.get('data_path', None):
+    if datagen:
+      data_list = next(datagen)
+      _, params, _ = zip(*data_list)
+      params = utils.tree_stack(params)
+      num_samples *= self.config.num_models
+    elif not self.config_model.get('data_path', None):
       params = model.make_init_params(rng_param)
-    elif self.config_model.get('cfg_str', None):
-      sample_idx, params, reference_obj = zip(*data_list)
-      reference_obj = np.array(reference_obj, dtype=np.float32)
-      sample_idx = np.array(sample_idx, dtype=np.int32)
-      params = discs_utils.tree_stack(params)
-      params = jax.tree_map(
-          lambda x: jnp.tile(x, [batch_repeat] + [1] * (x.ndim - 1)), params)
-      params = jax.tree_map(fn_breshape, params)
     else:
       params = flax.core.frozen_dict.freeze(self.config_model.params)
-    x0 = model.get_init_samples(rng_x0, self.config.batch_size)
+    x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
     state = sampler.make_init_state(rng_state)
     return params, x0, state, x0_ess
@@ -79,9 +77,9 @@ class Experiment:
       n_rand_split = jax.local_device_count()
     return n_rand_split
 
-  def get_results(self, model, sampler, evaluator):
+  def get_results(self, model, sampler, evaluator, datagen=None):
     num_ll_calls, acc_ratios, hops, evals, running_time, _ = (
-        self._get_chains_and_evaluations(model, sampler, evaluator)
+        self._get_chains_and_evaluations(model, sampler, evaluator, datagen)
     )
     metrcis = evaluator.get_eval_metrics(evals[-1], running_time, num_ll_calls)
     return metrcis, running_time, acc_ratios, hops
@@ -89,21 +87,19 @@ class Experiment:
   def _get_vmapped_functions(self, sampler, model, evaluator):
     sampler_init_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
-    obj_fn_step = jax.pmap(evaluator.evaluate_step)
-    obj_fn_chain = jax.pmap(
-        evaluator.evaluate_chain, static_broadcasted_argnums=[1]
-    )
+    obj_fn_step = jax.vmap(evaluator.evaluate_step)
+    obj_fn_chain = jax.vmap(evaluator.evaluate_chain)
     return sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain
 
-  def _get_chains_and_evaluations(self, model, sampler, evaluator):
+  def _get_chains_and_evaluations(self, model, sampler, evaluator, datagen=None):
     """Sets up the model and the samlping alg and gets the chain of samples."""
-
+    pdb.set_trace()
     sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain = (
         self._get_vmapped_functions(sampler, model, evaluator)
     )
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
-        rnd, model, sampler
+        rnd, model, sampler, datagen
     )
     model_params = params
     n_rand_split = self._setup_num_devices()
