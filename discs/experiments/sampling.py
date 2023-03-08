@@ -45,17 +45,17 @@ def solve_dataset(config, global_key, logger,
 
   if exp_config.num_models > jax.local_device_count():
     assert exp_config.num_models % jax.local_device_count() == 0
-    num_instances_per_device = exp_config.num_models // jax.local_device_count()
+    num_models_per_device = exp_config.num_models // jax.local_device_count()
     batch_repeat = 1
   else:
     assert jax.local_device_count() % exp_config.num_models == 0
     batch_repeat = jax.local_device_count() // exp_config.num_models
-    num_instances_per_device = 1
+    num_models_per_device = 1
 
   sampler_init_fn = jax.vmap(sampler.make_init_state)
   step_fn = jax.vmap(functools.partial(sampler.step, model=model))
   obj_fn = jax.vmap(model.evaluate)
-  bshape = (num_instances_per_device,)
+  bshape = (num_models_per_device,)
   if jax.local_device_count() == 1:
     step_fn = jax.jit(step_fn)
     obj_fn = jax.jit(obj_fn)
@@ -84,8 +84,7 @@ def solve_dataset(config, global_key, logger,
       reference_obj = np.array(reference_obj, dtype=np.float32)
       sample_idx = np.array(sample_idx, dtype=np.int32)
       params = discs_utils.tree_stack(params)
-      params = jax.tree_map(
-          lambda x: jnp.tile(x, [batch_repeat] + [1] * (x.ndim - 1)), params)
+      params = jax.tree_map(lambda x: jnp.tile(x, [batch_repeat] + [1] * (x.ndim - 1)), params)
       params = jax.tree_map(fn_breshape, params)
       sample_mask = sample_idx >= 0
 

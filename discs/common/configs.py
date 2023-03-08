@@ -31,7 +31,6 @@ def get_config():
           batch_size=100,
           chain_length=100000,
           ess_ratio=0.5,
-          run_parallel=False,
           window_size=10,
           window_stride=10,
           shuffle_buffer_size=0,

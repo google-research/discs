@@ -6,6 +6,7 @@ import tqdm
 import pdb
 import flax
 import time
+import functools
 
 
 class Experiment:
@@ -14,11 +15,23 @@ class Experiment:
   def __init__(self, config):
     self.config = config.experiment
     self.config_model = config.model
+    if jax.local_device_count() == 1:
+      self.run_parallel = False
+    else:
+      self.run_parallel = True
 
   def _initialize_model_and_sampler(self, rnd, model, sampler):
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
     if not self.config_model.get('data_path', None):
       params = model.make_init_params(rng_param)
+    elif self.config_model.get('cfg_str', None):
+      sample_idx, params, reference_obj = zip(*data_list)
+      reference_obj = np.array(reference_obj, dtype=np.float32)
+      sample_idx = np.array(sample_idx, dtype=np.int32)
+      params = discs_utils.tree_stack(params)
+      params = jax.tree_map(
+          lambda x: jnp.tile(x, [batch_repeat] + [1] * (x.ndim - 1)), params)
+      params = jax.tree_map(fn_breshape, params)
     else:
       params = flax.core.frozen_dict.freeze(self.config_model.params)
     x0 = model.get_init_samples(rng_x0, self.config.batch_size)
@@ -40,25 +53,27 @@ class Experiment:
     x = self._split(x, n_devices)
     return params, x, state
 
-  def _compile_sampler_step(self, sampler):
-    if not self.config.run_parallel:
-      compiled_step = jax.jit(sampler.step, static_argnums=0)
+  def _compile_sampler_step(self, step_fn):
+    if not self.run_parallel:
+      compiled_step = jax.jit(step_fn, static_argnums=0)
     else:
-      compiled_step = jax.pmap(sampler.step, static_broadcasted_argnums=[0])
+      compiled_step = jax.pmap(step_fn, static_broadcasted_argnums=[0])
     return compiled_step
 
-  def _compile_evaluator(self, evaluator):
-    if not self.config.run_parallel:
-      compiled_eval_step = jax.jit(evaluator.evaluate_step, static_argnums=1)
-      compiled_eval_chain = jax.jit(evaluator.evaluate_chain)
+  def _compile_evaluator(self, obj_fn_step, obj_fn_chain):
+    if not self.run_parallel:
+      compiled_eval_step = jax.jit(obj_fn_step, static_argnums=1)
+      compiled_eval_chain = jax.jit(obj_fn_chain)
 
     else:
-      compiled_eval_step = jax.pmap(evaluator.evaluate_step)
-      compiled_eval_chain = jax.pmap(evaluator.evaluate_chain, static_broadcasted_argnums=[1])
+      compiled_eval_step = jax.pmap(obj_fn_step)
+      compiled_eval_chain = jax.pmap(
+          obj_fn_chain, static_broadcasted_argnums=[1]
+      )
     return compiled_eval_step, compiled_eval_chain
 
   def _setup_num_devices(self):
-    if not self.config.run_parallel:
+    if not self.run_parallel:
       n_rand_split = 2
     else:
       n_rand_split = jax.local_device_count()
@@ -71,20 +86,35 @@ class Experiment:
     metrcis = evaluator.get_eval_metrics(evals[-1], running_time, num_ll_calls)
     return metrcis, running_time, acc_ratios, hops
 
+  def _get_vmapped_functions(self, sampler, model, evaluator):
+    sampler_init_fn = jax.vmap(sampler.make_init_state)
+    step_fn = jax.vmap(functools.partial(sampler.step, model=model))
+    obj_fn_step = jax.pmap(evaluator.evaluate_step)
+    obj_fn_chain = jax.pmap(
+        evaluator.evaluate_chain, static_broadcasted_argnums=[1]
+    )
+    return sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain
+
   def _get_chains_and_evaluations(self, model, sampler, evaluator):
     """Sets up the model and the samlping alg and gets the chain of samples."""
+
+    sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain = (
+        self._get_vmapped_functions(sampler, model, evaluator)
+    )
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
         rnd, model, sampler
     )
     model_params = params
     n_rand_split = self._setup_num_devices()
-    if self.config.run_parallel:
+    if self.run_parallel:
       params, x, state = self._prepare_data_for_parallel(
           params, x, state, n_rand_split
       )
-    compiled_step = self._compile_sampler_step(sampler)
-    compiled_eval_step, compiled_eval_chain = self._compile_evaluator(evaluator)
+    compiled_step = self._compile_sampler_step(step_fn)
+    compiled_eval_step, compiled_eval_chain = self._compile_evaluator(
+        obj_fn_step, obj_fn_chain
+    )
     state, acc_ratios, hops, evals, running_time = self._compute_chain(
         model,
         compiled_step,
@@ -97,7 +127,7 @@ class Experiment:
         n_rand_split,
         x0_ess,
     )
-    if self.config.run_parallel:
+    if self.run_parallel:
       num_ll_calls = state['num_ll_calls'][0]
     else:
       num_ll_calls = state['num_ll_calls']
@@ -123,7 +153,7 @@ class Experiment:
     evaluations = []
     running_time = 0
     for _ in tqdm.tqdm(range(self.config.chain_length)):
-      if self.config.run_parallel:
+      if self.run_parallel:
         rng_sampler_step_p = jax.random.split(
             rng_sampler_step, num=n_rand_split
         )
