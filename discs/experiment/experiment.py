@@ -149,7 +149,6 @@ class Experiment:
         else:
           chosen_sample_idx = int(jax.random.randint(rng_randint, shape=(1,), minval=0, maxval=x.shape[0])[0])
           sample = new_x[chosen_sample_idx]
-        pdb.set_trace()
         saver.dump_sample(sample, step, self.config_model.get('visualize', False))
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))

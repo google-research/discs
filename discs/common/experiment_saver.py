@@ -116,10 +116,9 @@ class Saver:
     path = os.path.join(root_path, 'samples.pkl')
     if os.path.exists(path):
       samples = pickle.load(open(path, 'rb'))
-      samples[step] = sample
     else:
       samples = {}
-      samples[step] = sample
+    samples[step] = sample
     with open(path, 'wb') as file:
       pickle.dump(samples, file, protocol=pickle.HIGHEST_PROTOCOL)
     if visualize:
