@@ -149,7 +149,8 @@ class Experiment:
         else:
           chosen_sample_idx = int(jax.random.randint(rng_randint, shape=(1,), minval=0, maxval=x.shape[0])[0])
           sample = new_x[chosen_sample_idx]
-        saver.dump_sample(sample, step, self.config_model.name == 'rbm')
+        pdb.set_trace()
+        saver.dump_sample(sample, step, self.config_model.get('visualize', False))
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
       rng_sampler_step, _ = jax.random.split(rng_sampler_step)
@@ -182,7 +183,7 @@ class Experiment:
         else:
           chosen_sample_idx = int(jax.random.randint(rng_randint, shape=(1,), minval=0, maxval=x.shape[0])[0])
           sample = new_x[chosen_sample_idx]
-        saver.dump_sample(sample, step, self.config_model.name == 'rbm')
+        saver.dump_sample(sample, step, self.config_model.get('visualize', False))
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
       x = new_x
