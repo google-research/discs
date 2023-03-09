@@ -2,6 +2,7 @@ import optax
 from absl import flags
 import pdb
 from discs.graph_loader import graph_gen
+import logging
 
 flags.DEFINE_integer('seed', 1, 'seed')
 flags.DEFINE_bool('do_eval', False, 'eval?')
@@ -41,5 +42,6 @@ def update_graph_config(config, graphs):
 def get_datagen(config):
   test_graphs = graph_gen.get_graphs(config)
   update_graph_config(config, test_graphs)
+  logging.info(config)
   datagen = test_graphs.get_iterator('test', config.experiment.num_models)
   return datagen
