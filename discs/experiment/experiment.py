@@ -86,10 +86,13 @@ class Experiment:
           params, x, state, n_rand_split
       )
     compiled_step = self._compile_sampler_step(sampler)
+    compiled_step_burnin = compiled_step
+    compiled_step_mixing = compiled_step
     compiled_eval_step, compiled_eval_chain = self._compile_evaluator(evaluator)
     state, acc_ratios, hops, evals, running_time = self._compute_chain(
         model,
-        compiled_step,
+        compiled_step_burnin,
+        compiled_step_mixing,
         compiled_eval_step,
         compiled_eval_chain,
         state,
@@ -109,7 +112,8 @@ class Experiment:
   def _compute_chain(
       self,
       model,
-      sampler_step,
+      sampler_step_burnin,
+      sampler_step_mixing,
       eval_step_fn,
       eval_chain_fn,
       state,
@@ -121,7 +125,7 @@ class Experiment:
       saver,
   ):
     """Generates the chain of samples."""
-    
+
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
     acc_ratios = []
@@ -134,7 +138,7 @@ class Experiment:
         )
       else:
         rng_sampler_step_p = rng_sampler_step
-      new_x, state, acc = sampler_step(
+      new_x, state, acc = sampler_step_burnin(
           model, rng_sampler_step_p, x, params, state
       )
       del rng_sampler_step_p
@@ -146,9 +150,15 @@ class Experiment:
         if eval_val:
           chosen_sample_idx = jnp.argmax(eval_val)
         else:
-          chosen_sample_idx = int(jax.random.randint(rng_randint, shape=(1,), minval=0, maxval=x.shape[0])[0])
+          chosen_sample_idx = int(
+              jax.random.randint(
+                  rng_randint, shape=(1,), minval=0, maxval=x.shape[0]
+              )[0]
+          )
         sample = new_x[chosen_sample_idx]
-        saver.dump_sample(sample, step, self.config_model.get('visualize', False))
+        saver.dump_sample(
+            sample, step, self.config_model.get('visualize', False)
+        )
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
       x = new_x
@@ -156,7 +166,7 @@ class Experiment:
     # after burn in
     running_time = 0
     chain = []
-    for step in tqdm.tqdm(range( burn_in_length, 1 + self.config.chain_length)):
+    for step in tqdm.tqdm(range(burn_in_length, 1 + self.config.chain_length)):
       if self.config.run_parallel:
         rng_sampler_step_p = jax.random.split(
             rng_sampler_step, num=n_rand_split
@@ -164,7 +174,7 @@ class Experiment:
       else:
         rng_sampler_step_p = rng_sampler_step
       start = time.time()
-      new_x, state, acc = sampler_step(
+      new_x, state, acc = sampler_step_mixing(
           model, rng_sampler_step_p, x, params, state
       )
       running_time += time.time() - start
@@ -177,9 +187,15 @@ class Experiment:
         if eval_val:
           chosen_sample_idx = jnp.argmax(eval_val)
         else:
-          chosen_sample_idx = int(jax.random.randint(rng_randint, shape=(1,), minval=0, maxval=x.shape[0])[0])
+          chosen_sample_idx = int(
+              jax.random.randint(
+                  rng_randint, shape=(1,), minval=0, maxval=x.shape[0]
+              )[0]
+          )
         sample = new_x[chosen_sample_idx]
-        saver.dump_sample(sample, step, self.config_model.get('visualize', False))
+        saver.dump_sample(
+            sample, step, self.config_model.get('visualize', False)
+        )
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
       x = new_x
