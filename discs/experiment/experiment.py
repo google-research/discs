@@ -40,17 +40,23 @@ class Experiment:
       raise ValueError('Unknown schedule %s' % config.t_schedule)
     return schedule
 
-  def _initialize_model_and_sampler(self, rnd, model, sampler_init_fn):
+  def _initialize_model_and_sampler(
+      self, rnd, model, sampler_init_state_fn, model_init_params_fn
+  ):
+    """Initializes model params, sampler state and gets initial samples."""
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
     if not self.config_model.get('data_path', None):
-      params = model.make_init_params(rng_param)
+      params = model_init_params_fn(
+          jax.random.split(rng_param, self.config.num_models)
+      )
     else:
       params = self.config_model.params
     num_samples = self.config.batch_size * self.config.num_models
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
-    state = sampler_init_fn(jax.random.split(rng_state, self.config.num_models))
-
+    state = sampler_init_state_fn(
+        jax.random.split(rng_state, self.config.num_models)
+    )
     return params, x0, state, x0_ess
 
   def _split(self, arr, n_devices):
@@ -61,17 +67,23 @@ class Experiment:
       state[key] = jnp.hstack([state[key]] * n_devices)
     return state
 
-  def _prepare_data(self, params, x, state, n_devices, co_model=False):
-    if co_model:
-      bshape = (n_devices, self.config.num_models // n_devices)
-      fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
-      params = jax.tree_map(fn_breshape, params)
-      state = jax.tree_map(fn_breshape, state)
-      x = jnp.reshape(x, bshape + (self.config.batch_size,) + x.shape[1:])
-    elif self.run_parallel:
-      params = jnp.stack([params] * n_devices)
-      state = self._prepare_state(state, n_devices)
-      x = self._split(x, n_devices)
+  def _prepare_data(self, params, x, state, n_devices):
+    if self.config.num_models > n_devices:
+      assert self.config.num_models % n_devices == 0
+      batch_size_per_device = self.config.num_models // n_devices
+    else:
+      batch_size_per_device = 1
+
+    bshape = (n_devices, batch_size_per_device)
+    fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
+    params = jax.tree_map(fn_breshape, params)
+    state = jax.tree_map(fn_breshape, state)
+    x = jnp.reshape(x, bshape + (self.config.batch_size,) + x.shape[1:])
+    # elif self.run_parallel:
+    #   params = jnp.stack([params] * n_devices)
+    #   state = self._prepare_state(state, n_devices)
+    #   x = self._split(x, n_devices)
+
     return params, x, state
 
   def _compile_sampler_step(self, step_fn):
@@ -83,14 +95,12 @@ class Experiment:
 
   def _compile_evaluator(self, obj_fn_step, obj_fn_chain):
     if not self.run_parallel:
-      compiled_eval_step = jax.jit(obj_fn_step, static_argnums=1)
+      compiled_eval_step = jax.jit(obj_fn_step)
       compiled_eval_chain = jax.jit(obj_fn_chain)
 
     else:
       compiled_eval_step = jax.pmap(obj_fn_step)
-      compiled_eval_chain = jax.pmap(
-          obj_fn_chain, static_broadcasted_argnums=[1]
-      )
+      compiled_eval_chain = jax.pmap(obj_fn_chain)
     return compiled_eval_step, compiled_eval_chain
 
   def _setup_num_devices(self):
@@ -102,36 +112,43 @@ class Experiment:
 
   def get_results(self, model, sampler, evaluator, datagen=None):
     num_ll_calls, acc_ratios, hops, evals, running_time, _ = (
-        self._get_chains_and_evaluations(model, sampler, evaluator, datagen)
+        self._get_chains_and_evaluations(model, sampler, evaluator)
     )
     metrcis = evaluator.get_eval_metrics(evals[-1], running_time, num_ll_calls)
     return metrcis, running_time, acc_ratios, hops
 
   def _get_vmapped_functions(self, sampler, model, evaluator):
-    sampler_init_fn = jax.vmap(sampler.make_init_state)
+    model_init_params_fn = jax.vmap(model.model.make_init_params)
+    sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
     obj_fn_step = jax.vmap(
         functools.partial(evaluator.evaluate_step, model=model)
     )
     obj_fn_chain = jax.vmap(evaluator.evaluate_chain)
-    return sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain
-
-  def _get_chains_and_evaluations(
-      self, model, sampler, evaluator, datagen=None
-  ):
-    """Sets up the model and the samlping alg and gets the chain of samples."""
-    sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain = (
-        self._get_vmapped_functions(sampler, model, evaluator)
+    return (
+        model_init_params_fn,
+        sampler_init_state_fn,
+        step_fn,
+        obj_fn_step,
+        obj_fn_chain,
     )
+
+  def _get_chains_and_evaluations(self, model, sampler, evaluator):
+    """Sets up the model and the samlping alg and gets the chain of samples."""
+    (
+        model_init_params_fn,
+        sampler_init_state_fn,
+        step_fn,
+        obj_fn_step,
+        obj_fn_chain,
+    ) = self._get_vmapped_functions(sampler, model, evaluator)
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
-        rnd, model, sampler_init_fn
+        rnd, model, sampler_init_state_fn, model_init_params_fn
     )
     model_params = params
     n_rand_split = self._setup_num_devices()
-    params, x, state = self._prepare_data(
-        params, x, state, n_rand_split, datagen
-    )
+    params, x, state = self._prepare_data(params, x, state, n_rand_split)
     compiled_step = self._compile_sampler_step(step_fn)
     compiled_eval_step, compiled_eval_chain = self._compile_evaluator(
         obj_fn_step, obj_fn_chain
