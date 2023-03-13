@@ -5,8 +5,12 @@ import ml_collections
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import os
 import csv
+import pickle
+import pdb
+import numpy as np
 
 
 class Saver:
@@ -104,6 +108,25 @@ class Saver:
     self._plot_acc_ratio(acc_ratio)
     self._plot_hops(hops)
     self._save_results(metrcis, running_time)
+
+  def dump_sample(self, sample, step, visualize=False):
+    root_path = os.path.join(self.save_dir, self.config.sampler.name)
+    if not os.path.isdir(root_path):
+        os.makedirs(root_path)
+    path = os.path.join(root_path, 'samples.pkl')
+    if os.path.exists(path):
+      samples = pickle.load(open(path, 'rb'))
+    else:
+      samples = {}
+    samples[step] = sample
+    with open(path, 'wb') as file:
+      pickle.dump(samples, file, protocol=pickle.HIGHEST_PROTOCOL)
+    if visualize:
+      size = int(jnp.sqrt(sample.shape[0]))
+      sample = jnp.reshape(sample, (size, size))
+      image_path = os.path.join(root_path, f'sample_{step}.jpeg')
+      plt.imsave(image_path, np.array(sample), cmap=cm.gray)
+
 
 
 def build_saver(save_dir, config):

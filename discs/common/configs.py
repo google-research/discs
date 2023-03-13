@@ -37,7 +37,7 @@ def get_config():
           shuffle_buffer_size=0,
           log_every_steps=1,
           plot_every_steps=10,
-          save_every_steps=100,
+          save_every_steps=10000,
           ess_ratio=0.5,
           evaluator= 'ess_eval', # ess_eval or co_eval
       ),
