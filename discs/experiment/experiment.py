@@ -28,33 +28,37 @@ class Experiment:
     if config.t_schedule == 'constant':
       schedule = lambda step: step * 0 + config.init_temperature
     elif config.t_schedule == 'linear':
-      schedule = optax.linear_schedule(config.init_temperature,
-                                     config.final_temperature,
-                                     config.chain_length)
+      schedule = optax.linear_schedule(
+          config.init_temperature, config.final_temperature, config.chain_length
+      )
     elif config.t_schedule == 'exp_decay':
       schedule = optax.exponential_decay(
-          config.init_temperature, config.chain_length, config.decay_rate,
-          end_value=config.final_temperature)
+          config.init_temperature,
+          config.chain_length,
+          config.decay_rate,
+          end_value=config.final_temperature,
+      )
     else:
       raise ValueError('Unknown schedule %s' % config.t_schedule)
     return schedule
 
-  def _initialize_model_and_sampler(self, rnd, model, sampler_init_fn, datagen=None):
-    num_samples = self.config.batch_size
+  def _initialize_model_and_sampler(
+      self, rnd, model, sampler_init_fn, datagen=None
+  ):
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
     if datagen:
       data_list = next(datagen)
       _, params, _ = zip(*data_list)
       params = utils.tree_stack(params)
-      num_samples *= self.config.num_models
     elif not self.config_model.get('data_path', None):
       params = model.make_init_params(rng_param)
     else:
       params = flax.core.frozen_dict.freeze(self.config_model.params)
+    num_samples = self.config.batch_size * self.config.num_models
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
     state = sampler_init_fn(jax.random.split(rng_state, self.config.num_models))
-    
+
     return params, x0, state, x0_ess
 
   def _split(self, arr, n_devices):
@@ -114,7 +118,9 @@ class Experiment:
   def _get_vmapped_functions(self, sampler, model, evaluator):
     sampler_init_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
-    obj_fn_step = jax.vmap(functools.partial(evaluator.evaluate_step, model=model) )
+    obj_fn_step = jax.vmap(
+        functools.partial(evaluator.evaluate_step, model=model)
+    )
     obj_fn_chain = jax.vmap(evaluator.evaluate_chain)
     return sampler_init_fn, step_fn, obj_fn_step, obj_fn_chain
 
@@ -131,10 +137,12 @@ class Experiment:
     )
     model_params = params
     n_rand_split = self._setup_num_devices()
-    params, x, state = self._prepare_data(params, x, state, n_rand_split, datagen)
+    params, x, state = self._prepare_data(
+        params, x, state, n_rand_split, datagen
+    )
     compiled_step = self._compile_sampler_step(step_fn)
-    compiled_eval_step , compiled_eval_chain = self._compile_evaluator(
-       obj_fn_step, obj_fn_chain
+    compiled_eval_step, compiled_eval_chain = self._compile_evaluator(
+        obj_fn_step, obj_fn_chain
     )
     t_schedule = self._build_temperature_schedule(self.config)
     state, acc_ratios, hops, evals, running_time = self._compute_chain(
@@ -168,7 +176,7 @@ class Experiment:
       x,
       n_rand_split,
       x0_ess,
-      t_schedule
+      t_schedule,
   ):
     """Generates the chain of samples."""
     chain = []
@@ -176,23 +184,29 @@ class Experiment:
     hops = []
     evaluations = []
     running_time = 0
-    bshape = (2, self.config.num_models//2)
+    bshape = (2, self.config.num_models // 2)
     init_temperature = jnp.ones(bshape, dtype=jnp.float32)
     for step in tqdm.tqdm(range(self.config.chain_length)):
-#      if self.run_parallel:
-#        rng_sampler_step_p = jax.random.split(
-#            rng_sampler_step, num=n_rand_split
-#        )
-#      else:
-#        rng_sampler_step_p = rng_sampler_step
+      #      if self.run_parallel:
+      #        rng_sampler_step_p = jax.random.split(
+      #            rng_sampler_step, num=n_rand_split
+      #        )
+      #      else:
+      #        rng_sampler_step_p = rng_sampler_step
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
       rng = jax.random.fold_in(rng, step)
       fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
-      rng_sampler_step_p = fn_breshape(jax.random.split(rng, self.config.num_models))
+      rng_sampler_step_p = fn_breshape(
+          jax.random.split(rng, self.config.num_models)
+      )
       start = time.time()
       new_x, state, acc = step_fn(
-          rng=rng_sampler_step_p, x=x, model_param=params, state=state, x_mask=params['mask']
+          rng=rng_sampler_step_p,
+          x=x,
+          model_param=params,
+          state=state,
+          x_mask=params['mask'],
       )
       running_time += time.time() - start
       eval_val = eval_step_fn(samples=new_x, params=params)
