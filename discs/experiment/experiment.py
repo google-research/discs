@@ -4,11 +4,9 @@ import jax.numpy as jnp
 from ml_collections import config_dict
 import tqdm
 import pdb
-import flax
 import time
 import functools
 import optax
-from discs.common import utils
 
 
 class Experiment:
@@ -42,18 +40,12 @@ class Experiment:
       raise ValueError('Unknown schedule %s' % config.t_schedule)
     return schedule
 
-  def _initialize_model_and_sampler(
-      self, rnd, model, sampler_init_fn, datagen=None
-  ):
+  def _initialize_model_and_sampler(self, rnd, model, sampler_init_fn):
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
-    if datagen:
-      data_list = next(datagen)
-      _, params, _ = zip(*data_list)
-      params = utils.tree_stack(params)
-    elif not self.config_model.get('data_path', None):
+    if not self.config_model.get('data_path', None):
       params = model.make_init_params(rng_param)
     else:
-      params = flax.core.frozen_dict.freeze(self.config_model.params)
+      params = self.config_model.params
     num_samples = self.config.batch_size * self.config.num_models
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
@@ -133,7 +125,7 @@ class Experiment:
     )
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
-        rnd, model, sampler_init_fn, datagen
+        rnd, model, sampler_init_fn
     )
     model_params = params
     n_rand_split = self._setup_num_devices()

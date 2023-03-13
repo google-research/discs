@@ -57,7 +57,7 @@ def setup_logging(config):
 
 
 def main_(_):
-  config = config_setup.get_main_config(_MODEL_CONFIG.value, _SAMPLER_CONFIG.value)
+  config = config_setup.get_main_config(_MODEL_CONFIG.value, _SAMPLER_CONFIG.value, _WEIGHT_FN.value)
 
   # sampler
   sampler_mod = importlib.import_module(
@@ -88,9 +88,7 @@ def main(_):
   )
   sampler = sampler_mod.build_sampler(config)
 
-  datagen=None
-  if config.model.get('cfg_str', None):
-    datagen = co_setup.get_datagen(config)
+
 
 
   # model
