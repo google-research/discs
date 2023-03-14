@@ -2,6 +2,7 @@
 import jax
 import jax.numpy as jnp
 from ml_collections import config_dict
+from discs.common import math
 import tqdm
 import pdb
 import time
@@ -16,10 +17,9 @@ class Experiment:
   def __init__(self, config):
     self.config = config.experiment
     self.config_model = config.model
-    if jax.local_device_count() == 1:
-      self.run_parallel = False
-    else:
-      self.run_parallel = True
+    self.parallel = False
+    if jax.local_device_count() != 1 and self.config.run_parallel:
+      self.parallel = True
 
   def _build_temperature_schedule(self, config):
     """Temperature schedule."""
@@ -44,7 +44,7 @@ class Experiment:
   def _initialize_model_and_sampler(
       self, rnd, model, sampler_init_state_fn, model_init_params_fn
   ):
-    """Initializes model params, sampler state and gets initial samples."""
+    """Initializes model params, sampler state and gets the initial samples."""
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
     if self.config_model.get('data_path', None):
       params = self.config_model.params
@@ -62,46 +62,37 @@ class Experiment:
     )
     return params, x0, state, x0_ess
 
-  def _split(self, arr, n_devices):
-    return arr.reshape(n_devices, arr.shape[0] // n_devices, *arr.shape[1:])
 
-  def _prepare_state(self, state, n_devices):
-    for key in state:
-      state[key] = jnp.hstack([state[key]] * n_devices)
-    return state
-
-  def _prepare_data(self, params, x, state, n_devices):
+  def _prepare_data(self, params, x, state):
     pdb.set_trace()
-    if self.config.num_models > n_devices:
-      assert self.config.num_models % n_devices == 0
-      batch_size_per_device = self.config.num_models // n_devices
-      breshape = (n_devices, batch_size_per_device)
+    if self.parallel:
+        if self.config.num_models > jax.local_device_count():
+            assert self.config.num_models % jax.local_device_count() == 0
+            num_models_per_device = self.config.num_models // jax.local_device_count()
+            bshape = (jax.local_device_count(), num_models_per_device)
+        else:
+            num_models_per_device = 1
+            bshape = (self.config.num_models, num_models_per_device)
     else:
-      assert self.config.batch_size % n_devices == 0
-      batch_size_per_device = self.config.batch_size // n_devices
-      breshape =  (n_devices, batch_size_per_device)
+        bshape = (self.config.num_models,)
 
-    #breshape = (n_devices, batch_size_per_device,)
-    fn_breshape = lambda par: jnp.reshape(par, breshape + par.shape[1:] )
+    x_shape = bshape + (self.config.batch_size,) + self.config_model.shape
+    fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
     state = jax.tree_map(fn_breshape, state)
     params = jax.tree_map(fn_breshape, params)
-    x = jnp.reshape(x, breshape + (self.config.batch_size,) + self.config_model.shape)
-    # elif self.run_parallel:
-    #   params = jnp.stack([params] * n_devices)
-    #   state = self._prepare_state(state, n_devices)
-    #   x = self._split(x, n_devices)
+    x = jnp.reshape(x, x_shape)
 
-    return params, x, state
+    return params, x, state, fn_breshape, bshape
 
   def _compile_sampler_step(self, step_fn):
-    if not self.run_parallel:
+    if not self.parallel:
       compiled_step = jax.jit(step_fn)
     else:
       compiled_step = jax.pmap(step_fn)
     return compiled_step
 
   def _compile_evaluator(self, obj_fn_step, obj_fn_chain):
-    if not self.run_parallel:
+    if not self.parallel:
       compiled_eval_step = jax.jit(obj_fn_step)
       compiled_eval_chain = jax.jit(obj_fn_chain)
 
@@ -110,16 +101,9 @@ class Experiment:
       compiled_eval_chain = jax.pmap(obj_fn_chain)
     return compiled_eval_step, compiled_eval_chain
 
-  def _setup_num_devices(self):
-    if not self.run_parallel:
-      n_rand_split = 2
-    else:
-      n_rand_split = jax.local_device_count()
-    return n_rand_split
-
-  def get_results(self, model, sampler, evaluator):
+  def get_results(self, model, sampler, evaluator, saver):
     num_ll_calls, acc_ratios, hops, evals, running_time, _ = (
-        self._get_chains_and_evaluations(model, sampler, evaluator)
+        self._get_chains_and_evaluations(model, sampler, evaluator, saver)
     )
     metrcis = evaluator.get_eval_metrics(evals[-1], running_time, num_ll_calls)
     return metrcis, running_time, acc_ratios, hops
@@ -140,7 +124,7 @@ class Experiment:
         obj_fn_chain,
     )
 
-  def _get_chains_and_evaluations(self, model, sampler, evaluator):
+  def _get_chains_and_evaluations(self, model, sampler, evaluator, saver):
     """Sets up the model and the samlping alg and gets the chain of samples."""
     (
         model_init_params_fn,
@@ -154,13 +138,13 @@ class Experiment:
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
     model_params = params
-    n_rand_split = self._setup_num_devices()
-    params, x, state = self._prepare_data(params, x, state, n_rand_split)
+    params, x, state, fn_reshape, breshape = self._prepare_data(params, x, state)
     compiled_step = self._compile_sampler_step(step_fn)
     compiled_eval_step, compiled_eval_chain = self._compile_evaluator(
         obj_fn_step, obj_fn_chain
     )
     t_schedule = self._build_temperature_schedule(self.config)
+    ref_obj = self.config_model.get('ref_obj', None)
     state, acc_ratios, hops, evals, running_time = self._compute_chain(
         model,
         compiled_step,
@@ -170,9 +154,12 @@ class Experiment:
         params,
         rnd,
         x,
-        n_rand_split,
         x0_ess,
+        saver,
         t_schedule,
+        fn_reshape,
+        breshape,
+        ref_obj
     )
     if self.run_parallel:
       num_ll_calls = state['num_ll_calls'][0]
@@ -190,35 +177,30 @@ class Experiment:
       params,
       rng,
       x,
-      n_rand_split,
       x0_ess,
+      saver,
       t_schedule,
+      fn_reshape,
+      bshape,
+      ref_obj = None
   ):
     """Generates the chain of samples."""
     chain = []
     acc_ratios = []
     hops = []
     evaluations = []
+    trajectory = []
     running_time = 0
-    bshape = (2, self.config.num_models // 2)
+    pdb.set_trace()
     init_temperature = jnp.ones(bshape, dtype=jnp.float32)
     for step in tqdm.tqdm(range(self.config.chain_length)):
-      #      if self.run_parallel:
-      #        rng_sampler_step_p = jax.random.split(
-      #            rng_sampler_step, num=n_rand_split
-      #        )
-      #      else:
-      #        rng_sampler_step_p = rng_sampler_step
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
       rng = jax.random.fold_in(rng, step)
-      fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
-      rng_sampler_step_p = fn_breshape(
-          jax.random.split(rng, self.config.num_models)
-      )
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
       start = time.time()
       new_x, state, acc = step_fn(
-          rng=rng_sampler_step_p,
+          rng=step_rng,
           x=x,
           model_param=params,
           state=state,
@@ -227,6 +209,8 @@ class Experiment:
       running_time += time.time() - start
       eval_val = eval_step_fn(samples=new_x, params=params)
       if eval_val != None:
+        best_ratio = jnp.max(eval_val, axis = -1).reshape(-1)/ref_obj
+        print(jnp.mean(best_ratio))
         eval_val = jnp.mean(eval_val)
         evaluations.append(eval_val)
       acc_ratios.append(acc)

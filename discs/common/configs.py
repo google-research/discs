@@ -27,10 +27,11 @@ def get_config():
           name='',
       ),
       experiment=dict(
-          num_models=12,
+          num_models=1,
           batch_size=100,
           chain_length=100000,
           ess_ratio=0.5,
+          run_parallel=True,
           t_schedule='constant',
           init_temperature=1.0,
           window_size=10,

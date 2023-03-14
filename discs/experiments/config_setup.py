@@ -11,6 +11,7 @@ from absl import logging
 from discs.common import configs as common_configs
 from discs.graph_loader import graph_gen
 import yaml
+import jax.numpy as jnp
 
 import pdb
 
@@ -47,9 +48,11 @@ def update_model_cfg(config):
   elif config.model.get('cfg_str', None):
     datagen = get_datagen(config)
     data_list = next(datagen)
-    _, params, _ = zip(*data_list)
+    _, params, reference_obj = zip(*data_list)
     params = utils.tree_stack(params)
     config.model.params = flax.core.frozen_dict.freeze(params)
+    config.model.ref_obj = jnp.array(reference_obj)
+
 
 
 def update_experiment_cfg(config):

@@ -17,7 +17,7 @@ class AbstractEvaluator(abc.ABC):
     return eval_val / (mh_steps * self.config.ess_ratio)
 
   def _eval_over_time(self, eval_val, time):
-    return eval_val / (time * self.config.ess_ratio)
+    return eval_val / (time)
 
   def get_eval_metrics(self, eval_val, running_time, num_ll_calls):
     """Computes objective value over time, M-H step and calls of loglike function."""
