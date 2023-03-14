@@ -62,25 +62,39 @@ class Experiment:
     )
     return params, x0, state, x0_ess
 
+  def _prepare_dict(self, state, n_devices):
+    for key in state:
+      if state[key] is None:
+          continue
+      state[key] = jnp.squeeze(jnp.stack([state[key]] * n_devices), axis=1)
+    return state
 
   def _prepare_data(self, params, x, state):
-    pdb.set_trace()
     if self.parallel:
         if self.config.num_models > jax.local_device_count():
             assert self.config.num_models % jax.local_device_count() == 0
             num_models_per_device = self.config.num_models // jax.local_device_count()
             bshape = (jax.local_device_count(), num_models_per_device)
+            x_shape = bshape + (self.config.batch_size,) + self.config_model.shape
         else:
-            num_models_per_device = 1
-            bshape = (self.config.num_models, num_models_per_device)
+            assert self.config.batch_size % jax.local_device_count() == 0
+            batch_size_per_device = self.config.batch_size // jax.local_device_count()
+            params = self._prepare_dict(params, jax.local_device_count())
+            state = self._prepare_dict(state, jax.local_device_count())
+            bshape = (self.config.num_models, jax.local_device_count())
+            x_shape = bshape + (batch_size_per_device, ) + self.config_model.shape
     else:
         bshape = (self.config.num_models,)
-
-    x_shape = bshape + (self.config.batch_size,) + self.config_model.shape
+        x_shape = bshape + (self.config.batch_size,) + self.config_model.shape
     fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
     state = jax.tree_map(fn_breshape, state)
     params = jax.tree_map(fn_breshape, params)
     x = jnp.reshape(x, x_shape)
+
+    print("x shape: ", x.shape)
+    print("state shape: ", state['steps'].shape)
+    key = list(params.keys())[1]
+    print("params shape: ", params[key].shape) 
 
     return params, x, state, fn_breshape, bshape
 
@@ -210,13 +224,14 @@ class Experiment:
       eval_val = eval_step_fn(samples=new_x, params=params)
       if eval_val != None:
         best_ratio = jnp.max(eval_val, axis = -1).reshape(-1)/ref_obj
-        print(jnp.mean(best_ratio))
+        trajectory.append(np.mean(best_ration))
         eval_val = jnp.mean(eval_val)
         evaluations.append(eval_val)
       acc_ratios.append(acc)
       hops.append(self._get_hop(x, new_x))
       chain.append(self._get_mapped_samples(new_x, x0_ess))
       x = new_x
+    
     chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
     chain = jnp.array(chain)
     eval_val = eval_chain_fn(chain, rng_sampler_step)
