@@ -59,6 +59,7 @@ class Potts(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+    params = params['params']
     if len(x.shape) - 1 == len(self.sample_shape):
       x = jax.nn.one_hot(x, self.num_categories)
 
@@ -86,6 +87,7 @@ class Potts(abstractmodel.AbstractModel):
     return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
 
   def get_value_and_grad(self, params, x):
+    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):

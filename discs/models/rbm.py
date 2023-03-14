@@ -98,6 +98,7 @@ class RBM(abstractmodel.AbstractModel):
     return self.net.apply({'params': params}, v=x)
 
   def get_value_and_grad(self, params, x):
+    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):

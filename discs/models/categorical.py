@@ -33,6 +33,7 @@ class Categorical(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+    params = params['params']
     if len(x.shape) - 1 == len(self.shape):
       x = jax.nn.one_hot(x, self.num_categories)
 
@@ -42,6 +43,7 @@ class Categorical(abstractmodel.AbstractModel):
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
+    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):

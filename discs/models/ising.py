@@ -53,6 +53,7 @@ class Ising(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+    params = params['params']
     x = 2 * x - 1
     w_h = params[0][:, :-1]
     w_v = params[1][:-1, :]
@@ -80,6 +81,7 @@ class Ising(abstractmodel.AbstractModel):
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
+    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):
