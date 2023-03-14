@@ -74,10 +74,13 @@ class Experiment:
     if self.config.num_models > n_devices:
       assert self.config.num_models % n_devices == 0
       batch_size_per_device = self.config.num_models // n_devices
+      breshape = (n_devices, batch_size_per_device)
     else:
-      batch_size_per_device = 1
+      assert self.config.batch_size % n_devices == 0
+      batch_size_per_device = self.config.batch_size // n_devices
+      breshape =  (n_devices, batch_size_per_device)
 
-    breshape = (n_devices, batch_size_per_device,)
+    #breshape = (n_devices, batch_size_per_device,)
     fn_breshape = lambda par: jnp.reshape(par, breshape + par.shape[1:] )
     state = jax.tree_map(fn_breshape, state)
     params = jax.tree_map(fn_breshape, params)
@@ -205,6 +208,7 @@ class Experiment:
       #        )
       #      else:
       #        rng_sampler_step_p = rng_sampler_step
+      pdb.set_trace()
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
       rng = jax.random.fold_in(rng, step)
