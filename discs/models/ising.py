@@ -5,6 +5,7 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 
+
 class Ising(abstractmodel.AbstractModel):
   """Ising Distribution with Cyclic 2D Lattice."""
 
@@ -34,10 +35,10 @@ class Ising(abstractmodel.AbstractModel):
           1,
           -1,
       )
-      
+
       params_b += inner_outter
       params_b = -1 * params_b
-      return jnp.array([params_weight_h, params_weight_v, params_b])
+      return {'params': jnp.array([params_weight_h, params_weight_v, params_b])}
 
     return jnp.array([params_weight_h, params_weight_v])
 

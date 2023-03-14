@@ -10,13 +10,12 @@ class Bernoulli(abstractmodel.AbstractModel):
   """Bernoulli Distribution."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-
     self.shape = config.shape
     self.init_sigma = config.init_sigma
 
   def make_init_params(self, rng):
     params = jax.random.normal(rng, shape=self.shape) * self.init_sigma
-    return params
+    return {'params': params}
 
   def get_init_samples(self, rng, num_samples: int):
     x0 = jax.random.randint(
@@ -24,7 +23,8 @@ class Bernoulli(abstractmodel.AbstractModel):
         shape=(num_samples,) + self.shape,
         minval=0,
         maxval=2,
-        dtype=jnp.int32)
+        dtype=jnp.int32,
+    )
     return x0
 
   def forward(self, params, x):

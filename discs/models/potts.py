@@ -44,7 +44,7 @@ class Potts(abstractmodel.AbstractModel):
 
       params_b += inner_outter
       params_b = -1 * params_b
-      return jnp.array([params_weight_h, params_weight_v, params_b])
+      return {'params': jnp.array([params_weight_h, params_weight_v, params_b])}
 
     return jnp.array([params_weight_h, params_weight_v])
 
@@ -61,7 +61,7 @@ class Potts(abstractmodel.AbstractModel):
   def forward(self, params, x):
     if len(x.shape) - 1 == len(self.sample_shape):
       x = jax.nn.one_hot(x, self.num_categories)
-      
+
     w_h = params[0][:, :-1, :]
     w_v = params[1][:-1, :, :]
 
@@ -82,8 +82,7 @@ class Potts(abstractmodel.AbstractModel):
     if self.external_field_type == 1:
       w_b = params[2]
       loglikelihood += w_b * x
-    
-    
+
     return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
 
   def get_value_and_grad(self, params, x):

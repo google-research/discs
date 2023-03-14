@@ -5,6 +5,7 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 
+
 class Categorical(abstractmodel.AbstractModel):
   """Categorical Distribution."""
 
@@ -18,7 +19,7 @@ class Categorical(abstractmodel.AbstractModel):
         jax.random.normal(rnd, shape=(self.shape + (self.num_categories,)))
         * self.init_sigma
     )
-    return params
+    return {'params': params}
 
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
