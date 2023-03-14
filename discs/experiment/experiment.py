@@ -52,7 +52,8 @@ class Experiment:
       params = flax.core.frozen_dict.unfreeze(self.config_model.params)
     else:
       params = model_init_params_fn(jax.random.split(rng_param, self.config.num_models))
-
+    if 'mask' not in params:
+      params['mask'] = None
     num_samples = self.config.batch_size * self.config.num_models
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)

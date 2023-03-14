@@ -4,6 +4,7 @@ from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
+import pdb
 
 
 class Categorical(abstractmodel.AbstractModel):
@@ -15,7 +16,7 @@ class Categorical(abstractmodel.AbstractModel):
     self.num_categories = config.num_categories
 
   def make_init_params(self, rnd):
-    params = super().make_init_params(rnd)
+    params = {}
     params['params'] = (
         jax.random.normal(rnd, shape=(self.shape + (self.num_categories,)))
         * self.init_sigma
@@ -44,7 +45,6 @@ class Categorical(abstractmodel.AbstractModel):
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
-    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):

@@ -25,7 +25,7 @@ class Potts(abstractmodel.AbstractModel):
       return -1
 
   def make_init_params(self, rnd):
-    params = super().make_init_params(rnd)
+    params = {}
     # connectivity strength
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
@@ -90,7 +90,6 @@ class Potts(abstractmodel.AbstractModel):
     return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
 
   def get_value_and_grad(self, params, x):
-    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):

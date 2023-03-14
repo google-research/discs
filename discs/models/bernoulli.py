@@ -14,7 +14,7 @@ class Bernoulli(abstractmodel.AbstractModel):
     self.init_sigma = config.init_sigma
 
   def make_init_params(self, rng):
-    params = super().make_init_params(rng)
+    params = {}
     params['params'] = (
         jax.random.normal(rng, shape=self.shape) * self.init_sigma
     )
@@ -37,7 +37,6 @@ class Bernoulli(abstractmodel.AbstractModel):
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
-    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):
