@@ -7,6 +7,7 @@ import pdb
 import time
 import functools
 import optax
+import flax
 
 
 class Experiment:
@@ -45,12 +46,13 @@ class Experiment:
   ):
     """Initializes model params, sampler state and gets initial samples."""
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
-    if not self.config_model.get('data_path', None):
-      params = model_init_params_fn(
-          jax.random.split(rng_param, self.config.num_models)
-      )
-    else:
+    if self.config_model.get('data_path', None):
       params = self.config_model.params
+    elif self.config_model.get('cfg_str', None):
+      params = flax.core.frozen_dict.unfreeze(self.config_model.params)
+    else:
+      params = model_init_params_fn(jax.random.split(rng_param, self.config.num_models))
+
     num_samples = self.config.batch_size * self.config.num_models
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
@@ -68,17 +70,18 @@ class Experiment:
     return state
 
   def _prepare_data(self, params, x, state, n_devices):
+    pdb.set_trace()
     if self.config.num_models > n_devices:
       assert self.config.num_models % n_devices == 0
       batch_size_per_device = self.config.num_models // n_devices
     else:
       batch_size_per_device = 1
 
-    bshape = (n_devices, batch_size_per_device)
-    fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
-    params = jax.tree_map(fn_breshape, params)
+    breshape = (n_devices, batch_size_per_device,)
+    fn_breshape = lambda par: jnp.reshape(par, breshape + par.shape[1:] )
     state = jax.tree_map(fn_breshape, state)
-    x = jnp.reshape(x, bshape + (self.config.batch_size,) + x.shape[1:])
+    params = jax.tree_map(fn_breshape, params)
+    x = jnp.reshape(x, breshape + (self.config.batch_size,) + self.config_model.shape)
     # elif self.run_parallel:
     #   params = jnp.stack([params] * n_devices)
     #   state = self._prepare_state(state, n_devices)
@@ -110,7 +113,7 @@ class Experiment:
       n_rand_split = jax.local_device_count()
     return n_rand_split
 
-  def get_results(self, model, sampler, evaluator, datagen=None):
+  def get_results(self, model, sampler, evaluator):
     num_ll_calls, acc_ratios, hops, evals, running_time, _ = (
         self._get_chains_and_evaluations(model, sampler, evaluator)
     )
@@ -118,7 +121,7 @@ class Experiment:
     return metrcis, running_time, acc_ratios, hops
 
   def _get_vmapped_functions(self, sampler, model, evaluator):
-    model_init_params_fn = jax.vmap(model.model.make_init_params)
+    model_init_params_fn = jax.vmap(model.make_init_params)
     sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
     obj_fn_step = jax.vmap(

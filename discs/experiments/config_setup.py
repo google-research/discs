@@ -16,7 +16,6 @@ import pdb
 
 
 def update_graph_cfg(config, graphs):
-  config.experiment.save_root = config.save_root
   config.model.max_num_nodes = graphs.max_num_nodes
   config.model.max_num_edges = graphs.max_num_edges
   config.model.shape = (graphs.max_num_nodes,)
@@ -24,7 +23,7 @@ def update_graph_cfg(config, graphs):
 
 def get_datagen(config):
   test_graphs = graph_gen.get_graphs(config)
-  update_graph_cfg(config.experiment, test_graphs)
+  update_graph_cfg(config, test_graphs)
   logging.info(config)
   datagen = test_graphs.get_iterator('test', config.experiment.num_models)
   return datagen
@@ -32,12 +31,12 @@ def get_datagen(config):
 
 def update_sampler_cfg(config, weight_fn_val):
   if 'balancing_fn_type' in config.sampler.keys():
-    config.sampler.balancing_fn_type = importlib.import_module(
-        f'discs.samplers.locallybalanced.LBWeightFn.{weight_fn_val}'
-    )
+    lbweighfn = importlib.import_module('discs.samplers.locallybalanced').LBWeightFn
+    config.sampler.balancing_fn_type = getattr(lbweighfn, f'{weight_fn_val}')
 
 
 def update_model_cfg(config):
+
   if config.model.get('data_path', None):
     path = config.model.data_path
     model = pickle.load(open(path + 'params.pkl', 'rb'))
@@ -50,7 +49,7 @@ def update_model_cfg(config):
     data_list = next(datagen)
     _, params, _ = zip(*data_list)
     params = utils.tree_stack(params)
-    config.model.params = params
+    config.model.params = flax.core.frozen_dict.freeze(params)
 
 
 def update_experiment_cfg(config):
@@ -75,7 +74,6 @@ def get_main_config(model_config, sampler_config, weight_fn):
   update_sampler_cfg(config, weight_fn)
   config.model.update(model_config)
   logging.info(config)
-  update_model_cfg(config)
   update_experiment_cfg(config)
-
+  update_model_cfg(config)
   return config

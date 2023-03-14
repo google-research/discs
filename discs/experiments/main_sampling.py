@@ -10,7 +10,7 @@ from absl import logging
 from discs.common import configs as common_configs
 from discs.experiment import experiment as experiment_mod
 from discs.experiments import config_setup
-from discs.experiments import co_setup
+#from discs.experiments import co_setup
 from discs.experiments import sampling
 from ml_collections import config_flags
 import pdb
@@ -65,8 +65,6 @@ def main_(_):
   )
   sampler = sampler_mod.build_sampler(config)
 
-  datagen = co_setup.get_datagen(config)
-
   global_key = jax.random.PRNGKey(0)
 
   # model
@@ -79,7 +77,7 @@ def main_(_):
 
 def main(_):
   config = config_setup.get_main_config(
-      _MODEL_CONFIG.value, _SAMPLER_CONFIG.value
+      _MODEL_CONFIG.value, _SAMPLER_CONFIG.value, _WEIGHT_FN.value
   )
 
   # sampler
@@ -106,7 +104,7 @@ def main(_):
 
   # chain generation
   metrics, running_time, acc_ratio, hops = experiment.get_results(
-      model, sampler, evaluator, datagen
+      model, sampler, evaluator
   )
 
 #  # saver
