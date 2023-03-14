@@ -15,11 +15,12 @@ class Categorical(abstractmodel.AbstractModel):
     self.num_categories = config.num_categories
 
   def make_init_params(self, rnd):
-    params = (
+    params = super().make_init_params(rnd)
+    params['params'] = (
         jax.random.normal(rnd, shape=(self.shape + (self.num_categories,)))
         * self.init_sigma
     )
-    return {'params': params}
+    return params
 
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(

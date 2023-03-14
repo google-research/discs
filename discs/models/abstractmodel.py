@@ -12,7 +12,8 @@ class AbstractModel(abc.ABC):
 
   @abc.abstractmethod
   def make_init_params(self, rng):
-    pass
+    _ = rng
+    return {'mask': None}
 
   @abc.abstractmethod
   def get_init_samples(self, rng, num_samples):

@@ -14,8 +14,11 @@ class Bernoulli(abstractmodel.AbstractModel):
     self.init_sigma = config.init_sigma
 
   def make_init_params(self, rng):
-    params = jax.random.normal(rng, shape=self.shape) * self.init_sigma
-    return {'params': params}
+    params = super().make_init_params(rng)
+    params['params'] = (
+        jax.random.normal(rng, shape=self.shape) * self.init_sigma
+    )
+    return params
 
   def get_init_samples(self, rng, num_samples: int):
     x0 = jax.random.randint(

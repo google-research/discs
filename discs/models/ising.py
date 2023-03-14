@@ -17,6 +17,7 @@ class Ising(abstractmodel.AbstractModel):
     self.mu = config.mu
 
   def make_init_params(self, rnd):
+    params = super().make_init_params(rnd)
     # connectivity strength
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
@@ -38,7 +39,8 @@ class Ising(abstractmodel.AbstractModel):
 
       params_b += inner_outter
       params_b = -1 * params_b
-      return {'params': jnp.array([params_weight_h, params_weight_v, params_b])}
+      params['params'] = jnp.array([params_weight_h, params_weight_v, params_b])
+      return params
 
     return jnp.array([params_weight_h, params_weight_v])
 
