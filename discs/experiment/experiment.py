@@ -208,7 +208,6 @@ class Experiment:
       #        )
       #      else:
       #        rng_sampler_step_p = rng_sampler_step
-      pdb.set_trace()
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
       rng = jax.random.fold_in(rng, step)
