@@ -1,6 +1,6 @@
 """Gibbs with gradient."""
 
-from discs.common import math
+from discs.common import math_lib as math
 from discs.samplers import locallybalanced
 import jax
 import jax.numpy as jnp

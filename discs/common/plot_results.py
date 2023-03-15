@@ -1,7 +1,7 @@
+import pdb
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
-import pdb
 import os
 
 
@@ -79,6 +79,7 @@ def main():
       x_pos = 0.5 * np.arange(len(keys_ee))
       c = []
       for key in keys_ee:
+          print(key)
           alg = key[0:3]
           c.append(color_map[alg])
       fig = plt.figure(figsize=(10, 6))

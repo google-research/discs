@@ -23,7 +23,6 @@ class PathAuxiliarySampler(locallybalanced.LocallyBalancedSampler):
     ll_x2y = trajectory['ll_x2y']
     ll_y, ll_y2x, num_calls_backward = self.ll_y2x(
         model, x, model_param, trajectory, y, x_mask)
-
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(
         rng_acceptance, num_calls_forward + num_calls_backward,
@@ -62,8 +61,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     if self.adaptive:
       acc = jnp.mean(jnp.exp(jnp.clip(log_acc, a_max=0.0)))
       r = sampler_state['radius'] + acc - self.target_acceptance_rate
-      new_state['radius'] = jnp.clip(
-          r, a_min=1, a_max=math.prod(self.sample_shape))
+      new_state['radius'] = jnp.clip(r, a_min=1, a_max=math.prod(y.shape[1:]))
     return y, new_state
 
   def make_init_state(self, rng):
@@ -86,19 +84,19 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     logits = self.apply_weight_function_logscale(logratio)
     if x_mask is not None:
       logits = logits * x_mask + -1e9 * (1 - x_mask)
-    if self.num_categories != 2:
-      logits = logits * (1 - x) + x * -1e9
     log_prob = jax.nn.log_softmax(jnp.reshape(logits, (x.shape[0], -1)), -1)
     return ll_x, log_prob, num_calls
 
   def proposal(self, model, rng, x, model_param, state, x_mask):
     ll_x, log_prob, num_calls = self.get_local_dist(
         model, x, model_param, x_mask)
+    num_classes = log_prob.shape[1]
     if self.adaptive:
       num_samples = jnp.clip(jnp.round(state['radius']).astype(jnp.int32),
-                             a_min=1, a_max=math.prod(self.sample_shape))
+                             a_min=1, a_max=num_classes)
     else:
       num_samples = self.num_flips
+
     x_shape = x.shape
     x = jnp.reshape(x, (x.shape[0], -1))
     if self.num_categories > 2:
@@ -136,6 +134,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     trajectory = {
         'll_x2y': jnp.sum(ll_selected, axis=-1),
         'selected_idx': selected_idx,
+        'newval_candidates': new_val
     }
     return ll_x, y, trajectory, num_calls
 
@@ -143,6 +142,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
     ll_y, log_prob, num_calls = self.get_local_dist(
         model, y, model_param, x_mask)
     if self.num_categories > 2:
+      forward_newval = forward_trajectory['newval_candidates']
       log_prob_all = jnp.reshape(log_prob,
                                  [log_prob.shape[0], -1, self.num_categories])
       log_prob = special.logsumexp(log_prob_all, axis=-1)
@@ -151,8 +151,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
       selected_mask = forward_trajectory['selected_idx']['selected_mask']
       order_info = forward_trajectory['selected_idx']['perturbed_ll']
       if self.num_categories > 2:
-        x = jnp.reshape(x, [x.shape[0], -1, self.num_categories])
-        ll_val = jnp.sum(x * log_prob_all, axis=-1) * selected_mask
+        ll_val = jnp.sum(forward_newval * log_prob_all, axis=-1) * selected_mask
       backwd_idx = jnp.argsort(order_info)
       log_prob = jnp.where(selected_mask, log_prob, -1e18)
       backwd_ll = jnp.take_along_axis(log_prob, backwd_idx, -1)
@@ -166,10 +165,7 @@ class PAFSNoReplacement(PathAuxiliarySampler):
       if self.num_categories > 2:
         val_logprob = log_prob_all[
             jnp.expand_dims(jnp.arange(x.shape[0]), axis=1), reverse_idx_traj]
-        x = jnp.reshape(x, [x.shape[0], -1, self.num_categories])
-        orig_val = x[jnp.expand_dims(jnp.arange(x.shape[0]), axis=1),
-                     reverse_idx_traj]
-        ll_val = jnp.sum(orig_val * val_logprob, axis=-1)
+        ll_val = jnp.sum(forward_newval * val_logprob, axis=-1)
       ll_y2x = jnp.sum(ll_y2x_traj, axis=-1)
     if self.num_categories > 2:
       ll_y2x = ll_y2x + jnp.sum(ll_val, axis=-1)

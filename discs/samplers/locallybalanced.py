@@ -1,7 +1,7 @@
 """Locally Balanced Informed Sampler Class."""
 
 import enum
-from discs.common import math
+from discs.common import math_lib as math
 from discs.common import utils
 from discs.samplers import abstractsampler
 import jax
