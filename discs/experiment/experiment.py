@@ -71,7 +71,7 @@ class Experiment:
 
   def _prepare_data(self, params, x, state):
     if self.parallel:
-        if self.config.num_models > jax.local_device_count():
+        if self.config.num_models >= jax.local_device_count():
             assert self.config.num_models % jax.local_device_count() == 0
             num_models_per_device = self.config.num_models // jax.local_device_count()
             bshape = (jax.local_device_count(), num_models_per_device)
@@ -81,7 +81,7 @@ class Experiment:
             batch_size_per_device = self.config.batch_size // jax.local_device_count()
             params = self._prepare_dict(params, jax.local_device_count())
             state = self._prepare_dict(state, jax.local_device_count())
-            bshape = (self.config.num_models, jax.local_device_count())
+            bshape = (jax.local_device_count(), self.config.num_models)
             x_shape = bshape + (batch_size_per_device, ) + self.config_model.shape
     else:
         bshape = (self.config.num_models,)
@@ -205,7 +205,6 @@ class Experiment:
     evaluations = []
     trajectory = []
     running_time = 0
-    pdb.set_trace()
     init_temperature = jnp.ones(bshape, dtype=jnp.float32)
     for step in tqdm.tqdm(range(self.config.chain_length)):
       cur_temp = t_schedule(step)
