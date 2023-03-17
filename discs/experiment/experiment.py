@@ -175,7 +175,7 @@ class Experiment:
         breshape,
         ref_obj
     )
-    if self.run_parallel:
+    if self.parallel:
       num_ll_calls = state['num_ll_calls'][0]
     else:
       num_ll_calls = state['num_ll_calls']
@@ -199,12 +199,14 @@ class Experiment:
       ref_obj = None
   ):
     """Generates the chain of samples."""
+    get_hop = jax.jit(self._get_hop)
+    get_mapped_samples = jax.jit(self._get_mapped_samples)
     chain = []
     acc_ratios = []
     hops = []
     evaluations = []
-    trajectory = []
     running_time = 0
+    best_ratio = jnp.ones(self.config.num_models, dtype=jnp.float32) * -1e9
     init_temperature = jnp.ones(bshape, dtype=jnp.float32)
     for step in tqdm.tqdm(range(self.config.chain_length)):
       cur_temp = t_schedule(step)
@@ -220,22 +222,28 @@ class Experiment:
           x_mask=params['mask'],
       )
       running_time += time.time() - start
-      eval_val = eval_step_fn(samples=new_x, params=params)
-      if eval_val != None:
-        best_ratio = jnp.max(eval_val, axis = -1).reshape(-1)/ref_obj
-        trajectory.append(np.mean(best_ration))
-        eval_val = jnp.mean(eval_val)
-        evaluations.append(eval_val)
-      acc_ratios.append(acc)
-      hops.append(self._get_hop(x, new_x))
-      chain.append(self._get_mapped_samples(new_x, x0_ess))
+      if self.config.evaluator == 'co_eval':
+        if step % self.config.log_every_steps == 0:
+          eval_val = eval_step_fn(samples=new_x, params=params)
+          ratio = jnp.max(eval_val, axis = -1).reshape(-1)/ref_obj
+          best_ratio = jnp.maximum(ratio, best_ratio)
+          chain.append(best_ratio)
+          eval_val = jnp.mean(eval_val)
+          evaluations.append(eval_val)
+      else:
+        chain.append(get_mapped_samples(new_x, x0_ess))
+      if self.config.get_additional_metrics:
+        acc_ratios.append(acc)
+        hops.append(get_hop(x, new_x))
       x = new_x
-    
-    chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
-    chain = jnp.array(chain)
-    eval_val = eval_chain_fn(chain, rng_sampler_step)
-    if eval_val:
+
+    if self.config.evaluator == 'ess_eval':
+      chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
+      chain = jnp.array(chain)
+      eval_val = eval_chain_fn(chain, rng)
       evaluations.append(eval_val)
+    else:
+      saver.dump_results(chain)
     return (
         state,
         jnp.array(acc_ratios),

@@ -105,9 +105,11 @@ class Saver:
       f.write(str(self.config))
 
   def save_results(self, acc_ratio, hops, metrcis, running_time):
-    self._plot_acc_ratio(acc_ratio)
-    self._plot_hops(hops)
-    self._save_results(metrcis, running_time)
+    if self.config.experiment.get_additional_metrics:
+      self._plot_acc_ratio(acc_ratio)
+      self._plot_hops(hops)
+    if self.config.experiment.evaluator == 'ess_eval':
+      self._save_results(metrcis, running_time)
 
   def dump_sample(self, sample, step, visualize=False):
     root_path = os.path.join(self.save_dir, self.config.sampler.name)
@@ -126,6 +128,16 @@ class Saver:
       sample = jnp.reshape(sample, (size, size))
       image_path = os.path.join(root_path, f'sample_{step}.jpeg')
       plt.imsave(image_path, np.array(sample), cmap=cm.gray)
+  
+  def dump_results(self, trajectory):
+    root_path = os.path.join(self.save_dir, f's-{self.config.sampler.name},{self.config.model.cfg_str}')
+    if not os.path.isdir(root_path):
+        os.makedirs(root_path)
+    path = os.path.join(root_path, 'results.pkl')
+    results = {}
+    results['best_ratio'] = jnp.array(trajectory)
+    with open(path, 'wb') as file:
+      pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 def build_saver(save_dir, config):
   return Saver(save_dir, config)
