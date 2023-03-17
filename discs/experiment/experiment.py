@@ -159,6 +159,8 @@ class Experiment:
     )
     t_schedule = self._build_temperature_schedule(self.config)
     ref_obj = self.config_model.get('ref_obj', None)
+    sample_idx = self.config_model.get('sample_idx', None)
+    sample_mask = sample_idx >= 0
     state, acc_ratios, hops, evals, running_time = self._compute_chain(
         model,
         compiled_step,
@@ -173,7 +175,8 @@ class Experiment:
         t_schedule,
         fn_reshape,
         breshape,
-        ref_obj
+        ref_obj,
+        sample_mask
     )
     if self.parallel:
       num_ll_calls = state['num_ll_calls'][0]
@@ -196,7 +199,8 @@ class Experiment:
       t_schedule,
       fn_reshape,
       bshape,
-      ref_obj = None
+      ref_obj = None,
+      sample_mask = None
   ):
     """Generates the chain of samples."""
     get_hop = jax.jit(self._get_hop)
@@ -227,7 +231,7 @@ class Experiment:
           eval_val = eval_step_fn(samples=new_x, params=params)
           ratio = jnp.max(eval_val, axis = -1).reshape(-1)/ref_obj
           best_ratio = jnp.maximum(ratio, best_ratio)
-          chain.append(best_ratio)
+          chain.append(best_ratio[sample_mask])
           eval_val = jnp.mean(eval_val)
           evaluations.append(eval_val)
       else:
@@ -243,7 +247,7 @@ class Experiment:
       eval_val = eval_chain_fn(chain, rng)
       evaluations.append(eval_val)
     else:
-      saver.dump_results(chain)
+      saver.dump_results(best_ratio[sample_mask])
     return (
         state,
         jnp.array(acc_ratios),

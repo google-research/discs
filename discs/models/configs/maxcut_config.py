@@ -9,10 +9,10 @@ def get_config():
       dict(
           name='maxcut',
           graph_type='ba',
-          cfg_str='r-ba-4-n-32-40',
+          cfg_str='r-ba-4-n-1024-1100',
       )
   )
-  model_config['save_dir_name'] = model_config['cfg_str']
+  model_config['save_dir_name'] = model_config['name']
   graph_config = importlib.import_module(
       'discs.models.configs.maxcut.%s' % model_config['graph_type']
   )

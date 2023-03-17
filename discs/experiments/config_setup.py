@@ -48,11 +48,11 @@ def update_model_cfg(config):
   elif config.model.get('cfg_str', None):
     datagen = get_datagen(config)
     data_list = next(datagen)
-    _, params, reference_obj = zip(*data_list)
+    sample_idx, params, reference_obj = zip(*data_list)
     params = utils.tree_stack(params)
     config.model.params = flax.core.frozen_dict.freeze(params)
     config.model.ref_obj = jnp.array(reference_obj)
-
+    config.model.sample_idx = jnp.array(sample_idx)
 
 
 def update_experiment_cfg(config):

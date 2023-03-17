@@ -9,12 +9,12 @@ def get_config():
   """Get config."""
   exp_config = dict(
       num_models=1024,
-      batch_size=16,
+      batch_size=32,
       t_schedule='exp_decay',
-      chain_length=10000,
-      log_every_steps=10,
-      init_temperature=0.5,
-      decay_rate=0.05,
+      chain_length=50000,
+      log_every_steps=100,
+      init_temperature=1,
+      decay_rate=0.1,
       final_temperature=0.000001,
   )
   return config_dict.ConfigDict(exp_config)
