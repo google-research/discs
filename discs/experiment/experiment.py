@@ -250,7 +250,6 @@ class Experiment:
 
     if self.config.evaluator == 'ess_eval':
       chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
-      pdb.set_trace()
       chain = jnp.array(chain)
       ess = eval_chain_fn(chain, rng)
       num_ll_calls = int(state['num_ll_calls'][0])
