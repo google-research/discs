@@ -69,6 +69,7 @@ def update_experiment_cfg(config):
     config.experiment.update(graph_exp_config.get_config())
   else:
     config.experiment.evaluator = 'ess_eval'
+    config.experiment.log_every_steps = 1
 
 
 def get_main_config(model_config, sampler_config, weight_fn):

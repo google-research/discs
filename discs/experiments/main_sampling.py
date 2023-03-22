@@ -10,7 +10,7 @@ from absl import logging
 from discs.common import configs as common_configs
 from discs.experiment import experiment as experiment_mod
 from discs.experiments import config_setup
-#from discs.experiments import co_setup
+# from discs.experiments import co_setup
 from discs.experiments import sampling
 from ml_collections import config_flags
 import pdb
@@ -29,6 +29,7 @@ FLAGS = flags.FLAGS
 def get_save_dir(config):
   save_folder = config.model.get('save_dir_name', config.model.name)
   return _SAVE_DIR.value + '_' + save_folder
+
 
 def main(_):
   config = config_setup.get_main_config(
@@ -58,11 +59,8 @@ def main(_):
   saver = saver_mod.build_saver(get_save_dir(config), config)
 
   # chain generation
-  metrics, running_time, acc_ratio, hops = experiment.get_results(
-      model, sampler, evaluator, saver
-  )
+  experiment.get_results(model, sampler, evaluator, saver)
 
-  saver.save_results(acc_ratio, hops, metrics, running_time)
 
 if __name__ == '__main__':
   app.run(main)
