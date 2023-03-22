@@ -110,14 +110,12 @@ class Experiment:
       compiled_step = jax.pmap(step_fn)
     return compiled_step
 
-  def _compile_evaluator(self, obj_fn_step, obj_fn_chain):
+  def _compile_evaluator(self, obj_fn_step):
     if not self.parallel:
       compiled_eval_step = jax.jit(obj_fn_step)
-      compiled_eval_chain = jax.jit(obj_fn_chain)
     else:
       compiled_eval_step = jax.pmap(obj_fn_step)
-      compiled_eval_chain = jax.pmap(obj_fn_chain)
-    return compiled_eval_step, compiled_eval_chain
+    return compiled_eval_step
 
   def _get_vmapped_functions(self, sampler, model, evaluator):
     model_init_params_fn = jax.vmap(model.make_init_params)
@@ -126,20 +124,17 @@ class Experiment:
     obj_fn_step = jax.vmap(
         functools.partial(evaluator.evaluate_step, model=model)
     )
-    obj_fn_chain = jax.vmap(evaluator.evaluate_chain)
     return (
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
         obj_fn_step,
-        obj_fn_chain,
     )
 
-  def _compile_fns(self, step_fn, obj_fn_step, obj_fn_chain, evaluator):
+  def _compile_fns(self, step_fn, obj_fn_step, evaluator):
     compiled_step = self._compile_sampler_step(step_fn)
-    compiled_eval_step, compiled_eval_chain = self._compile_evaluator(
-        obj_fn_step, obj_fn_chain
-    )
+    compiled_eval_step = self._compile_evaluator(obj_fn_step)
+    compiled_eval_chain = jax.jit(evaluator.evaluate_chain)
     get_hop = jax.jit(self._get_hop)
     get_mapped_samples = jax.jit(self._get_mapped_samples)
     eval_metric = jax.jit(evaluator.get_eval_metrics)
@@ -162,7 +157,6 @@ class Experiment:
         sampler_init_state_fn,
         step_fn,
         obj_fn_step,
-        obj_fn_chain,
     ) = self._get_vmapped_functions(sampler, model, evaluator)
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
@@ -172,7 +166,7 @@ class Experiment:
         params, x, state
     )
     compiled_fns = self._compile_fns(
-        step_fn, obj_fn_step, obj_fn_chain, evaluator
+        step_fn, obj_fn_step, evaluator
     )
     self._compute_chain(
         compiled_fns,
@@ -247,18 +241,19 @@ class Experiment:
         chain.append(sample)
 
       if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
         acc_ratios.append(acc)
+        # hop avg over batch size and num models
         hops.append(get_hop(x, new_x))
       x = new_x
 
     if self.config.evaluator == 'ess_eval':
       chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
+      pdb.set_trace()
       chain = jnp.array(chain)
       ess = eval_chain_fn(chain, rng)
-      if self.parallel:
-        num_ll_calls = state['num_ll_calls'][0]
-      else:
-        num_ll_calls = state['num_ll_calls']
+      num_ll_calls = int(state['num_ll_calls'][0])
       metrics = eval_metric(ess, running_time, num_ll_calls)
     else:
       saver.dump_results(best_ratio[sample_mask])
@@ -269,7 +264,9 @@ class Experiment:
     t_schedule = self._build_temperature_schedule(self.config)
     ref_obj = self.config_model.get('ref_obj', None)
     sample_idx = self.config_model.get('sample_idx', None)
-    sample_mask = sample_idx >= 0
+    sample_mask = None
+    if sample_idx is not None:
+        sample_mask = sample_idx >= 0
 
     chain = []
     acc_ratios = []
@@ -296,12 +293,12 @@ class Experiment:
 
   def _get_mapped_samples(self, samples, x0_ess):
     samples = samples.reshape((-1,) + self.config_model.shape)
-    x0_ess = x0_ess.reshape(x0_ess.shape[0], -1)
+    x0_ess = x0_ess.reshape((-1,) + self.config_model.shape)
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
 
   def _get_hop(self, x, new_x):
-    return jnp.sum(abs(x - new_x)) / self.config.batch_size
+    return jnp.sum(abs(x - new_x)) / self.config.batch_size / self.config.num_models
 
 
 def build_experiment(config: config_dict):
-  return Experiment(config)
+    return Experiment(config)
