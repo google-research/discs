@@ -4,6 +4,8 @@ from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
+import pdb
+
 
 class Categorical(abstractmodel.AbstractModel):
   """Categorical Distribution."""
@@ -14,7 +16,8 @@ class Categorical(abstractmodel.AbstractModel):
     self.num_categories = config.num_categories
 
   def make_init_params(self, rnd):
-    params = (
+    params = {}
+    params['params'] = (
         jax.random.normal(rnd, shape=(self.shape + (self.num_categories,)))
         * self.init_sigma
     )
@@ -32,6 +35,7 @@ class Categorical(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+    params = params['params']
     if len(x.shape) - 1 == len(self.shape):
       x = jax.nn.one_hot(x, self.num_categories)
 

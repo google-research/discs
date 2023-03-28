@@ -7,7 +7,7 @@ class COevaluator(abstractevaluator.AbstractEvaluator):
   """Combinotorial optimization evaluator class."""
 
   def evaluate_step(self, samples, model, params):
-    return model.forward(params, samples) * params['temperature']
+    return model.evaluate(params, samples)
 
   def evaluate_chain(self, samples, rnd):
     return None

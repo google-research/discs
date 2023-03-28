@@ -25,6 +25,7 @@ class Potts(abstractmodel.AbstractModel):
       return -1
 
   def make_init_params(self, rnd):
+    params = {}
     # connectivity strength
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
@@ -44,9 +45,11 @@ class Potts(abstractmodel.AbstractModel):
 
       params_b += inner_outter
       params_b = -1 * params_b
-      return jnp.array([params_weight_h, params_weight_v, params_b])
+      params['params'] = jnp.array([params_weight_h, params_weight_v, params_b])
+      return params
 
-    return jnp.array([params_weight_h, params_weight_v])
+    params['params'] = jnp.array([params_weight_h, params_weight_v])
+    return params
 
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
@@ -59,9 +62,10 @@ class Potts(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+    params = params['params']
     if len(x.shape) - 1 == len(self.sample_shape):
       x = jax.nn.one_hot(x, self.num_categories)
-      
+
     w_h = params[0][:, :-1, :]
     w_v = params[1][:-1, :, :]
 
@@ -82,8 +86,7 @@ class Potts(abstractmodel.AbstractModel):
     if self.external_field_type == 1:
       w_b = params[2]
       loglikelihood += w_b * x
-    
-    
+
     return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
 
   def get_value_and_grad(self, params, x):

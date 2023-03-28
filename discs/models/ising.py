@@ -5,6 +5,7 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 
+
 class Ising(abstractmodel.AbstractModel):
   """Ising Distribution with Cyclic 2D Lattice."""
 
@@ -16,6 +17,7 @@ class Ising(abstractmodel.AbstractModel):
     self.mu = config.mu
 
   def make_init_params(self, rnd):
+    params = {}
     # connectivity strength
     params_weight_h = self.lambdaa * jnp.ones(self.shape)
     params_weight_v = self.lambdaa * jnp.ones(self.shape)
@@ -34,12 +36,14 @@ class Ising(abstractmodel.AbstractModel):
           1,
           -1,
       )
-      
+
       params_b += inner_outter
       params_b = -1 * params_b
-      return jnp.array([params_weight_h, params_weight_v, params_b])
+      params['params'] = jnp.array([params_weight_h, params_weight_v, params_b])
+      return params
 
-    return jnp.array([params_weight_h, params_weight_v])
+    params['params'] = jnp.array([params_weight_h, params_weight_v])
+    return params
 
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
@@ -52,6 +56,7 @@ class Ising(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+    params = params['params']
     x = 2 * x - 1
     w_h = params[0][:, :-1]
     w_v = params[1][:-1, :]

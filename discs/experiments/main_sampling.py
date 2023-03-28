@@ -9,10 +9,14 @@ from absl import flags
 from absl import logging
 from discs.common import configs as common_configs
 from discs.experiment import experiment as experiment_mod
-from discs.samplers.locallybalanced import LBWeightFn
+from discs.experiments import config_setup
+# from discs.experiments import co_setup
 from ml_collections import config_flags
-import yaml
 import pdb
+import jax
+import os
+from clu import metric_writers
+from clu.metric_writers.summary_writer import SummaryWriter
 
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
@@ -21,60 +25,40 @@ _WEIGHT_FN = flags.DEFINE_string('weight_fn', 'SQRT', 'Balancing FN TYPE')
 FLAGS = flags.FLAGS
 
 
-def update_sampler_cfg(config):
-  if 'balancing_fn_type' in config.sampler.keys():
-    if _WEIGHT_FN.value == 'RATIO':
-      config.sampler['balancing_fn_type'] = LBWeightFn.RATIO
-    elif _WEIGHT_FN.value == 'MAX':
-      config.sampler['balancing_fn_type'] = LBWeightFn.MAX
-    elif _WEIGHT_FN.value == 'MIN':
-      config.sampler['balancing_fn_type'] = LBWeightFn.MIN
-    else:
-      config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
-
-
-def update_model_cfg(config):
-  if config.model.get('data_path', None):
-    path = config.model.data_path
-    model = pickle.load(open(path + 'params.pkl', 'rb'))
-    config.model.params = model['params']
-    model_config = yaml.unsafe_load(open(path + 'config.yaml', 'r'))
-    config.model.update(model_config.model)
-
-
 def get_save_dir(config):
   save_folder = config.model.get('save_dir_name', config.model.name)
   return _SAVE_DIR.value + '_' + save_folder
 
 
 def main(_):
-  
-  config = common_configs.get_config()
-  config.model.update(_MODEL_CONFIG.value)
-  config.sampler.update(_SAMPLER_CONFIG.value)
+  config = config_setup.get_main_config(
+      _MODEL_CONFIG.value, _SAMPLER_CONFIG.value, _WEIGHT_FN.value
+  )
 
-  update_sampler_cfg(config)
+  # sampler
   sampler_mod = importlib.import_module(
       'discs.samplers.%s' % config.sampler.name
   )
-  logging.info(config)
-
-  update_model_cfg(config)
   sampler = sampler_mod.build_sampler(config)
+
+  # model
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
   model = model_mod.build_model(config)
 
+  # experiment
   experiment = experiment_mod.build_experiment(config)
+
+  # evaluator
   evaluator_mod = importlib.import_module(
       'discs.evaluators.%s' % config.experiment.evaluator
   )
   evaluator = evaluator_mod.build_evaluator(config)
+
+  # saver
   saver = saver_mod.build_saver(get_save_dir(config), config)
 
-  metrics, running_time, acc_ratio, hops = experiment.get_results(
-      model, sampler, evaluator, saver
-  )
-  saver.save_results(acc_ratio, hops, metrics, running_time)
+  # chain generation
+  experiment.get_results(model, sampler, evaluator, saver)
 
 
 if __name__ == '__main__':
