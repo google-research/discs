@@ -138,8 +138,11 @@ class Experiment:
     get_hop = jax.jit(self._get_hop)
     get_mapped_samples = jax.jit(self._get_mapped_samples)
     eval_metric = jax.jit(evaluator.get_eval_metrics)
+    compiled_step_burnin = compiled_step
+    compiled_step_mixing = compiled_step
     return (
-        compiled_step,
+        compiled_step_burnin,
+        compiled_step_mixing,
         compiled_eval_step,
         compiled_eval_chain,
         eval_metric,
@@ -165,9 +168,7 @@ class Experiment:
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
     )
-    compiled_fns = self._compile_fns(
-        step_fn, obj_fn_step, evaluator
-    )
+    compiled_fns = self._compile_fns(step_fn, obj_fn_step, evaluator)
     self._compute_chain(
         compiled_fns,
         state,
@@ -209,20 +210,61 @@ class Experiment:
     ) = self._initialize_chain_vars(bshape)
 
     (
-        step_fn,
+        sampler_step_burnin,
+        sampler_step_mixing,
         eval_step_fn,
         eval_chain_fn,
         eval_metric,
         get_hop,
         get_mapped_samples,
     ) = compiled_fns
-    for step in tqdm.tqdm(range(self.config.chain_length)):
+
+    # burn in
+    burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
+
+    for step in tqdm.tqdm(range(1, burn_in_length)):
+      cur_temp = t_schedule(step)
+      params['temperature'] = init_temperature * cur_temp
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+
+      new_x, state, acc = sampler_step_burnin(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+          x_mask=params['mask'],
+      )
+
+      if step % self.config.save_every_steps == 0:
+        if self.config.evaluator == 'co_eval':
+          eval_val = eval_step_fn(samples=new_x, params=params)
+          ratio = jnp.max(eval_val, axis=-1).reshape(-1) / ref_obj
+          best_ratio = jnp.maximum(ratio, best_ratio)
+          sample = best_ratio[sample_mask]
+          chosen_sample_idx = jnp.argmax(eval_val)
+        else:
+          chosen_sample_idx = 0
+        saved_sample = new_x[chosen_sample_idx]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
+
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      x = new_x
+
+    for step in tqdm.tqdm(range(burn_in_length, 1 + self.config.chain_length)):
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
       rng = jax.random.fold_in(rng, step)
       step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
       start = time.time()
-      new_x, state, acc = step_fn(
+      new_x, state, acc = sampler_step_mixing(
           rng=step_rng,
           x=x,
           model_param=params,
@@ -236,9 +278,15 @@ class Experiment:
           ratio = jnp.max(eval_val, axis=-1).reshape(-1) / ref_obj
           best_ratio = jnp.maximum(ratio, best_ratio)
           sample = best_ratio[sample_mask]
+          chosen_sample_idx = jnp.argmax(eval_val)
         else:
           sample = get_mapped_samples(new_x, x0_ess)
+          chosen_sample_idx = 0
         chain.append(sample)
+        saved_sample = new_x[chosen_sample_idx]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -249,7 +297,6 @@ class Experiment:
       x = new_x
 
     if self.config.evaluator == 'ess_eval':
-      chain = chain[int(self.config.chain_length * self.config.ess_ratio) :]
       chain = jnp.array(chain)
       ess = eval_chain_fn(chain, rng)
       num_ll_calls = int(state['num_ll_calls'][0])
@@ -265,7 +312,7 @@ class Experiment:
     sample_idx = self.config_model.get('sample_idx', None)
     sample_mask = None
     if sample_idx is not None:
-        sample_mask = sample_idx >= 0
+      sample_mask = sample_idx >= 0
 
     chain = []
     acc_ratios = []
@@ -296,8 +343,12 @@ class Experiment:
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
 
   def _get_hop(self, x, new_x):
-    return jnp.sum(abs(x - new_x)) / self.config.batch_size / self.config.num_models
+    return (
+        jnp.sum(abs(x - new_x))
+        / self.config.batch_size
+        / self.config.num_models
+    )
 
 
 def build_experiment(config: config_dict):
-    return Experiment(config)
+  return Experiment(config)

@@ -40,9 +40,9 @@ def get_config():
           shuffle_buffer_size=0,
           log_every_steps=1,
           plot_every_steps=10,
-          save_every_steps=100,
           save_root='.',
           fig_folder='',
+          save_every_steps=10000,
       ),
   )
   return config_dict.ConfigDict(general_config)
