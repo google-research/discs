@@ -11,7 +11,6 @@ from discs.common import configs as common_configs
 from discs.experiment import experiment as experiment_mod
 from discs.experiments import config_setup
 # from discs.experiments import co_setup
-from discs.experiments import sampling
 from ml_collections import config_flags
 import pdb
 import jax

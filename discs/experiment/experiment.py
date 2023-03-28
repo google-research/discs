@@ -236,7 +236,7 @@ class Experiment:
           x_mask=params['mask'],
       )
 
-      if step % self.config.save_every_steps == 0:
+      if step % self.config.log_every_steps == 0:
         if self.config.evaluator == 'co_eval':
           eval_val = eval_step_fn(samples=new_x, params=params)
           ratio = jnp.max(eval_val, axis=-1).reshape(-1) / ref_obj
@@ -245,10 +245,11 @@ class Experiment:
           chosen_sample_idx = jnp.argmax(eval_val)
         else:
           chosen_sample_idx = 0
-        saved_sample = new_x[chosen_sample_idx]
-        saver.dump_sample(
-            saved_sample, step, self.config_model.get('visualize', False)
-        )
+        if step % self.config.save_every_steps == 0:
+            saved_sample = new_x[chosen_sample_idx]
+            saver.dump_sample(
+                saved_sample, step, self.config_model.get('visualize', False)
+            )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -283,10 +284,11 @@ class Experiment:
           sample = get_mapped_samples(new_x, x0_ess)
           chosen_sample_idx = 0
         chain.append(sample)
-        saved_sample = new_x[chosen_sample_idx]
-        saver.dump_sample(
-            saved_sample, step, self.config_model.get('visualize', False)
-        )
+        if step % self.config.save_every_steps == 0:
+            saved_sample = new_x[chosen_sample_idx]
+            saver.dump_sample(
+                saved_sample, step, self.config_model.get('visualize', False)
+            )
 
       if self.config.get_additional_metrics:
         # avg over all models
