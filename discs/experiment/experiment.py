@@ -134,7 +134,7 @@ class Experiment:
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
     if params is None:
-      return
+      return False
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
     )
@@ -150,6 +150,7 @@ class Experiment:
         fn_reshape,
         breshape,
     )
+    return True
 
   def _get_hop(self, x, new_x):
     return (
@@ -288,7 +289,6 @@ class Sampling_Experiment(Experiment):
 class CO_Experiment(Experiment):
 
   def get_results(self, model, sampler, evaluator, saver):
-    pdb.set_trace()
     while True:
       if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
         break
@@ -296,9 +296,8 @@ class CO_Experiment(Experiment):
   def _initialize_model_and_sampler(
       self, rnd, model, sampler_init_state_fn, model_init_params_fn
   ):
-    pdb.set_trace()
     data_list, x0, state, x0_es = super()._initialize_model_and_sampler(
-        rnd, model, sampler_init_state_fn, model_init_params_fn
+        rnd, model, sampler_init_state_fn, model.make_init_params
     )
     if data_list is None:
       return None, x0, state, x0_es
@@ -358,7 +357,6 @@ class CO_Experiment(Experiment):
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
 
-    pdb.set_trace()
     for step in tqdm.tqdm(range(1, burn_in_length)):
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
@@ -409,7 +407,7 @@ class CO_Experiment(Experiment):
       running_time += time.time() - start
       if step % self.config.log_every_steps == 0:
         eval_val = eval_step_fn(samples=new_x, params=params)
-        ratio = jnp.max(eval_val, axis=-1).reshape(-1) / ref_obj
+        ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample = best_ratio[sample_mask]
         chosen_sample_idx = jnp.argmax(eval_val)

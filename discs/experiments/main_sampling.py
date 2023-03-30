@@ -44,7 +44,6 @@ def main(_):
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
   model = model_mod.build_model(config)
 
-  pdb.set_trace()
   # experiment
   experiment_mod = getattr(importlib.import_module('discs.experiment.experiment'), f'{config.experiment.name}')
   experiment = experiment_mod(config)

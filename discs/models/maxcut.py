@@ -12,13 +12,15 @@ class Maxcut(comb_ebm.BinaryNodeCombEBM):
   """Maxcut model."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    pdb.set_trace()
     self.datagen = get_datagen(config)
     self.config = config.model
     self.max_num_nodes=self.config.max_num_nodes
 
   def make_init_params(self, rng):
-    data_list = next(self.datagen)
+    try:
+      data_list = next(self.datagen)
+    except:
+        return None
     return data_list
 
   def get_init_samples(self, rng, num_samples):
