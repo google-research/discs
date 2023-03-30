@@ -8,7 +8,6 @@ from absl import app
 from absl import flags
 from absl import logging
 from discs.common import configs as common_configs
-from discs.experiment import experiment as experiment_mod
 from discs.experiments import config_setup
 # from discs.experiments import co_setup
 from ml_collections import config_flags
@@ -45,8 +44,10 @@ def main(_):
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)
   model = model_mod.build_model(config)
 
+  pdb.set_trace()
   # experiment
-  experiment = experiment_mod.build_experiment(config)
+  experiment_mod = getattr(importlib.import_module('discs.experiment.experiment'), f'{config.experiment.name}')
+  experiment = experiment_mod(config)
 
   # evaluator
   evaluator_mod = importlib.import_module(

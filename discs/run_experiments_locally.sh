@@ -1,7 +1,7 @@
 #!/bin/bash
 
-models="categorical maxcut rbm potts ising bernoulli"
-samplers="dlmc path_auxiliary randomwalk gwg"
+models="maxcut categorical maxcut rbm potts ising bernoulli"
+samplers="path_auxiliary dlmc randomwalk gwg"
 weight_fns="SQRT RATIO"
 
 for model in $models

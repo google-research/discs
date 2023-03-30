@@ -27,6 +27,7 @@ def get_config():
           name='',
       ),
       experiment=dict(
+          name='Sampling_Experiment',
           num_models=1,
           batch_size=100,
           chain_length=100000,

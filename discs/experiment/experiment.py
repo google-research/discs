@@ -138,7 +138,7 @@ class Experiment:
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
     )
-    compiled_fns = self._compile_fns(step_fn, obj_fn_step, evaluator)
+    compiled_fns = self._compile_fns(step_fn, obj_fn_step)
     self._compute_chain(
         compiled_fns,
         state,
@@ -288,6 +288,7 @@ class Sampling_Experiment(Experiment):
 class CO_Experiment(Experiment):
 
   def get_results(self, model, sampler, evaluator, saver):
+    pdb.set_trace()
     while True:
       if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
         break
@@ -295,13 +296,14 @@ class CO_Experiment(Experiment):
   def _initialize_model_and_sampler(
       self, rnd, model, sampler_init_state_fn, model_init_params_fn
   ):
+    pdb.set_trace()
     data_list, x0, state, x0_es = super()._initialize_model_and_sampler(
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
     if data_list is None:
       return None, x0, state, x0_es
     sample_idx, params, reference_obj = zip(*data_list)
-    params = flax.core.frozen_dict.freeze(utils.tree_stack(params))
+    params = flax.core.frozen_dict.unfreeze(utils.tree_stack(params))
     self.ref_obj = jnp.array(reference_obj)
     self.sample_idx = jnp.array(sample_idx)
     return params, x0, state, x0_es
@@ -356,6 +358,7 @@ class CO_Experiment(Experiment):
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
 
+    pdb.set_trace()
     for step in tqdm.tqdm(range(1, burn_in_length)):
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
@@ -450,6 +453,3 @@ class CO_Experiment(Experiment):
         sample_mask,
     )
 
-
-def build_experiment(config: config_dict):
-  return Experiment(config)

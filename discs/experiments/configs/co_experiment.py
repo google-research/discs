@@ -14,4 +14,5 @@ def get_co_default_config():
   exp_config.final_temperature = 0.05
   exp_config.log_every_steps = 100
   exp_config.temp0_steps = 0
+  exp_config.name = 'CO_Experiment'
   return exp_config
