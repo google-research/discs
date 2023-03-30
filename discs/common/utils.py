@@ -172,14 +172,14 @@ def parse_cfg_str(cfg):
     cfg_dict[k] = v
   return cfg_dict
 
-# def update_graph_cfg(config, graphs):
-#   config.model.max_num_nodes = graphs.max_num_nodes
-#   config.model.max_num_edges = graphs.max_num_edges
-#   config.model.shape = (graphs.max_num_nodes,)
+def update_graph_cfg(config, graphs):
+  config.model.max_num_nodes = graphs.max_num_nodes
+  config.model.max_num_edges = graphs.max_num_edges
+  config.model.shape = (graphs.max_num_nodes,)
 
 def get_datagen(config):
   test_graphs = graph_gen.get_graphs(config)
-  # update_graph_cfg(config, test_graphs)
+  update_graph_cfg(config, test_graphs)
   # logging.info(config)
   datagen = test_graphs.get_iterator('test', config.experiment.num_models)
   return datagen
