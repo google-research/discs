@@ -4,6 +4,8 @@ from discs.models import comb_ebm
 import jax
 import jax.numpy as jnp
 import ml_collections
+import flax
+from discs.common.utils import get_datagen
 
 
 class Maxcut(comb_ebm.BinaryNodeCombEBM):
@@ -11,6 +13,12 @@ class Maxcut(comb_ebm.BinaryNodeCombEBM):
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.max_num_nodes = config.max_num_nodes
+    self.datagen = get_datagen(config)
+    self.config = config
+
+  def make_init_params(self, rng):
+    data_list = next(self.datagen)
+    return data_list
 
   def get_init_samples(self, rng, num_samples):
     return jax.random.bernoulli(

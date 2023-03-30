@@ -2,12 +2,15 @@
 
 import functools
 from typing import Any
-from discs.models import abstractmodel
+from discs.models import deepenergymodel
 from flax import linen as nn
 from flax.linen import initializers
 import jax
 import jax.numpy as jnp
 import ml_collections
+import os
+import pickle
+import flax
 import pdb
 
 
@@ -70,19 +73,19 @@ class NNCategorical(nn.Module):
     pass
 
 
-class RBM(abstractmodel.AbstractModel):
+class RBM(deepenergymodel.DeepEBM):
   """RBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
+    super().__init__(config)
     self.num_visible = config.num_visible
     self.num_hidden = config.num_hidden
     self.num_categories = config.num_categories
     self.net = None
-    params = config.get('params', None)
-    if params is not None:
-      data_mean = params['data_mean']
-    else:
-      data_mean = config.get('data_mean', None)
+    data_mean = None
+    self.params = config.get('params', None)
+    if self.params:
+      data_mean = self.params['data_mean']
     self.init_dist = self.build_init_dist(data_mean)
     self.data_mean = data_mean
 
@@ -90,6 +93,8 @@ class RBM(abstractmodel.AbstractModel):
     return self.init_dist(key=rng, shape=(num_samples, self.num_visible))
 
   def make_init_params(self, rng):
+    if self.params:
+      return self.params
     model_rng, sample_rng = jax.random.split(rng)
     v = self.get_init_samples(sample_rng, 1)
     return self.net.init({'params': model_rng}, v=v)['params']
@@ -154,7 +159,6 @@ class CategoricalRBM(RBM):
   def build_init_dist(self, data_mean):
     if data_mean is None:
       pass
-
 
 def build_model(config):
   config_model = config.model
