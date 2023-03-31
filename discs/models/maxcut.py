@@ -5,22 +5,22 @@ import jax
 import jax.numpy as jnp
 import ml_collections
 import flax
-from discs.common.utils import get_datagen
 import pdb
+
 
 class Maxcut(comb_ebm.BinaryNodeCombEBM):
   """Maxcut model."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    self.datagen = get_datagen(config)
+    super().__init__(config)
     self.config = config.model
-    self.max_num_nodes=self.config.max_num_nodes
+    self.max_num_nodes = self.config.max_num_nodes
 
   def make_init_params(self, rng):
     try:
       data_list = next(self.datagen)
     except:
-        return None
+      return None
     return data_list
 
   def get_init_samples(self, rng, num_samples):
