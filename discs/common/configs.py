@@ -27,6 +27,8 @@ def get_config():
           name='',
       ),
       experiment=dict(
+          name='Sampling_Experiment',
+          evaluator='ess_eval',
           num_models=1,
           batch_size=100,
           chain_length=100000,

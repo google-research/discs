@@ -3,13 +3,14 @@
 import functools
 import os
 from typing import Any
+
 from absl import logging
 from clu import metric_writers
+from discs.graph_loader import graph_gen
 import flax
 import jax
 import jax.numpy as jnp
 import numpy as np
-
 
 @flax.struct.dataclass
 class SamplerState:
@@ -170,3 +171,15 @@ def parse_cfg_str(cfg):
     v = '-'.join(args[1:])
     cfg_dict[k] = v
   return cfg_dict
+
+def update_graph_cfg(config, graphs):
+  config.model.max_num_nodes = graphs.max_num_nodes
+  config.model.max_num_edges = graphs.max_num_edges
+  config.model.shape = (graphs.max_num_nodes,)
+
+def get_datagen(config):
+  test_graphs = graph_gen.get_graphs(config)
+  update_graph_cfg(config, test_graphs)
+  # logging.info(config)
+  datagen = test_graphs.get_iterator('test', config.experiment.num_models)
+  return datagen

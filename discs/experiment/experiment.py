@@ -3,12 +3,14 @@ import jax
 import jax.numpy as jnp
 from ml_collections import config_dict
 from discs.common import math
+from discs.common import utils
 import tqdm
 import pdb
 import time
 import functools
 import optax
 import flax
+import importlib
 
 
 class Experiment:
@@ -21,41 +23,14 @@ class Experiment:
     if jax.local_device_count() != 1 and self.config.run_parallel:
       self.parallel = True
 
-  def _build_temperature_schedule(self, config):
-    """Temperature schedule."""
-
-    if config.t_schedule == 'constant':
-      schedule = lambda step: step * 0 + config.init_temperature
-    elif config.t_schedule == 'linear':
-      schedule = optax.linear_schedule(
-          config.init_temperature, config.final_temperature, config.chain_length
-      )
-    elif config.t_schedule == 'exp_decay':
-      schedule = optax.exponential_decay(
-          config.init_temperature,
-          config.chain_length,
-          config.decay_rate,
-          end_value=config.final_temperature,
-      )
-    else:
-      raise ValueError('Unknown schedule %s' % config.t_schedule)
-    return schedule
-
   def _initialize_model_and_sampler(
       self, rnd, model, sampler_init_state_fn, model_init_params_fn
   ):
     """Initializes model params, sampler state and gets the initial samples."""
     rng_param, rng_x0, rng_x0_ess, rng_state = jax.random.split(rnd, num=4)
-    if self.config_model.get('data_path', None):
-      params = self.config_model.params
-    elif self.config_model.get('cfg_str', None):
-      params = flax.core.frozen_dict.unfreeze(self.config_model.params)
-    else:
-      params = model_init_params_fn(
-          jax.random.split(rng_param, self.config.num_models)
-      )
-    if 'mask' not in params:
-      params['mask'] = None
+    params = model_init_params_fn(
+        jax.random.split(rng_param, self.config.num_models)
+    )
     num_samples = self.config.batch_size * self.config.num_models
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
@@ -99,7 +74,7 @@ class Experiment:
 
     print('x shape: ', x.shape)
     print('state shape: ', state['steps'].shape)
-    key = list(params.keys())[1]
+    key = list(params.keys())[0]
     print('params shape: ', params[key].shape)
     return params, x, state, fn_breshape, bshape
 
@@ -110,44 +85,36 @@ class Experiment:
       compiled_step = jax.pmap(step_fn)
     return compiled_step
 
-  def _compile_evaluator(self, obj_fn_step):
+  def _compile_evaluator(self, obj_fn):
     if not self.parallel:
-      compiled_eval_step = jax.jit(obj_fn_step)
+      compiled_obj_fn = jax.jit(obj_fn)
     else:
-      compiled_eval_step = jax.pmap(obj_fn_step)
-    return compiled_eval_step
+      compiled_obj_fn = jax.pmap(obj_fn)
+    return compiled_obj_fn
 
   def _get_vmapped_functions(self, sampler, model, evaluator):
     model_init_params_fn = jax.vmap(model.make_init_params)
     sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
-    obj_fn_step = jax.vmap(
-        functools.partial(evaluator.evaluate_step, model=model)
-    )
+    obj_fn = self._vmap_evaluator(evaluator, model)
     return (
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
-        obj_fn_step,
+        obj_fn,
     )
 
-  def _compile_fns(self, step_fn, obj_fn_step, evaluator):
+  def _compile_fns(self, step_fn, obj_fn):
     compiled_step = self._compile_sampler_step(step_fn)
-    compiled_eval_step = self._compile_evaluator(obj_fn_step)
-    compiled_eval_chain = jax.jit(evaluator.evaluate_chain)
     get_hop = jax.jit(self._get_hop)
-    get_mapped_samples = jax.jit(self._get_mapped_samples)
-    eval_metric = jax.jit(evaluator.get_eval_metrics)
     compiled_step_burnin = compiled_step
     compiled_step_mixing = compiled_step
+    compiled_obj_fn = self._compile_evaluator(obj_fn)
     return (
         compiled_step_burnin,
         compiled_step_mixing,
-        compiled_eval_step,
-        compiled_eval_chain,
-        eval_metric,
         get_hop,
-        get_mapped_samples,
+        compiled_obj_fn,
     )
 
   def get_results(self, model, sampler, evaluator, saver):
@@ -159,16 +126,18 @@ class Experiment:
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
-        obj_fn_step,
+        obj_fn,
     ) = self._get_vmapped_functions(sampler, model, evaluator)
     rnd = jax.random.PRNGKey(0)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
+    if params is None:
+      return False
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
     )
-    compiled_fns = self._compile_fns(step_fn, obj_fn_step, evaluator)
+    compiled_fns = self._compile_fns(step_fn, obj_fn)
     self._compute_chain(
         compiled_fns,
         state,
@@ -177,8 +146,17 @@ class Experiment:
         x,
         x0_ess,
         saver,
+        evaluator,
         fn_reshape,
         breshape,
+    )
+    return True
+
+  def _get_hop(self, x, new_x):
+    return (
+        jnp.sum(abs(x - new_x))
+        / self.config.batch_size
+        / self.config.num_models
     )
 
   def _compute_chain(
@@ -190,6 +168,184 @@ class Experiment:
       x,
       x0_ess,
       saver,
+      evaluator,
+      fn_reshape,
+      bshape,
+  ):
+    raise NotImplementedError
+  
+  def vmap_evaluator(self, evaluator, model):
+    raise NotImplementedError
+  
+class Sampling_Experiment(Experiment):
+  """Experiment class that generates chains of samples."""
+
+  def _vmap_evaluator(self, evaluator, model):
+    obj_fn = evaluator.evaluate
+    return obj_fn
+
+  def _compute_chain(
+      self,
+      compiled_fns,
+      state,
+      params,
+      rng,
+      x,
+      x0_ess,
+      saver,
+      evaluator,
+      fn_reshape,
+      bshape,
+  ):
+    """Generates the chain of samples."""
+    assert self.config.num_models == 1
+    (
+        chain,
+        acc_ratios,
+        hops,
+        running_time,
+    ) = self._initialize_chain_vars()
+
+    stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
+    get_mapped_samples, eval_metric = self._compile_additional_fns(evaluator)
+
+    # burn in
+    burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
+    for step in tqdm.tqdm(range(1, burn_in_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      new_x, state, acc = stp_burnin(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      if step % self.config.save_every_steps == 0:
+        saved_sample = new_x[0]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      x = new_x
+
+    for step in tqdm.tqdm(range(burn_in_length, 1 + self.config.chain_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      start = time.time()
+      new_x, state, acc = stp_mixing(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      running_time += time.time() - start
+      if step % self.config.save_every_steps == 0:
+        saved_sample = new_x[0]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      chain.append(get_mapped_samples(new_x, x0_ess))
+      x = new_x
+
+    chain = jnp.array(chain)
+    if self.parallel:
+      chain = jnp.array([chain])
+      rng = jnp.array([rng])
+    ess = float(obj_fn(samples=chain, rnd=rng).reshape(-1))
+    num_ll_calls = int(state['num_ll_calls'][0])
+    metrics = eval_metric(ess, running_time, num_ll_calls)
+    saver.save_results(acc_ratios, hops, metrics, running_time)
+
+  def _initialize_chain_vars(self):
+    chain = []
+    acc_ratios = []
+    hops = []
+    running_time = 0
+
+    return (
+        chain,
+        acc_ratios,
+        hops,
+        running_time,
+    )
+
+  def _compile_additional_fns(self, evaluator):
+    get_mapped_samples = jax.jit(self._get_mapped_samples)
+    eval_metric = jax.jit(evaluator.get_eval_metrics)
+    return get_mapped_samples, eval_metric
+
+  def _get_mapped_samples(self, samples, x0_ess):
+    samples = samples.reshape((-1,) + self.config_model.shape)
+    x0_ess = x0_ess.reshape((-1,) + self.config_model.shape)
+    return jnp.sum(jnp.abs(samples - x0_ess), -1)
+
+
+class CO_Experiment(Experiment):
+
+  def _vmap_evaluator(self, evaluator, model):
+    obj_fn = jax.vmap(functools.partial(evaluator.evaluate, model=model))
+    return obj_fn
+
+  def get_results(self, model, sampler, evaluator, saver):
+    while True:
+      if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
+        break
+
+  def _initialize_model_and_sampler(
+      self, rnd, model, sampler_init_state_fn, model_init_params_fn
+  ):
+    data_list, x0, state, x0_es = super()._initialize_model_and_sampler(
+        rnd, model, sampler_init_state_fn, model.make_init_params
+    )
+    if data_list is None:
+      return None, x0, state, x0_es
+    sample_idx, params, reference_obj = zip(*data_list)
+    params = flax.core.frozen_dict.unfreeze(utils.tree_stack(params))
+    self.ref_obj = jnp.array(reference_obj)
+    self.sample_idx = jnp.array(sample_idx)
+    return params, x0, state, x0_es
+
+  def _build_temperature_schedule(self, config):
+    """Temperature schedule."""
+
+    if config.t_schedule == 'constant':
+      schedule = lambda step: step * 0 + config.init_temperature
+    elif config.t_schedule == 'linear':
+      schedule = optax.linear_schedule(
+          config.init_temperature, config.final_temperature, config.chain_length
+      )
+    elif config.t_schedule == 'exp_decay':
+      schedule = optax.exponential_decay(
+          config.init_temperature,
+          config.chain_length,
+          config.decay_rate,
+          end_value=config.final_temperature,
+      )
+    else:
+      raise ValueError('Unknown schedule %s' % config.t_schedule)
+    return schedule
+
+  def _compute_chain(
+      self,
+      compiled_fns,
+      state,
+      params,
+      rng,
+      x,
+      x0_ess,
+      saver,
+      evaluator,
       fn_reshape,
       bshape,
   ):
@@ -200,24 +356,13 @@ class Experiment:
         acc_ratios,
         hops,
         running_time,
-        ess,
-        metrics,
         best_ratio,
         init_temperature,
         t_schedule,
-        ref_obj,
         sample_mask,
     ) = self._initialize_chain_vars(bshape)
 
-    (
-        sampler_step_burnin,
-        sampler_step_mixing,
-        eval_step_fn,
-        eval_chain_fn,
-        eval_metric,
-        get_hop,
-        get_mapped_samples,
-    ) = compiled_fns
+    stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
 
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
@@ -227,8 +372,7 @@ class Experiment:
       params['temperature'] = init_temperature * cur_temp
       rng = jax.random.fold_in(rng, step)
       step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
-
-      new_x, state, acc = sampler_step_burnin(
+      new_x, state, acc = stp_burnin(
           rng=step_rng,
           x=x,
           model_param=params,
@@ -237,19 +381,17 @@ class Experiment:
       )
 
       if step % self.config.log_every_steps == 0:
-        if self.config.evaluator == 'co_eval':
-          eval_val = eval_step_fn(samples=new_x, params=params)
-          ratio = jnp.max(eval_val, axis=-1).reshape(-1) / ref_obj
-          best_ratio = jnp.maximum(ratio, best_ratio)
-          sample = best_ratio[sample_mask]
-          chosen_sample_idx = jnp.argmax(eval_val)
-        else:
-          chosen_sample_idx = 0
+        eval_val = obj_fn(samples=new_x, params=params)
+        ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
+        best_ratio = jnp.maximum(ratio, best_ratio)
+        sample = best_ratio[sample_mask]
+        chosen_sample_idx = jnp.argmax(eval_val)
+
         if step % self.config.save_every_steps == 0:
-            saved_sample = new_x[chosen_sample_idx]
-            saver.dump_sample(
-                saved_sample, step, self.config_model.get('visualize', False)
-            )
+          saved_sample = new_x[chosen_sample_idx]
+          saver.dump_sample(
+              saved_sample, step, self.config_model.get('visualize', False)
+          )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -265,7 +407,7 @@ class Experiment:
       rng = jax.random.fold_in(rng, step)
       step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
       start = time.time()
-      new_x, state, acc = sampler_step_mixing(
+      new_x, state, acc = stp_mixing(
           rng=step_rng,
           x=x,
           model_param=params,
@@ -274,21 +416,17 @@ class Experiment:
       )
       running_time += time.time() - start
       if step % self.config.log_every_steps == 0:
-        if self.config.evaluator == 'co_eval':
-          eval_val = eval_step_fn(samples=new_x, params=params)
-          ratio = jnp.max(eval_val, axis=-1).reshape(-1) / ref_obj
-          best_ratio = jnp.maximum(ratio, best_ratio)
-          sample = best_ratio[sample_mask]
-          chosen_sample_idx = jnp.argmax(eval_val)
-        else:
-          sample = get_mapped_samples(new_x, x0_ess)
-          chosen_sample_idx = 0
+        eval_val = obj_fn(samples=new_x, params=params)
+        ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
+        best_ratio = jnp.maximum(ratio, best_ratio)
+        sample = best_ratio[sample_mask]
+        chosen_sample_idx = jnp.argmax(eval_val)
         chain.append(sample)
         if step % self.config.save_every_steps == 0:
-            saved_sample = new_x[chosen_sample_idx]
-            saver.dump_sample(
-                saved_sample, step, self.config_model.get('visualize', False)
-            )
+          saved_sample = new_x[chosen_sample_idx]
+          saver.dump_sample(
+              saved_sample, step, self.config_model.get('visualize', False)
+          )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -298,30 +436,17 @@ class Experiment:
         hops.append(get_hop(x, new_x))
       x = new_x
 
-    if self.config.evaluator == 'ess_eval':
-      chain = jnp.array(chain)
-      ess = eval_chain_fn(chain, rng)
-      num_ll_calls = int(state['num_ll_calls'][0])
-      metrics = eval_metric(ess, running_time, num_ll_calls)
-    else:
-      saver.dump_results(best_ratio[sample_mask])
-
-    saver.save_results(acc_ratios, hops, metrics, running_time)
+    saver.dump_results(best_ratio[sample_mask])
+    saver.save_results(acc_ratios, hops, None, running_time)
 
   def _initialize_chain_vars(self, bshape):
     t_schedule = self._build_temperature_schedule(self.config)
-    ref_obj = self.config_model.get('ref_obj', None)
-    sample_idx = self.config_model.get('sample_idx', None)
-    sample_mask = None
-    if sample_idx is not None:
-      sample_mask = sample_idx >= 0
+    sample_mask = self.sample_idx >= 0
 
     chain = []
     acc_ratios = []
     hops = []
     running_time = 0
-    ess = None
-    metrcis = None
     best_ratio = jnp.ones(self.config.num_models, dtype=jnp.float32) * -1e9
     init_temperature = jnp.ones(bshape, dtype=jnp.float32)
 
@@ -330,27 +455,8 @@ class Experiment:
         acc_ratios,
         hops,
         running_time,
-        ess,
-        metrcis,
         best_ratio,
         init_temperature,
         t_schedule,
-        ref_obj,
         sample_mask,
     )
-
-  def _get_mapped_samples(self, samples, x0_ess):
-    samples = samples.reshape((-1,) + self.config_model.shape)
-    x0_ess = x0_ess.reshape((-1,) + self.config_model.shape)
-    return jnp.sum(jnp.abs(samples - x0_ess), -1)
-
-  def _get_hop(self, x, new_x):
-    return (
-        jnp.sum(abs(x - new_x))
-        / self.config.batch_size
-        / self.config.num_models
-    )
-
-
-def build_experiment(config: config_dict):
-  return Experiment(config)

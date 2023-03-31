@@ -8,5 +8,6 @@ def get_config():
           name='rbm',
           visualize = True,
           data_path='./RBM_Haoran/mnist-2-200/',
+          num_categories=2,
           )
   return config_dict.ConfigDict(model_config)

@@ -1,12 +1,17 @@
 """EBM for combinatorial optimization problems."""
 
 from discs.models import abstractmodel
+from discs.common.utils import get_datagen
 import jax
+import ml_collections
 import jax.numpy as jnp
 
 
 class CombEBM(abstractmodel.AbstractModel):
   """Comb-opt EBM."""
+
+  def __init__(self, config: ml_collections.ConfigDict):
+    self.datagen = get_datagen(config)
 
   def make_init_params(self, rng):
     raise NotImplementedError
@@ -41,12 +46,11 @@ class BinaryNodeCombEBM(CombEBM):
 
   def get_init_samples(self, rng, num_samples):
     return jax.random.bernoulli(
-        key=rng, p=0.5,
-        shape=(num_samples, self.max_num_nodes)).astype(jnp.int32)
+        key=rng, p=0.5, shape=(num_samples, self.max_num_nodes)
+    ).astype(jnp.int32)
 
   def get_neighbor_fn(self, _, x, neighbhor_idx):
     brange = jnp.arange(x.shape[0])
     cur_val = x[brange, neighbhor_idx]
     y = x.at[brange, neighbhor_idx].set(1 - cur_val)
     return y
-  
