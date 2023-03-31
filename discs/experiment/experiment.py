@@ -73,7 +73,7 @@ class Experiment:
 
     print('x shape: ', x.shape)
     print('state shape: ', state['steps'].shape)
-    key = list(params.keys())[1]
+    key = list(params.keys())[0]
     print('params shape: ', params[key].shape)
     return params, x, state, fn_breshape, bshape
 
@@ -147,6 +147,7 @@ class Experiment:
         x,
         x0_ess,
         saver,
+        evaluator,
         fn_reshape,
         breshape,
     )
