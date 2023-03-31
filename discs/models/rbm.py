@@ -2,7 +2,7 @@
 
 import functools
 from typing import Any
-from discs.models import deepenergymodel
+from discs.models import deepenergmodel
 from flax import linen as nn
 from flax.linen import initializers
 import jax
@@ -73,7 +73,7 @@ class NNCategorical(nn.Module):
     pass
 
 
-class RBM(deepenergymodel.DeepEBM):
+class RBM(deepenergmodel.DeepEBM):  
   """RBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
@@ -85,6 +85,7 @@ class RBM(deepenergymodel.DeepEBM):
     data_mean = None
     self.params = config.get('params', None)
     if self.params:
+      self.params = flax.core.frozen_dict.unfreeze(self.params)
       data_mean = self.params['data_mean']
     self.init_dist = self.build_init_dist(data_mean)
     self.data_mean = data_mean
@@ -103,7 +104,6 @@ class RBM(deepenergymodel.DeepEBM):
     return self.net.apply({'params': params}, v=x)
 
   def get_value_and_grad(self, params, x):
-    params = params['params']
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):

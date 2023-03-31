@@ -26,6 +26,7 @@ class DeepEBM(abstractmodel.AbstractModel):
   def load_params_configs(self, config):
     path = os.path.join(config.data_path, 'params.pkl')
     if os.path.exists(path):
+      path = config.data_path
       model = pickle.load(open(path + 'params.pkl', 'rb'))
       config.params = flax.core.frozen_dict.freeze(model['params'])
       model_config = yaml.unsafe_load(open(path + 'config.yaml', 'r'))

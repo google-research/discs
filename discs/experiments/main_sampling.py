@@ -34,15 +34,15 @@ def main(_):
       _MODEL_CONFIG.value, _SAMPLER_CONFIG.value, _WEIGHT_FN.value
   )
 
+  # model
+  model_mod = importlib.import_module('discs.models.%s' % config.model.name)
+  model = model_mod.build_model(config)
+
   # sampler
   sampler_mod = importlib.import_module(
       'discs.samplers.%s' % config.sampler.name
   )
   sampler = sampler_mod.build_sampler(config)
-
-  # model
-  model_mod = importlib.import_module('discs.models.%s' % config.model.name)
-  model = model_mod.build_model(config)
 
   # experiment
   experiment_mod = getattr(importlib.import_module('discs.experiment.experiment'), f'{config.experiment.name}')

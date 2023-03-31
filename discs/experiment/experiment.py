@@ -337,6 +337,7 @@ class CO_Experiment(Experiment):
       x,
       x0_ess,
       saver,
+      evaluator,
       fn_reshape,
       bshape,
   ):
