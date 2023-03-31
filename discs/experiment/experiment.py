@@ -10,6 +10,7 @@ import time
 import functools
 import optax
 import flax
+import importlib
 
 
 class Experiment:
@@ -176,10 +177,9 @@ class Sampling_Experiment(Experiment):
   """Experiment class that generates chains of samples."""
 
   def _get_vmapped_functions(self, sampler, model, evaluator):
-    
-    (model_init_params_fn,
-    sampler_init_state_fn,
-    step_fn) = super()._get_vmapped_functions(sampler, model, evaluator)
+    (model_init_params_fn, sampler_init_state_fn, step_fn) = (
+        super()._get_vmapped_functions(sampler, model, evaluator)
+    )
     obj_fn = evaluator.evaluate
     return (
         model_init_params_fn,
@@ -187,6 +187,7 @@ class Sampling_Experiment(Experiment):
         step_fn,
         obj_fn,
     )
+
   def _compute_chain(
       self,
       compiled_fns,
@@ -261,7 +262,6 @@ class Sampling_Experiment(Experiment):
       chain.append(get_mapped_samples(new_x, x0_ess))
       x = new_x
 
-    
     chain = jnp.array(chain)
     if self.parallel:
       chain = jnp.array([chain])
@@ -297,11 +297,22 @@ class Sampling_Experiment(Experiment):
 
 class CO_Experiment(Experiment):
 
+  def __init__(self, config):
+    co_exp_default_config = importlib.import_module(
+        'discs.experiments.configs.co_experiment'
+    )
+    config.experiment.update(co_exp_default_config.get_co_default_config())
+    graph_exp_config = importlib.import_module(
+        'discs.experiments.configs.%s.%s'
+        % (config.model.name, config.model.graph_type)
+    )
+    config.experiment.update(graph_exp_config.get_config())
+    super().__init__(config)
+
   def _get_vmapped_functions(self, sampler, model, evaluator):
-    
-    (model_init_params_fn,
-    sampler_init_state_fn,
-    step_fn) = super()._get_vmapped_functions(sampler, model, evaluator)
+    (model_init_params_fn, sampler_init_state_fn, step_fn) = (
+        super()._get_vmapped_functions(sampler, model, evaluator)
+    )
     obj_fn = jax.vmap(functools.partial(evaluator.evaluate, model=model))
     return (
         model_init_params_fn,
