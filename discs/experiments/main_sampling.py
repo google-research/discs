@@ -24,7 +24,16 @@ def get_main_config(model_config, sampler_config):
   config = common_configs.get_config()
   config.sampler.update(sampler_config)
   config.model.update(model_config)
-  logging.info(config)
+  if config.model.get('cfg_str', None):
+    co_exp_default_config = importlib.import_module(
+        'discs.experiments.configs.co_experiment'
+    )
+    config.experiment.update(co_exp_default_config.get_co_default_config())
+    graph_exp_config = importlib.import_module(
+        'discs.experiments.configs.%s.%s'
+        % (config.model.name, config.model.graph_type)
+    )
+    config.experiment.update(graph_exp_config.get_config())
   return config
 
 

@@ -96,7 +96,7 @@ class Experiment:
     model_init_params_fn = jax.vmap(model.make_init_params)
     sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
-    obj_fn = self._vmap_evaluator(evaluator)
+    obj_fn = self._vmap_evaluator(evaluator, model)
     return (
         model_init_params_fn,
         sampler_init_state_fn,
@@ -174,13 +174,13 @@ class Experiment:
   ):
     raise NotImplementedError
   
-  def vmap_evaluator(self, evaluator):
+  def vmap_evaluator(self, evaluator, model):
     raise NotImplementedError
   
 class Sampling_Experiment(Experiment):
   """Experiment class that generates chains of samples."""
 
-  def _vmap_evaluator(self, evaluator):
+  def _vmap_evaluator(self, evaluator, model):
     obj_fn = evaluator.evaluate
     return obj_fn
 
@@ -262,7 +262,7 @@ class Sampling_Experiment(Experiment):
     if self.parallel:
       chain = jnp.array([chain])
       rng = jnp.array([rng])
-    ess = obj_fn(samples=chain, rnd=rng)
+    ess = float(obj_fn(samples=chain, rnd=rng).reshape(-1))
     num_ll_calls = int(state['num_ll_calls'][0])
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
@@ -293,19 +293,7 @@ class Sampling_Experiment(Experiment):
 
 class CO_Experiment(Experiment):
 
-  def __init__(self, config):
-    co_exp_default_config = importlib.import_module(
-        'discs.experiments.configs.co_experiment'
-    )
-    config.experiment.update(co_exp_default_config.get_co_default_config())
-    graph_exp_config = importlib.import_module(
-        'discs.experiments.configs.%s.%s'
-        % (config.model.name, config.model.graph_type)
-    )
-    config.experiment.update(graph_exp_config.get_config())
-    super().__init__(config)
-
-  def _vmap_evaluator(self, evaluator):
+  def _vmap_evaluator(self, evaluator, model):
     obj_fn = jax.vmap(functools.partial(evaluator.evaluate, model=model))
     return obj_fn
 
