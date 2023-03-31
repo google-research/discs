@@ -15,14 +15,6 @@ import jax.numpy as jnp
 
 import pdb
 
-
-def update_sampler_cfg(config, weight_fn_val):
-  if 'balancing_fn_type' in config.sampler.keys():
-    lbweighfn = importlib.import_module(
-        'discs.samplers.locallybalanced'
-    ).LBWeightFn
-    config.sampler.balancing_fn_type = getattr(lbweighfn, f'{weight_fn_val}')
-
 def update_experiment_cfg(config):
   if config.model.get('cfg_str', None):
     config.experiment.evaluator = 'co_eval'
@@ -40,10 +32,9 @@ def update_experiment_cfg(config):
     config.experiment.log_every_steps = 1
 
 
-def get_main_config(model_config, sampler_config, weight_fn):
+def get_main_config(model_config, sampler_config):
   config = common_configs.get_config()
   config.sampler.update(sampler_config)
-  update_sampler_cfg(config, weight_fn)
   config.model.update(model_config)
   logging.info(config)
   update_experiment_cfg(config)

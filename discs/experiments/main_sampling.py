@@ -20,7 +20,6 @@ from clu.metric_writers.summary_writer import SummaryWriter
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 _SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
-_WEIGHT_FN = flags.DEFINE_string('weight_fn', 'SQRT', 'Balancing FN TYPE')
 FLAGS = flags.FLAGS
 
 
@@ -31,7 +30,7 @@ def get_save_dir(config):
 
 def main(_):
   config = config_setup.get_main_config(
-      _MODEL_CONFIG.value, _SAMPLER_CONFIG.value, _WEIGHT_FN.value
+      _MODEL_CONFIG.value, _SAMPLER_CONFIG.value
   )
 
   # model
