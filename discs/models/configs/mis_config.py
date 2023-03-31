@@ -9,6 +9,7 @@ def get_config():
       dict(
           name='mis',
           graph_type='ertest',
+          data_root='er_800_test',
           cfg_str='r-800',
       )
   )

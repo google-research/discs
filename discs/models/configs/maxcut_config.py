@@ -9,6 +9,7 @@ def get_config():
       dict(
           name='maxcut',
           graph_type='ba',
+          data_root='maxcut-ba',
           cfg_str='r-ba-4-n-16-20',
       )
   )
