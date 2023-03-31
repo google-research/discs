@@ -95,12 +95,10 @@ class Experiment:
     model_init_params_fn = jax.vmap(model.make_init_params)
     sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
-    obj_fn = jax.vmap(functools.partial(evaluator.evaluate, model=model))
     return (
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
-        obj_fn,
     )
 
   def _compile_fns(self, step_fn, obj_fn):
@@ -177,6 +175,18 @@ class Experiment:
 class Sampling_Experiment(Experiment):
   """Experiment class that generates chains of samples."""
 
+  def _get_vmapped_functions(self, sampler, model, evaluator):
+    
+    (model_init_params_fn,
+    sampler_init_state_fn,
+    step_fn) = super()._get_vmapped_functions(sampler, model, evaluator)
+    obj_fn = evaluator.evaluate
+    return (
+        model_init_params_fn,
+        sampler_init_state_fn,
+        step_fn,
+        obj_fn,
+    )
   def _compute_chain(
       self,
       compiled_fns,
@@ -191,7 +201,7 @@ class Sampling_Experiment(Experiment):
       bshape,
   ):
     """Generates the chain of samples."""
-
+    assert self.config.num_models == 1
     (
         chain,
         acc_ratios,
@@ -235,7 +245,6 @@ class Sampling_Experiment(Experiment):
           x=x,
           model_param=params,
           state=state,
-          x_mask=params['mask'],
       )
       running_time += time.time() - start
       if step % self.config.save_every_steps == 0:
@@ -252,8 +261,12 @@ class Sampling_Experiment(Experiment):
       chain.append(get_mapped_samples(new_x, x0_ess))
       x = new_x
 
+    
     chain = jnp.array(chain)
-    ess = obj_fn(chain, rng)
+    if self.parallel:
+      chain = jnp.array([chain])
+      rng = jnp.array([rng])
+    ess = obj_fn(samples=chain, rnd=rng)
     num_ll_calls = int(state['num_ll_calls'][0])
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
@@ -283,6 +296,19 @@ class Sampling_Experiment(Experiment):
 
 
 class CO_Experiment(Experiment):
+
+  def _get_vmapped_functions(self, sampler, model, evaluator):
+    
+    (model_init_params_fn,
+    sampler_init_state_fn,
+    step_fn) = super()._get_vmapped_functions(sampler, model, evaluator)
+    obj_fn = jax.vmap(functools.partial(evaluator.evaluate, model=model))
+    return (
+        model_init_params_fn,
+        sampler_init_state_fn,
+        step_fn,
+        obj_fn,
+    )
 
   def get_results(self, model, sampler, evaluator, saver):
     while True:
