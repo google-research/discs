@@ -4,6 +4,7 @@ import abc
 import ml_collections
 import pdb
 
+
 class AbstractEvaluator(abc.ABC):
   """Abstract evaluator class: needs to be extended by any new objective function."""
 
@@ -30,9 +31,5 @@ class AbstractEvaluator(abc.ABC):
     return (eval_val, ess_over_mh_steps, ess_over_time, ess_over_ll_calls)
 
   @abc.abstractmethod
-  def evaluate_step(self, samples, model, params):
-    pass
-  
-  @abc.abstractmethod
-  def evaluate_chain(self, samples, rnd):
+  def evaluate(self, *args, **kwargs):
     pass
