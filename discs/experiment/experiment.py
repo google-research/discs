@@ -96,10 +96,12 @@ class Experiment:
     model_init_params_fn = jax.vmap(model.make_init_params)
     sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
+    obj_fn = self._vmap_evaluator(evaluator)
     return (
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
+        obj_fn,
     )
 
   def _compile_fns(self, step_fn, obj_fn):
@@ -171,22 +173,16 @@ class Experiment:
       bshape,
   ):
     raise NotImplementedError
-
-
+  
+  def vmap_evaluator(self, evaluator):
+    raise NotImplementedError
+  
 class Sampling_Experiment(Experiment):
   """Experiment class that generates chains of samples."""
 
-  def _get_vmapped_functions(self, sampler, model, evaluator):
-    (model_init_params_fn, sampler_init_state_fn, step_fn) = (
-        super()._get_vmapped_functions(sampler, model, evaluator)
-    )
+  def _vmap_evaluator(self, evaluator):
     obj_fn = evaluator.evaluate
-    return (
-        model_init_params_fn,
-        sampler_init_state_fn,
-        step_fn,
-        obj_fn,
-    )
+    return obj_fn
 
   def _compute_chain(
       self,
@@ -309,17 +305,9 @@ class CO_Experiment(Experiment):
     config.experiment.update(graph_exp_config.get_config())
     super().__init__(config)
 
-  def _get_vmapped_functions(self, sampler, model, evaluator):
-    (model_init_params_fn, sampler_init_state_fn, step_fn) = (
-        super()._get_vmapped_functions(sampler, model, evaluator)
-    )
+  def _vmap_evaluator(self, evaluator):
     obj_fn = jax.vmap(functools.partial(evaluator.evaluate, model=model))
-    return (
-        model_init_params_fn,
-        sampler_init_state_fn,
-        step_fn,
-        obj_fn,
-    )
+    return obj_fn
 
   def get_results(self, model, sampler, evaluator, saver):
     while True:
