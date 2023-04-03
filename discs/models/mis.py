@@ -2,7 +2,7 @@
 
 import jax.numpy as jnp
 import ml_collections
-from sco.models import comb_ebm
+from discs.models import comb_ebm
 
 
 class MIS(comb_ebm.BinaryNodeCombEBM):

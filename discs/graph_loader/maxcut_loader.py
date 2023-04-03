@@ -29,6 +29,7 @@ class RandGraphGen(MaxcutGen):
 
   def __init__(self, data_root, model_config):
     super().__init__()
+    pdb.set_trace()
     data_folder = os.path.join(data_root, 'maxcut-%s' % model_config.rand_type)
     file_list = []
     for fname in os.listdir(data_folder):

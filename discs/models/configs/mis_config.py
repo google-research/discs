@@ -3,13 +3,11 @@
 import importlib
 from ml_collections import config_dict
 
-
 def get_config():
   model_config = config_dict.ConfigDict(
       dict(
           name='mis',
           graph_type='ertest',
-          data_root='er_800_test',
           cfg_str='r-800',
       )
   )

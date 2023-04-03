@@ -4,7 +4,7 @@ from discs.common import configs
 from ml_collections import config_dict
 
 
-def get_config(cfg_str):
+def get_model_config(cfg_str):
   """Get config for er benchmark graphs."""
   num_nodes = 1347
   num_edges = 5978

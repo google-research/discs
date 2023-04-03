@@ -3,13 +3,11 @@
 import importlib
 from ml_collections import config_dict
 
-
 def get_config():
   model_config = config_dict.ConfigDict(
       dict(
           name='maxcut',
           graph_type='ba',
-          data_root='maxcut-ba',
           cfg_str='r-ba-4-n-16-20',
       )
   )

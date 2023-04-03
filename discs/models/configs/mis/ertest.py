@@ -5,7 +5,7 @@ from ml_collections import config_dict
 from sco.experiments import default_configs
 
 
-def get_config(cfg_str):
+def get_model_config(cfg_str):
   """Get config for er benchmark graphs."""
   extra_cfg = default_configs.parse_cfg_str(cfg_str)
   rand_type = extra_cfg['r']
@@ -28,7 +28,7 @@ def get_config(cfg_str):
       shape=(0,),
       rand_type=rand_type,
       penalty=1.001,
-      data_root='',
+      data_root='sco/er_800_test',
       graph_type='ertest',
   )
   return config_dict.ConfigDict(model_config)

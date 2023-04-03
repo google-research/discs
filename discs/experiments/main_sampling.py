@@ -7,6 +7,7 @@ from absl import app
 from absl import flags
 from discs.common import configs as common_configs
 from ml_collections import config_flags
+import pdb
 
 # from discs.experiments import co_setup
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')

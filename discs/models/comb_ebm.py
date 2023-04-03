@@ -14,7 +14,11 @@ class CombEBM(abstractmodel.AbstractModel):
     self.datagen = get_datagen(config)
 
   def make_init_params(self, rng):
-    raise NotImplementedError
+    try:
+      data_list = next(self.datagen)
+    except:
+      return None
+    return data_list
 
   def objective(self, params, x):
     raise NotImplementedError

@@ -3,7 +3,7 @@
 from ml_collections import config_dict
 
 
-def get_config(cfg_str):
+def get_config():
   """Get config for er benchmark graphs."""
   exp_config = dict(
       num_models=256,
