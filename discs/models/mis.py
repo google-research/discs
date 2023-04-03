@@ -10,8 +10,9 @@ class MIS(comb_ebm.BinaryNodeCombEBM):
 
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
-    self.max_num_nodes = config.max_num_nodes
-    self.penalty_coeff = config.get('penalty', 2.0)
+    self.config = config.model
+    self.max_num_nodes = self.config.max_num_nodes
+    self.penalty_coeff = self.config.get('penalty', 2.0)
 
   def penalty(self, params, x):
     x = x * params['mask']
@@ -48,4 +49,4 @@ class MIS(comb_ebm.BinaryNodeCombEBM):
 
 
 def build_model(config):
-  return MIS(config.model)
+  return MIS(config)

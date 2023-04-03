@@ -28,7 +28,7 @@ def get_model_config(cfg_str):
       shape=(0,),
       rand_type=rand_type,
       penalty=1.001,
-      data_root='sco/er_800_test',
+      data_root='sco',
       graph_type='ertest',
   )
   return config_dict.ConfigDict(model_config)

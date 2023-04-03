@@ -1,7 +1,7 @@
 #!/bin/bash
 
-models="maxcut mis" #mis categorical rbm potts ising bernoulli"
-samplers="path_auxiliary" #dlmc randomwalk gwg"
+models="mis maxcut categorical rbm potts ising bernoulli"
+samplers="path_auxiliary dlmc randomwalk gwg"
 
 for model in $models
 do

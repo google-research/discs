@@ -7,8 +7,6 @@ import numpy as np
 import pickle
 from discs.common import utils
 from discs.graph_loader import common as data_common
-import pdb
-#from sco.common import utils
 
 
 class MaxcutGen(data_common.GraphGenerator):
@@ -29,7 +27,6 @@ class RandGraphGen(MaxcutGen):
 
   def __init__(self, data_root, model_config):
     super().__init__()
-    pdb.set_trace()
     data_folder = os.path.join(data_root, 'maxcut-%s' % model_config.rand_type)
     file_list = []
     for fname in os.listdir(data_folder):
