@@ -23,6 +23,12 @@ def get_save_dir(config):
 
 def get_main_config(model_config, sampler_config):
   config = common_configs.get_config()
+  if config.model.get('cfg_str', None):
+    graph_config = importlib.import_module(
+        'discs.models.configs.%s.%s'
+        % (model_config['name'], model_config['graph_type'])
+    )
+    model_config.update(graph_config.get_model_config(model_config['cfg_str']))
   config.sampler.update(sampler_config)
   config.model.update(model_config)
   if config.model.get('cfg_str', None):

@@ -5,6 +5,7 @@ from copy import deepcopy
 from xmanager import xm
 from xmanager import xm_abc
 from xmanager import xm_local
+from xmanager.contrib import framework_defaults
 from ml_collections import config_flags
 
 FLAGS = flags.FLAGS
@@ -23,6 +24,13 @@ config_flags.DEFINE_config_file(
     lock_config=True,
 )
 
+# config_flags.DEFINE_config_file(
+#     name='config',
+#     default=None,
+#     help_string='experiment configuration file.',
+#     lock_config=True,
+# )
+
 _EXP_NAME = flags.DEFINE_string(
     'experiment_name',
     'Sampling Experiment',
@@ -36,7 +44,7 @@ flags.DEFINE_string(
     'save folder pattern',
 )
 
-#TODO: Make sure this works when True.
+# TODO: Make sure this works when True.
 _LAUNCH_LOCALLY = flags.DEFINE_bool(
     'launch_locally',
     False,
@@ -47,6 +55,10 @@ _LAUNCH_LOCALLY = flags.DEFINE_bool(
 )
 
 _NUM_GPUS = flags.DEFINE_integer('num_gpus', 2, 'Number of GPUs')
+
+_USE_BATCH = flags.DEFINE_bool(
+    'use_batch', False, 'Enables batch service tier.'
+)
 
 
 def main(argv) -> None:
@@ -66,13 +78,24 @@ def main(argv) -> None:
   executable_args['model_config'] = model_config_filename
   executable_args['sampler_config'] = sampler_config_filename
 
+  executable_args.update({
+      'config.model.data_root': '/gcs/xcloud-shared/hadai/data/sco',
+      'config.experiment.use_tqdm': False,
+  })
+
   create_experiment = (
       xm_local.create_experiment
       if _LAUNCH_LOCALLY.value
       else xm_abc.create_experiment
   )
   with create_experiment(experiment_title=_EXP_NAME.value) as experiment:
-    job_requirements = xm.JobRequirements(v100=_NUM_GPUS.value)
+    priority = xm.ServiceTier.BATCH if _USE_BATCH.value else xm.ServiceTier.PROD
+    job_requirements = xm.JobRequirements(
+        ram=8 * FLAGS.num_gpus * xm.GiB,
+        cpu=4 * FLAGS.num_gpus,
+        v100=FLAGS.num_gpus,
+        service_tier=priority,
+    )
 
     # Creating executor depending on the --launch_locally value.
     executor = (
@@ -93,6 +116,9 @@ def main(argv) -> None:
         [
             xm.python_container(
                 path='.',
+                base_image=framework_defaults.base_image(
+                    'jax', job_requirements.accelerator
+                ),
                 entrypoint=xm.ModuleName(module),
                 use_deep_module=True,
                 executor_spec=executor.Spec(),

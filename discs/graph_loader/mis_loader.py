@@ -1,13 +1,12 @@
 """Load MIS graphs."""
 
 import os
-import jax
 import jax.numpy as jnp
 import networkx as nx
 import numpy as np
-import pickle5 as pickle
-from sco.common import utils
-from sco.data_process import common as data_common
+import pickle
+from discs.common import utils
+from discs.graph_loader import common as data_common
 from pysat.formula import CNF
 
 
