@@ -31,7 +31,7 @@ def get_main_config(model_config, sampler_config):
         'discs.models.configs.%s.%s'
         % (model_config['name'], model_config['graph_type'])
     )
-    model_config.update(graph_config.get_model_config(model_config['cfg_str']))
+    config.model.update(graph_config.get_model_config(model_config['cfg_str']))
   if _DATA_ROOT.value:
     config.model.data_root = _DATA_ROOT
   if config.model.get('cfg_str', None):
