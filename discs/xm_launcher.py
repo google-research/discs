@@ -24,13 +24,6 @@ config_flags.DEFINE_config_file(
     lock_config=True,
 )
 
-# config_flags.DEFINE_config_file(
-#     name='config',
-#     default=None,
-#     help_string='experiment configuration file.',
-#     lock_config=True,
-# )
-
 _EXP_NAME = flags.DEFINE_string(
     'experiment_name',
     'Sampling Experiment',
@@ -77,6 +70,18 @@ def main(argv) -> None:
   # Add config flag and related overrides to args.
   executable_args['model_config'] = model_config_filename
   executable_args['sampler_config'] = sampler_config_filename
+  
+  # executable_args.update(
+  #     {
+  #         name: value
+  #         for name, value in FLAGS.flag_values_dict().items()
+  #         if name.startswith('config.')
+  #     }
+  # )
+
+  # executable_args.update({
+  #     'model_config.data_root': '/gcs/xcloud-shared/hadai/data/sco',
+  # })
 
   create_experiment = (
       xm_local.create_experiment

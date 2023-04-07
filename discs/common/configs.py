@@ -22,7 +22,6 @@ def get_config():
   general_config = dict(
       model=dict(
           name='',
-          data_root = '/gcs/xcloud-shared/hadai/data/sco',
       ),
       sampler=dict(
           name='',

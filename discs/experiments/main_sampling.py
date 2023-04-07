@@ -12,6 +12,7 @@ import pdb
 # from discs.experiments import co_setup
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
+_DATA_ROOT = flags.DEFINE_string('data_root', None, 'Saving Dir')
 _SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
 FLAGS = flags.FLAGS
 
@@ -31,6 +32,8 @@ def get_main_config(model_config, sampler_config):
     model_config.update(graph_config.get_model_config(model_config['cfg_str']))
   config.sampler.update(sampler_config)
   config.model.update(model_config)
+  if _DATA_ROOT.value:
+    config.model.data_root = _DATA_ROOT
   if config.model.get('cfg_str', None):
     co_exp_default_config = importlib.import_module(
         'discs.experiments.configs.co_experiment'
