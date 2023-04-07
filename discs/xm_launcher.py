@@ -78,11 +78,6 @@ def main(argv) -> None:
   executable_args['model_config'] = model_config_filename
   executable_args['sampler_config'] = sampler_config_filename
 
-  executable_args.update({
-      'config.model.data_root': '/gcs/xcloud-shared/hadai/data/sco',
-      'config.experiment.use_tqdm': False,
-  })
-
   create_experiment = (
       xm_local.create_experiment
       if _LAUNCH_LOCALLY.value
