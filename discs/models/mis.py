@@ -14,6 +14,13 @@ class MIS(comb_ebm.BinaryNodeCombEBM):
     self.max_num_nodes = self.config.max_num_nodes
     self.penalty_coeff = self.config.get('penalty', 2.0)
 
+  def make_init_params(self, rng):
+    try:
+      data_list = next(self.datagen)
+    except:
+      return None
+    return data_list
+
   def penalty(self, params, x):
     x = x * params['mask']
     edge_from = params['edge_from']

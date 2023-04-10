@@ -16,6 +16,13 @@ class Maxcut(comb_ebm.BinaryNodeCombEBM):
     self.config = config.model
     self.max_num_nodes = self.config.max_num_nodes
 
+  def make_init_params(self, rng):
+    try:
+      data_list = next(self.datagen)
+    except:
+      return None
+    return data_list
+
   def get_init_samples(self, rng, num_samples):
     return jax.random.bernoulli(
         key=rng, p=0.5, shape=(num_samples, self.max_num_nodes)

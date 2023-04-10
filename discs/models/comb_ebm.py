@@ -5,6 +5,7 @@ from discs.common.utils import get_datagen
 import jax
 import ml_collections
 import jax.numpy as jnp
+import pdb
 
 
 class CombEBM(abstractmodel.AbstractModel):
@@ -12,18 +13,9 @@ class CombEBM(abstractmodel.AbstractModel):
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.datagen = get_datagen(config)
-    print("***************= ", len(self.datagen))
-    print("After Data Gen................................")
 
   def make_init_params(self, rng):
-    print("Calling Make initttt................................")
-    
-    try:
-      data_list = next(self.datagen)
-    except:
-      print("In execption................................")
-      return None
-    return data_list
+    raise NotImplementedError
 
   def objective(self, params, x):
     raise NotImplementedError

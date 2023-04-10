@@ -23,7 +23,7 @@ _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 
 def get_save_dir(config):
   save_folder = config.model.get('save_dir_name', config.model.name)
-  save_root = os.path.join(config.experiment.save_root, save_folder)
+  save_root = config.experiment.save_root + '/' + save_folder
   return save_root
 
 

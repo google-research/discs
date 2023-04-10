@@ -31,7 +31,7 @@ def get_config():
           shuffle_buffer_size=0,
           log_every_steps=1,
           plot_every_steps=10,
-          save_root='/discs/results',
+          save_root='./discs/results',
           fig_folder='',
           save_every_steps=10000,
       ),
