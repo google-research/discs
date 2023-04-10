@@ -17,14 +17,13 @@ _MAIN_CONFIG = config_flags.DEFINE_config_file(
     './discs/common/configs.py',
     lock_config=False,
 )
-_SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 
 
 def get_save_dir(config):
   save_folder = config.model.get('save_dir_name', config.model.name)
-  save_root = os.path.join(_SAVE_DIR.value, save_folder)
+  save_root = os.path.join(config.experiment.save_root, save_folder)
   return save_root
 
 
@@ -47,9 +46,6 @@ def get_main_config():
 
 
 def main(_):
-  print('_MODEL_CONFIG.value = ', _MODEL_CONFIG.value)
-  print('_SAMPLER_CONFIG.value = ', _SAMPLER_CONFIG.value)
-  print('_CONFIG.value = ', _MAIN_CONFIG.value)
 
   config = get_main_config()
 

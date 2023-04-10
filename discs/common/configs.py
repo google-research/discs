@@ -2,12 +2,14 @@
 
 from ml_collections import config_dict
 
+
 def get_config():
   """Get common config sketch."""
   general_config = dict(
       model=dict(
           name='',
-          data_root='',
+          data_root='sco',
+          sigma=0.5,
       ),
       sampler=dict(
           name='',
@@ -22,15 +24,16 @@ def get_config():
           run_parallel=True,
           get_additional_metrics=True,
           t_schedule='constant',
+          decay_rate=0.01,
           init_temperature=1.0,
           window_size=10,
           window_stride=10,
           shuffle_buffer_size=0,
           log_every_steps=1,
           plot_every_steps=10,
-          save_root='.',
+          save_root='/discs/results',
           fig_folder='',
           save_every_steps=10000,
       ),
-  )
+  )    
   return config_dict.ConfigDict(general_config)

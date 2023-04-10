@@ -12,11 +12,16 @@ class CombEBM(abstractmodel.AbstractModel):
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.datagen = get_datagen(config)
+    print("***************= ", len(self.datagen))
+    print("After Data Gen................................")
 
   def make_init_params(self, rng):
+    print("Calling Make initttt................................")
+    
     try:
       data_list = next(self.datagen)
     except:
+      print("In execption................................")
       return None
     return data_list
 

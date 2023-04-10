@@ -11,6 +11,8 @@ import flax
 import jax
 import jax.numpy as jnp
 import numpy as np
+from clu.metric_writers.summary_writer import SummaryWriter
+
 
 @flax.struct.dataclass
 class SamplerState:
@@ -53,15 +55,25 @@ def setup_logging(config):
     logging.info('process count: %d', jax.process_count())
     logging.info('device count: %d', jax.device_count())
     logging.info('device/host: %d', jax.local_device_count())
-  logdir = config.experiment.save_root
+  logdir = os.path.join(config.experiment.save_root, 'logs')
   writer = metric_writers.create_default_writer(
       logdir, just_logging=jax.process_index() > 0
   )
   fig_folder = os.path.join(logdir, 'figures')
   if jax.process_index() == 0:
+    if not os.path.exists(logdir):
+      os.makedirs(logdir)
     if not os.path.exists(fig_folder):
       os.makedirs(fig_folder)
+    if config.experiment.use_tqdm:
+      writer = SummaryWriter(logdir)
+    else:
+      writer = metric_writers.create_default_writer(logdir)
+  else:
+    writer = None
   config.experiment.fig_folder = fig_folder
+  with open(os.path.join(config.experiment.save_root, 'config.yaml'), 'w') as f:
+    f.write(config.to_yaml())
   return writer
 
 
@@ -128,8 +140,13 @@ def create_sharded_sampler_state(sampler_key, model, sampler, num_samples):
   return local_state
 
 
-def graph2edges(g, build_bidir_edges=False,
-                padded_num_edges=0, padded_weight=0.0, has_edge_weights=True):
+def graph2edges(
+    g,
+    build_bidir_edges=False,
+    padded_num_edges=0,
+    padded_weight=0.0,
+    has_edge_weights=True,
+):
   """Convert nx graph into param dict."""
   num_edges = len(g.edges())
   if padded_num_edges and padded_num_edges > num_edges:
@@ -149,7 +166,7 @@ def graph2edges(g, build_bidir_edges=False,
       'num_edges': jnp.array([len(g.edges())], dtype=jnp.int32),
       'edge_from': jnp.array(edge_from),
       'edge_to': jnp.array(edge_to),
-      'edge_mask': jnp.array(edge_mask, dtype=jnp.int32)
+      'edge_mask': jnp.array(edge_mask, dtype=jnp.int32),
   }
   if has_edge_weights:
     ret['edge_weight'] = jnp.array(edge_weight)
@@ -158,9 +175,11 @@ def graph2edges(g, build_bidir_edges=False,
     ret['bidir_edge_to'] = jnp.concatenate((ret['edge_to'], ret['edge_from']))
     if has_edge_weights:
       ret['bidir_edge_weight'] = jnp.concatenate(
-          (ret['edge_weight'], ret['edge_weight']))
+          (ret['edge_weight'], ret['edge_weight'])
+      )
   ret['mask'] = None
   return ret
+
 
 def parse_cfg_str(cfg):
   kv_pairs = cfg.split(',')
@@ -172,10 +191,12 @@ def parse_cfg_str(cfg):
     cfg_dict[k] = v
   return cfg_dict
 
+
 def update_graph_cfg(config, graphs):
   config.model.max_num_nodes = graphs.max_num_nodes
   config.model.max_num_edges = graphs.max_num_edges
   config.model.shape = (graphs.max_num_nodes,)
+
 
 def get_datagen(config):
   test_graphs = graph_gen.get_graphs(config)

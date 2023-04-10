@@ -18,7 +18,6 @@ def get_model_config(cfg_str):
       shape=(0,),
       rand_type='',
       penalty=1.0001,
-      data_root='',
       graph_type='satlib',
   )
   return config_dict.ConfigDict(model_config)

@@ -40,6 +40,7 @@ class ErTestGraphGen(MISGen):
     
     file_list = []
     for fname in os.listdir(data_folder):
+      print('fname = ', fname)
       if fname.startswith('ER'):
         file_list.append(os.path.join(data_folder, fname))
     self.file_list = sorted(file_list)

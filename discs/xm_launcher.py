@@ -69,9 +69,20 @@ def main(argv) -> None:
 
   executable_args = {}
   executable_args['config'] = '/workdir/discs/common/configs.py'
-  executable_args['model'] = job_config.model
-  executable_args['sampler'] = job_config.sampler
 
+  executable_args['model_config'] = (
+      f'/workdir/discs/models/configs/{job_config.model}_config.py'
+  )
+  executable_args['sampler_config'] = (
+      f'/workdir/discs/samplers/configs/{job_config.sampler}_config.py'
+  )
+  executable_args.update(
+      {
+          name: value
+          for name, value in FLAGS.flag_values_dict().items()
+          if name.startswith('config.')
+      }
+  )
   executable_args.update({
       'config.model.data_root': '/gcs/xcloud-shared/hadai/data/sco',
   })
@@ -103,7 +114,7 @@ def main(argv) -> None:
         user=uname, exp_name=_EXP_NAME.value, exp_id=experiment.experiment_id
     )
     print('Saving Dir is: ', save_dir)
-    executable_args['save_dir'] = save_dir
+    executable_args['config.experiment.save_root'] = save_dir
     module = 'discs.experiments.main_sampling'
     (executable,) = experiment.package(
         [
@@ -123,25 +134,6 @@ def main(argv) -> None:
     async def make_job(work_unit, **kwargs):
       args = deepcopy(executable_args)
       args.update(kwargs)
-      if 'config.model' not in kwargs:
-        model_name = args['model']
-      else:
-        model_name = args['config.model']
-        del args['config.model']
-      if 'config.sampler' not in kwargs:
-        sampler_name = args['sampler']
-      else:
-        sampler_name = args['config.sampler']
-        del args['config.sampler']
-      args['model_config'] = (
-          f'/workdir/discs/models/configs/{model_name}_config.py'
-      )
-      args['sampler_config'] = (
-          f'/workdir/discs/samplers/configs/{sampler_name}_config.py'
-      )
-      del args['model']
-      del args['sampler']
-
       print('************************')
       print(args)
       print('************************')
