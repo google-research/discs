@@ -4,11 +4,11 @@ import os
 import jax.numpy as jnp
 import networkx as nx
 import numpy as np
-import pickle
+import pickle5 as pickle
 from discs.common import utils
 from discs.graph_loader import common as data_common
 from pysat.formula import CNF
-
+import pdb
 
 class MISGen(data_common.GraphGenerator):
   """Generator for mis graphs."""
@@ -37,10 +37,9 @@ class ErTestGraphGen(MISGen):
     print("$$$$$$$$$$$$$$$$$$$$$$$$")
     print(data_folder)
     print("$$$$$$$$$$$$$$$$$$$$$$$$")
-    
+   
     file_list = []
     for fname in os.listdir(data_folder):
-      print('fname = ', fname)
       if fname.startswith('ER'):
         file_list.append(os.path.join(data_folder, fname))
     self.file_list = sorted(file_list)

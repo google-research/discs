@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 from discs.common import utils
 from discs.graph_loader import common as data_common
-
+import pdb
 
 class MaxcutGen(data_common.GraphGenerator):
   """Generator for maxcut graphs."""
@@ -28,16 +28,13 @@ class RandGraphGen(MaxcutGen):
   def __init__(self, data_root, model_config):
     super().__init__()
     data_folder = os.path.join(data_root, 'maxcut-%s' % model_config.graph_type)
-    print("$$$$$$$$$$$$$$$$$$$$$$$$")
-    print(data_folder)
-    print("$$$$$$$$$$$$$$$$$$$$$$$$")
+    data_folder = os.path.join(data_folder, 'maxcut-%s' % model_config.rand_type)
     file_list = []
     for fname in os.listdir(data_folder):
       print('fname = ', fname)
       if fname.startswith('test-'):
         file_list.append(os.path.join(data_folder, fname))
     self.file_list = sorted(file_list)
-
     if (model_config.max_num_nodes > 0 and model_config.max_num_edges > 0 and
         model_config.num_instances > 0):
       self._max_num_nodes = model_config.max_num_nodes
