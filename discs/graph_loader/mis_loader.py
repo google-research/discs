@@ -34,6 +34,10 @@ class ErTestGraphGen(MISGen):
   def __init__(self, data_root, model_config):
     super().__init__()
     data_folder = os.path.join(data_root, 'er_%s_test' % model_config.rand_type)
+    print("$$$$$$$$$$$$$$$$$$$$$$$$")
+    print(data_folder)
+    print("$$$$$$$$$$$$$$$$$$$$$$$$")
+    
     file_list = []
     for fname in os.listdir(data_folder):
       if fname.startswith('ER'):

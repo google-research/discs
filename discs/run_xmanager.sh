@@ -1,21 +1,18 @@
 #!/bin/bash
 
 #TODO: Kati migrate this to xmanager script.
-models="mis"
-samplers="randomwalk"
+# models="mis"
+# samplers="path_auxiliary"
 
-for model in $models
-do
-for sampler in $samplers
-do
-    echo "running $sampler on $model"
-    xmanager launch discs/xm_launcher.py -- \
-    --model_config="discs/models/configs/${model?}_config.py" \
-    --sampler_config="discs/samplers/configs/${sampler?}_config.py" \
-    --xm_resource_alloc="user:xcloud/xcloud-shared-user" \
-    --experiment_name="Sampling_Experiment_${sampler?}-${model?}" \
+# for model in $models
+# do
+# for sampler in $samplers
+# do
+    # echo "running $sampler on $model"
+xmanager launch discs/xm_launcher.py -- \
+--config=${config?} \
+--xm_resource_alloc="user:xcloud/xcloud-shared-user" \
 
-done
-done
+# done
+# done
 
-# --config=${config?} \

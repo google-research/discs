@@ -7,33 +7,31 @@ from absl import app
 from absl import flags
 from discs.common import configs as common_configs
 from ml_collections import config_flags
+import os
 import pdb
 
-# from discs.experiments import co_setup
+
+FLAGS = flags.FLAGS
+_MAIN_CONFIG = config_flags.DEFINE_config_file(
+    'config',
+    './discs/common/configs.py',
+    lock_config=False,
+)
+_SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
-_DATA_ROOT = flags.DEFINE_string('data_root', None, 'Saving Dir')
-_SAVE_DIR = flags.DEFINE_string('save_dir', './discs/results', 'Saving Dir')
-FLAGS = flags.FLAGS
 
 
 def get_save_dir(config):
   save_folder = config.model.get('save_dir_name', config.model.name)
-  return _SAVE_DIR.value + '_' + save_folder
+  save_root = os.path.join(_SAVE_DIR.value, save_folder)
+  return save_root
 
 
-def get_main_config(model_config, sampler_config):
-  config = common_configs.get_config()
-  config.sampler.update(sampler_config)
-  config.model.update(model_config)
-  if config.model.get('cfg_str', None):
-    graph_config = importlib.import_module(
-        'discs.models.configs.%s.%s'
-        % (model_config['name'], model_config['graph_type'])
-    )
-    config.model.update(graph_config.get_model_config(model_config['cfg_str']))
-  if _DATA_ROOT.value:
-    config.model.data_root = _DATA_ROOT
+def get_main_config():
+  config = _MAIN_CONFIG.value
+  config.sampler.update(_SAMPLER_CONFIG.value)
+  config.model.update(_MODEL_CONFIG.value)
   if config.model.get('cfg_str', None):
     co_exp_default_config = importlib.import_module(
         'discs.experiments.configs.co_experiment'
@@ -44,11 +42,16 @@ def get_main_config(model_config, sampler_config):
         % (config.model.name, config.model.graph_type)
     )
     config.experiment.update(graph_exp_config.get_config())
+  print(config)
   return config
 
 
 def main(_):
-  config = get_main_config(_MODEL_CONFIG.value, _SAMPLER_CONFIG.value)
+  print('_MODEL_CONFIG.value = ', _MODEL_CONFIG.value)
+  print('_SAMPLER_CONFIG.value = ', _SAMPLER_CONFIG.value)
+  print('_CONFIG.value = ', _MAIN_CONFIG.value)
+
+  config = get_main_config()
 
   # model
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)

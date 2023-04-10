@@ -1,6 +1,4 @@
 """Config for Gibbs sampler."""
-
-from discs.samplers.locallybalanced import LBWeightFn
 from ml_collections import config_dict
 
 
