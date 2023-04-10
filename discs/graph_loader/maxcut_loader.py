@@ -4,7 +4,7 @@ import os
 import jax
 import networkx as nx
 import numpy as np
-import pickle
+import pickle5 as pickle
 from discs.common import utils
 from discs.graph_loader import common as data_common
 import pdb

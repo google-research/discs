@@ -2,6 +2,7 @@
 import importlib
 import logging
 import discs.common.experiment_saver as saver_mod
+import discs.common.utils as utils
 
 from absl import app
 from absl import flags
@@ -48,6 +49,7 @@ def get_main_config():
 def main(_):
 
   config = get_main_config()
+  utils.setup_logging(config)
 
   # model
   model_mod = importlib.import_module('discs.models.%s' % config.model.name)

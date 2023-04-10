@@ -13,3 +13,4 @@ optax
 networkx
 python-sat
 tensorboard
+pickle5
