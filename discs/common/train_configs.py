@@ -1,4 +1,4 @@
-"""Main Config Structure."""
+"""Main Train Config Structure."""
 
 from ml_collections import config_dict
 

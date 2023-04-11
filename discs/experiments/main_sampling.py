@@ -42,7 +42,6 @@ def get_main_config():
         % (config.model.name, config.model.graph_type)
     )
     config.experiment.update(graph_exp_config.get_config())
-  print(config)
   return config
 
 

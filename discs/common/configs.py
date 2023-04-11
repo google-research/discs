@@ -9,7 +9,6 @@ def get_config():
       model=dict(
           name='',
           data_root='sco',
-          sigma=0.5,
       ),
       sampler=dict(
           name='',
@@ -34,6 +33,7 @@ def get_config():
           save_root='./discs/results',
           fig_folder='',
           save_every_steps=10000,
+          use_tqdm=False,
       ),
   )    
   return config_dict.ConfigDict(general_config)
