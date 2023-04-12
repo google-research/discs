@@ -5,6 +5,7 @@ from discs.common.utils import get_datagen
 import jax
 import ml_collections
 import jax.numpy as jnp
+import pdb
 
 
 class CombEBM(abstractmodel.AbstractModel):

@@ -4,5 +4,13 @@ ml_collections
 tensorflow
 tensorflow_probability
 matplotlib
+absl-py
 numpy
 tqdm
+clu
+flax
+optax
+networkx
+python-sat
+tensorboard
+pickle5

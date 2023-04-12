@@ -4,19 +4,19 @@ import os
 import jax
 import networkx as nx
 import numpy as np
-import pickle
+import pickle5 as pickle
 from discs.common import utils
 from discs.graph_loader import common as data_common
 import pdb
-#from sco.common import utils
 
 
 class MaxcutGen(data_common.GraphGenerator):
   """Generator for maxcut graphs."""
 
   def graph2edges(self, g):
-    return utils.graph2edges(g, build_bidir_edges=True,
-                             padded_num_edges=self._max_num_edges)
+    return utils.graph2edges(
+        g, build_bidir_edges=True, padded_num_edges=self._max_num_edges
+    )
 
   def get_dummy_sample(self):
     g = nx.Graph()
@@ -29,15 +29,20 @@ class RandGraphGen(MaxcutGen):
 
   def __init__(self, data_root, model_config):
     super().__init__()
-    data_folder = os.path.join(data_root, 'maxcut-%s' % model_config.rand_type)
+    data_folder = os.path.join(data_root, 'maxcut-%s' % model_config.graph_type)
+    data_folder = os.path.join(
+        data_folder, 'maxcut-%s' % model_config.rand_type
+    )
     file_list = []
     for fname in os.listdir(data_folder):
       if fname.startswith('test-'):
         file_list.append(os.path.join(data_folder, fname))
     self.file_list = sorted(file_list)
-
-    if (model_config.max_num_nodes > 0 and model_config.max_num_edges > 0 and
-        model_config.num_instances > 0):
+    if (
+        model_config.max_num_nodes > 0
+        and model_config.max_num_edges > 0
+        and model_config.num_instances > 0
+    ):
       self._max_num_nodes = model_config.max_num_nodes
       self._max_num_edges = model_config.max_num_edges
       self._num_instances = model_config.num_instances
@@ -110,16 +115,18 @@ class OptsicomGen(MaxcutGen):
 
   def __init__(self, rand_type):
     super().__init__()
-    file_list = ['sg3dl051000.mc',
-                 'sg3dl052000.mc',
-                 'sg3dl053000.mc',
-                 'sg3dl054000.mc',
-                 'sg3dl055000.mc',
-                 'sg3dl056000.mc',
-                 'sg3dl057000.mc',
-                 'sg3dl058000.mc',
-                 'sg3dl059000.mc',
-                 'sg3dl0510000.mc']
+    file_list = [
+        'sg3dl051000.mc',
+        'sg3dl052000.mc',
+        'sg3dl053000.mc',
+        'sg3dl054000.mc',
+        'sg3dl055000.mc',
+        'sg3dl056000.mc',
+        'sg3dl057000.mc',
+        'sg3dl058000.mc',
+        'sg3dl059000.mc',
+        'sg3dl0510000.mc',
+    ]
     self.graphs = []
     if len(rand_type) > 1 and rand_type[-1] == 'b':
       self.bias = 1

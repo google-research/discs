@@ -133,6 +133,7 @@ class Experiment:
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
     if params is None:
+      print("Params is NONE")
       return False
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state

@@ -26,6 +26,5 @@ def get_model_config(cfg_str):
       num_categories=2,
       shape=(0,),
       rand_type=rand_type,
-      data_root='sco',
   )
   return config_dict.ConfigDict(model_config)
