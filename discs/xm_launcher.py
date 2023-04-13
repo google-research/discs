@@ -47,7 +47,7 @@ _LAUNCH_LOCALLY = flags.DEFINE_bool(
     ),
 )
 
-_NUM_GPUS = flags.DEFINE_integer('num_gpus', 2, 'Number of GPUs')
+_NUM_GPUS = flags.DEFINE_integer('num_gpus', 8, 'Number of GPUs')
 
 _USE_BATCH = flags.DEFINE_bool(
     'use_batch', False, 'Enables batch service tier.'
@@ -134,6 +134,15 @@ def main(argv) -> None:
     async def make_job(work_unit, **kwargs):
       args = deepcopy(executable_args)
       args.update(kwargs)
+      sweep_str_parts = []
+      for k, v in kwargs.items():
+        if k.startswith('config.'):
+          k = k[len('config.') :]
+        sweep_str_parts.append(f'{k}={v!r}')
+      sweep_str = ','.join(sweep_str_parts)
+      args[
+          'config.experiment.save_root'
+      ] += f'/{work_unit.work_unit_id}_{sweep_str}'
       print('************************')
       print(args)
       print('************************')

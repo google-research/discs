@@ -221,11 +221,11 @@ class Sampling_Experiment(Experiment):
           model_param=params,
           state=state,
       )
-      if step % self.config.save_every_steps == 0:
-        saved_sample = new_x[0]
-        saver.dump_sample(
-            saved_sample, step, self.config_model.get('visualize', False)
-        )
+      # if step % self.config.save_every_steps == 0:
+      #   saved_sample = new_x[0]
+      #   saver.dump_sample(
+      #       saved_sample, step, self.config_model.get('visualize', False)
+      #   )
       if self.config.get_additional_metrics:
         # avg over all models
         acc = jnp.mean(acc)
@@ -245,11 +245,11 @@ class Sampling_Experiment(Experiment):
           state=state,
       )
       running_time += time.time() - start
-      if step % self.config.save_every_steps == 0:
-        saved_sample = new_x[0]
-        saver.dump_sample(
-            saved_sample, step, self.config_model.get('visualize', False)
-        )
+      # if step % self.config.save_every_steps == 0:
+      #   saved_sample = new_x[0]
+      #   saver.dump_sample(
+      #       saved_sample, step, self.config_model.get('visualize', False)
+      #   )
       if self.config.get_additional_metrics:
         # avg over all models
         acc = jnp.mean(acc)
@@ -388,11 +388,11 @@ class CO_Experiment(Experiment):
         sample = best_ratio[sample_mask]
         chosen_sample_idx = jnp.argmax(eval_val)
 
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[chosen_sample_idx]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
+        # if step % self.config.save_every_steps == 0:
+        #   saved_sample = new_x[chosen_sample_idx]
+        #   saver.dump_sample(
+        #       saved_sample, step, self.config_model.get('visualize', False)
+        #   )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -423,11 +423,11 @@ class CO_Experiment(Experiment):
         sample = best_ratio[sample_mask]
         chosen_sample_idx = jnp.argmax(eval_val)
         chain.append(sample)
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[chosen_sample_idx]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
+        # if step % self.config.save_every_steps == 0:
+        #   saved_sample = new_x[chosen_sample_idx]
+        #   saver.dump_sample(
+        #       saved_sample, step, self.config_model.get('visualize', False)
+        #   )
 
       if self.config.get_additional_metrics:
         # avg over all models

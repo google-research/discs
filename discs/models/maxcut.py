@@ -4,8 +4,6 @@ from discs.models import comb_ebm
 import jax
 import jax.numpy as jnp
 import ml_collections
-import flax
-import pdb
 
 
 class Maxcut(comb_ebm.BinaryNodeCombEBM):

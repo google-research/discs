@@ -20,12 +20,13 @@ _MAIN_CONFIG = config_flags.DEFINE_config_file(
 )
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
+_RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
 
 
 def get_save_dir(config):
-  save_folder = config.model.get('save_dir_name', config.model.name)
-  save_root = config.experiment.save_root + '/' + save_folder
-  return save_root
+  # save_folder = config.model.get('save_dir_name', config.model.name)
+  # save_root = config.experiment.save_root + '/' + save_folder
+  return config.experiment.save_root
 
 
 def get_main_config():
@@ -42,11 +43,14 @@ def get_main_config():
         % (config.model.name, config.model.graph_type)
     )
     config.experiment.update(graph_exp_config.get_config())
+  if not _RUN_LOCAL.value:
+    print("*********************************************************")
+    config.update(_MAIN_CONFIG.value)
+  print("###################")
   return config
 
 
 def main(_):
-
   config = get_main_config()
   utils.setup_logging(config)
 
