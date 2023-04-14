@@ -33,7 +33,7 @@ def get_main_config():
   config = _MAIN_CONFIG.value
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
-  if config.model.get('cfg_str', None):
+  if config.model.get('graph_type', None):
     co_exp_default_config = importlib.import_module(
         'discs.experiments.configs.co_experiment'
     )
@@ -43,10 +43,6 @@ def get_main_config():
         % (config.model.name, config.model.graph_type)
     )
     config.experiment.update(graph_exp_config.get_config())
-  if not _RUN_LOCAL.value:
-    print("*********************************************************")
-    config.update(_MAIN_CONFIG.value)
-  print("###################")
   return config
 
 
