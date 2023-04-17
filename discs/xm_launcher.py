@@ -68,7 +68,13 @@ def main(argv) -> None:
   job_config = FLAGS.config
 
   executable_args = {}
-  executable_args['config'] = '/workdir/discs/common/configs.py'
+  # executable_args['config'] = '/workdir/discs/common/configs.py'
+
+  if config.get('graph_type', None):
+    executable_args['experiment_config'] = (
+        f'/workdir/discs/experiments/configs/{job_config.model}/{job_config.graph_type}.py'
+    )
+    executable_args['model_config.graph_type'] = (f'{job_config.model}')
 
   executable_args['model_config'] = (
       f'/workdir/discs/models/configs/{job_config.model}_config.py'

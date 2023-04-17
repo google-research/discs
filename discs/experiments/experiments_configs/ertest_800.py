@@ -9,6 +9,7 @@ def get_config():
   config = config_dict.ConfigDict(
       dict(
           model='mis',
+          graph_type='ertest',
           sampler='path_auxiliary',
           sweep=[{
               'config.experiment.batch_size': [128],

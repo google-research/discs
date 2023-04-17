@@ -13,11 +13,7 @@ import pdb
 
 
 FLAGS = flags.FLAGS
-_MAIN_CONFIG = config_flags.DEFINE_config_file(
-    'config',
-    './discs/common/configs.py',
-    lock_config=False,
-)
+_EXPERIMENT_CONFIG = config_flags.DEFINE_config_file('experiment_config', None)
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 _RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
@@ -28,12 +24,20 @@ def get_save_dir(config):
   # save_root = config.experiment.save_root + '/' + save_folder
   return config.experiment.save_root
 
+def get_sweeped(config):
+  sweep = {}
+  original_config = common_configs.get_config()
+  for key in original_config.experiment:
+      if original_config.experiment[key] != config[key]:
+        sweep[key] = 
 
 def get_main_config():
-  config = _MAIN_CONFIG.value
+  config = common_configs.get_config()
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
+
   if config.model.get('graph_type', None):
+    config.experiment.update(_EXPERIMENT_CONFIG.value)
     co_exp_default_config = importlib.import_module(
         'discs.experiments.configs.co_experiment'
     )
@@ -43,6 +47,9 @@ def get_main_config():
         % (config.model.name, config.model.graph_type)
     )
     config.experiment.update(graph_exp_config.get_config())
+  if not _RUN_LOCAL.value:
+
+          
   return config
 
 
