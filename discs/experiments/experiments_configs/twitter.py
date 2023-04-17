@@ -9,6 +9,7 @@ def get_config():
   config = config_dict.ConfigDict(dict(
       model='maxclique',
       sampler='path_auxiliary',
+      graph_type='twitter',
       sweep=[
           'config.experiment.chain_length': [1000, 800, 500],
       ]

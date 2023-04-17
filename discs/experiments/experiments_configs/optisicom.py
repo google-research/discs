@@ -10,6 +10,7 @@ def get_config():
       dict(
           model='maxcut',
           sampler='path_auxiliary',
+          graph_type='optsicom',
           sweep=[
               {
                   'config.experiment.num_models': [10],

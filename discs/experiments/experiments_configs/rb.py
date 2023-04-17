@@ -9,6 +9,7 @@ def get_config():
   config = config_dict.ConfigDict(dict(
       model='maxclique',
       sampler='path_auxiliary',
+      graph_type='ba',
       sweep=[
           {
               'config.experiment.decay_rate': [0.1, 0.05, 0.01],
