@@ -13,7 +13,7 @@ import pdb
 
 
 FLAGS = flags.FLAGS
-_EXPERIMENT_CONFIG = config_flags.DEFINE_config_file('experiment_config', None)
+_EXPERIMENT_CONFIG = config_flags.DEFINE_config_file('config', None)
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 _RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
@@ -34,7 +34,7 @@ def get_main_config():
   config.model.update(_MODEL_CONFIG.value)
 
   if config.model.get('graph_type', None):
-    config.experiment.update(_EXPERIMENT_CONFIG.value)
+    config.update(_EXPERIMENT_CONFIG.value)
     co_exp_default_config = importlib.import_module(
         'discs.experiments.configs.co_experiment'
     )

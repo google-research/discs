@@ -9,6 +9,7 @@ def get_config():
           name='maxcut',
           graph_type='ba',
           cfg_str='r-ba-4-n-16-20',
+          data_root='',
       )
   )
   model_config['save_dir_name'] = model_config['name']

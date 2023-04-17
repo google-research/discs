@@ -68,20 +68,21 @@ def main(argv) -> None:
   job_config = FLAGS.config
 
   executable_args = {}
-  # executable_args['config'] = '/workdir/discs/common/configs.py'
-
-  if config.get('graph_type', None):
-    executable_args['experiment_config'] = (
-        f'/workdir/discs/experiments/configs/{job_config.model}/{job_config.graph_type}.py'
-    )
-    executable_args['model_config.graph_type'] = (f'{job_config.model}')
-
   executable_args['model_config'] = (
       f'/workdir/discs/models/configs/{job_config.model}_config.py'
   )
   executable_args['sampler_config'] = (
       f'/workdir/discs/samplers/configs/{job_config.sampler}_config.py'
   )
+  
+  if job_config.get('graph_type', None):
+    executable_args['config'] = (
+        f'/workdir/discs/experiments/configs/{job_config.model}/{job_config.graph_type}.py'
+    )
+    executable_args['model_config.graph_type'] = (f'{job_config.graph_type}')
+    executable_args.update({
+      'model_config.data_root': '/gcs/xcloud-shared/hadai/data/sco',
+    })
   executable_args.update(
       {
           name: value
@@ -89,9 +90,7 @@ def main(argv) -> None:
           if name.startswith('config.')
       }
   )
-  executable_args.update({
-      'config.model.data_root': '/gcs/xcloud-shared/hadai/data/sco',
-  })
+
 
   create_experiment = (
       xm_local.create_experiment
