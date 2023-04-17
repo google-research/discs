@@ -133,7 +133,7 @@ class Experiment:
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
     if params is None:
-      print("Params is NONE")
+      print('Params is NONE')
       return False
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
@@ -174,10 +174,11 @@ class Experiment:
       bshape,
   ):
     raise NotImplementedError
-  
+
   def vmap_evaluator(self, evaluator, model):
     raise NotImplementedError
-  
+
+
 class Sampling_Experiment(Experiment):
   """Experiment class that generates chains of samples."""
 
@@ -221,12 +222,13 @@ class Sampling_Experiment(Experiment):
           model_param=params,
           state=state,
       )
-      # if step % self.config.save_every_steps == 0:
-      #   saved_sample = new_x[0]
-      #   saver.dump_sample(
-      #       saved_sample, step, self.config_model.get('visualize', False)
-      #   )
+
       if self.config.get_additional_metrics:
+        if step % self.config.save_every_steps == 0:
+          saved_sample = new_x[0]
+          saver.dump_sample(
+              saved_sample, step, self.config_model.get('visualize', False)
+          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -245,12 +247,13 @@ class Sampling_Experiment(Experiment):
           state=state,
       )
       running_time += time.time() - start
-      # if step % self.config.save_every_steps == 0:
-      #   saved_sample = new_x[0]
-      #   saver.dump_sample(
-      #       saved_sample, step, self.config_model.get('visualize', False)
-      #   )
+
       if self.config.get_additional_metrics:
+        if step % self.config.save_every_steps == 0:
+          saved_sample = new_x[0]
+          saver.dump_sample(
+              saved_sample, step, self.config_model.get('visualize', False)
+          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -388,13 +391,12 @@ class CO_Experiment(Experiment):
         sample = best_ratio[sample_mask]
         chosen_sample_idx = jnp.argmax(eval_val)
 
-        # if step % self.config.save_every_steps == 0:
-        #   saved_sample = new_x[chosen_sample_idx]
-        #   saver.dump_sample(
-        #       saved_sample, step, self.config_model.get('visualize', False)
-        #   )
-
       if self.config.get_additional_metrics:
+        if step % self.config.save_every_steps == 0:
+          saved_sample = new_x[chosen_sample_idx]
+          saver.dump_sample(
+              saved_sample, step, self.config_model.get('visualize', False)
+          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -423,13 +425,13 @@ class CO_Experiment(Experiment):
         sample = best_ratio[sample_mask]
         chosen_sample_idx = jnp.argmax(eval_val)
         chain.append(sample)
-        # if step % self.config.save_every_steps == 0:
-        #   saved_sample = new_x[chosen_sample_idx]
-        #   saver.dump_sample(
-        #       saved_sample, step, self.config_model.get('visualize', False)
-        #   )
 
       if self.config.get_additional_metrics:
+        if step % self.config.save_every_steps == 0:
+          saved_sample = new_x[chosen_sample_idx]
+          saver.dump_sample(
+              saved_sample, step, self.config_model.get('visualize', False)
+          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)

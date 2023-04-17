@@ -74,15 +74,15 @@ def main(argv) -> None:
   executable_args['sampler_config'] = (
       f'/workdir/discs/samplers/configs/{job_config.sampler}_config.py'
   )
-  
+
   if job_config.get('graph_type', None):
     executable_args['config'] = (
         f'/workdir/discs/experiments/configs/{job_config.model}/{job_config.graph_type}.py'
     )
-    executable_args['model_config.graph_type'] = (f'{job_config.graph_type}')
-    executable_args.update({
-      'model_config.data_root': '/gcs/xcloud-shared/hadai/data/sco',
-    })
+    executable_args['model_config.graph_type'] = f'{job_config.graph_type}'
+    executable_args['model_config.data_root'] = (
+        '/gcs/xcloud-shared/hadai/data/sco'
+    )
   executable_args.update(
       {
           name: value
@@ -91,14 +91,21 @@ def main(argv) -> None:
       }
   )
 
-
   create_experiment = (
       xm_local.create_experiment
       if _LAUNCH_LOCALLY.value
       else xm_abc.create_experiment
   )
 
-  with create_experiment(experiment_title=_EXP_NAME.value) as experiment:
+  exp_name = (
+      'discs-'
+      + job_config.model
+      + '-'
+      + job_config.sampler
+      + '-'
+      + job_config.graph_type
+  )
+  with create_experiment(experiment_title=exp_name) as experiment:
     priority = xm.ServiceTier.BATCH if _USE_BATCH.value else xm.ServiceTier.PROD
     job_requirements = xm.JobRequirements(
         ram=8 * FLAGS.num_gpus * xm.GiB,
