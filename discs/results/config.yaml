@@ -1,0 +1,59 @@
+!!python/object:ml_collections.config_dict.config_dict.ConfigDict
+_convert_dict: true
+_fields:
+  experiment: !!python/object:ml_collections.config_dict.config_dict.ConfigDict
+    _convert_dict: true
+    _fields:
+      batch_size: 32
+      chain_length: 50000
+      decay_rate: 0.01
+      ess_ratio: 0.5
+      evaluator: co_eval
+      fig_folder: ./discs/results/logs/figures
+      final_temperature: 0.0001
+      get_additional_metrics: false
+      init_temperature: 1
+      log_every_steps: 100
+      name: CO_Experiment
+      num_models: 128
+      plot_every_steps: 10
+      run_parallel: true
+      save_every_steps: 100
+      save_root: ./discs/results
+      shuffle_buffer_size: 0
+      t_schedule: exp_decay
+      use_tqdm: false
+    _locked: false
+    _type_safe: true
+  model: !!python/object:ml_collections.config_dict.config_dict.ConfigDict
+    _convert_dict: true
+    _fields:
+      cfg_str: r-800
+      data_root: sco
+      graph_type: ertest
+      max_num_edges: 47885
+      max_num_nodes: 800
+      name: mis
+      num_categories: 2
+      num_instances: 128
+      penalty: 1.001
+      rand_type: '800'
+      save_dir_name: mis
+      shape: !!python/tuple
+      - 0
+    _locked: false
+    _type_safe: true
+  sampler: !!python/object:ml_collections.config_dict.config_dict.ConfigDict
+    _convert_dict: true
+    _fields:
+      adaptive: true
+      balancing_fn_type: !!python/object/apply:discs.samplers.locallybalanced.LBWeightFn
+      - 1
+      name: path_auxiliary
+      num_flips: 1
+      target_acceptance_rate: 0.574
+      use_fast_path: true
+    _locked: false
+    _type_safe: true
+_locked: false
+_type_safe: true

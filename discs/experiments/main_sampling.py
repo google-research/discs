@@ -24,12 +24,6 @@ def get_save_dir(config):
   # save_root = config.experiment.save_root + '/' + save_folder
   return config.experiment.save_root
 
-def get_sweeped(config):
-  sweep = {}
-  original_config = common_configs.get_config()
-  for key in original_config.experiment:
-      if original_config.experiment[key] != config[key]:
-        sweep[key] = 
 
 def get_main_config():
   config = common_configs.get_config()
@@ -42,14 +36,6 @@ def get_main_config():
         'discs.experiments.configs.co_experiment'
     )
     config.experiment.update(co_exp_default_config.get_co_default_config())
-    graph_exp_config = importlib.import_module(
-        'discs.experiments.configs.%s.%s'
-        % (config.model.name, config.model.graph_type)
-    )
-    config.experiment.update(graph_exp_config.get_config())
-  if not _RUN_LOCAL.value:
-
-          
   return config
 
 
