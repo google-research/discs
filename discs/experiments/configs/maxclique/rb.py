@@ -15,6 +15,7 @@ def get_config():
           init_temperature=1.0,
           decay_rate=0.1,
           final_temperature=0.001,
+          save_root='',
       )
   )
   return config_dict.ConfigDict(exp_config)
