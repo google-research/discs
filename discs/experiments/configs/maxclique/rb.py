@@ -7,14 +7,14 @@ def get_config():
   """Get config."""
   exp_config = dict(
       experiment=dict(
-          num_models=1024,
-          batch_size=32,
+          num_models=512,
+          batch_size=16,
           t_schedule='exp_decay',
-          chain_length=50000,
+          chain_length=1001,
           log_every_steps=100,
-          init_temperature=1,
+          init_temperature=1.0,
           decay_rate=0.1,
-          final_temperature=0.000001,
+          final_temperature=0.001,
           save_root='',
       )
   )

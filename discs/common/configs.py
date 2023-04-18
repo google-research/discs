@@ -21,19 +21,14 @@ def get_config():
           chain_length=100000,
           ess_ratio=0.5,
           run_parallel=True,
-          get_additional_metrics=True,
-          t_schedule='constant',
-          decay_rate=0.01,
-          init_temperature=1.0,
-          window_size=10,
-          window_stride=10,
+          get_additional_metrics=False,
           shuffle_buffer_size=0,
-          log_every_steps=1,
+          log_every_steps=100,
           plot_every_steps=10,
           save_root='./discs/results',
           fig_folder='',
           save_every_steps=10000,
           use_tqdm=False,
       ),
-  )    
+  )
   return config_dict.ConfigDict(general_config)

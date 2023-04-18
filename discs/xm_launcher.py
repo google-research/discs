@@ -47,7 +47,7 @@ _LAUNCH_LOCALLY = flags.DEFINE_bool(
     ),
 )
 
-_NUM_GPUS = flags.DEFINE_integer('num_gpus', 2, 'Number of GPUs')
+_NUM_GPUS = flags.DEFINE_integer('num_gpus', 8, 'Number of GPUs')
 
 _USE_BATCH = flags.DEFINE_bool(
     'use_batch', False, 'Enables batch service tier.'
@@ -68,14 +68,21 @@ def main(argv) -> None:
   job_config = FLAGS.config
 
   executable_args = {}
-  executable_args['config'] = '/workdir/discs/common/configs.py'
-
   executable_args['model_config'] = (
       f'/workdir/discs/models/configs/{job_config.model}_config.py'
   )
   executable_args['sampler_config'] = (
       f'/workdir/discs/samplers/configs/{job_config.sampler}_config.py'
   )
+
+  if job_config.get('graph_type', None):
+    executable_args['config'] = (
+        f'/workdir/discs/experiments/configs/{job_config.model}/{job_config.graph_type}.py'
+    )
+    executable_args['model_config.graph_type'] = f'{job_config.graph_type}'
+    executable_args['model_config.data_root'] = (
+        '/gcs/xcloud-shared/hadai/data/sco'
+    )
   executable_args.update(
       {
           name: value
@@ -83,9 +90,6 @@ def main(argv) -> None:
           if name.startswith('config.')
       }
   )
-  executable_args.update({
-      'config.model.data_root': '/gcs/xcloud-shared/hadai/data/sco',
-  })
 
   create_experiment = (
       xm_local.create_experiment
@@ -93,7 +97,15 @@ def main(argv) -> None:
       else xm_abc.create_experiment
   )
 
-  with create_experiment(experiment_title=_EXP_NAME.value) as experiment:
+  exp_name = (
+      'discs-'
+      + job_config.model
+      + '-'
+      + job_config.sampler
+      + '-'
+      + job_config.graph_type
+  )
+  with create_experiment(experiment_title=exp_name) as experiment:
     priority = xm.ServiceTier.BATCH if _USE_BATCH.value else xm.ServiceTier.PROD
     job_requirements = xm.JobRequirements(
         ram=8 * FLAGS.num_gpus * xm.GiB,
@@ -134,6 +146,15 @@ def main(argv) -> None:
     async def make_job(work_unit, **kwargs):
       args = deepcopy(executable_args)
       args.update(kwargs)
+      sweep_str_parts = []
+      for k, v in kwargs.items():
+        if k.startswith('config.'):
+          k = k[len('config.') :]
+        sweep_str_parts.append(f'{k}={v!r}')
+      sweep_str = ','.join(sweep_str_parts)
+      args[
+          'config.experiment.save_root'
+      ] += f'/{work_unit.work_unit_id}_{sweep_str}'
       print('************************')
       print(args)
       print('************************')
