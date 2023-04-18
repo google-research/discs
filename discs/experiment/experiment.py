@@ -32,6 +32,7 @@ class Experiment:
         jax.random.split(rng_param, self.config.num_models)
     )
     num_samples = self.config.batch_size * self.config.num_models
+    print('num samples:', num_samples)
     x0 = model.get_init_samples(rng_x0, num_samples)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
     state = sampler_init_state_fn(
@@ -128,12 +129,11 @@ class Experiment:
         step_fn,
         obj_fn,
     ) = self._get_vmapped_functions(sampler, model, evaluator)
-    rnd = jax.random.PRNGKey(0)
+    rnd = jax.random.PRNGKey(563)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
     if params is None:
-      print("Params is NONE")
       return False
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
@@ -292,6 +292,121 @@ class Sampling_Experiment(Experiment):
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
 
 
+class Text_Infilling_Experiment(Sampling_Experiment):
+  def get_results(self, model, sampler, evaluator, saver, rnd_seed=0):
+    sample = self._get_chains_and_evaluations(model, sampler, evaluator, saver, rnd_seed)
+
+    return sample
+
+  def _get_chains_and_evaluations(self, model, sampler, evaluator, saver, rnd_seed=0):
+    """Sets up the model and the samlping alg and gets the chain of samples."""
+    (
+        model_init_params_fn,
+        sampler_init_state_fn,
+        step_fn,
+        obj_fn,
+    ) = self._get_vmapped_functions(sampler, model, evaluator)
+    rnd = jax.random.PRNGKey(rnd_seed)
+    params, x, state, x0_ess = self._initialize_model_and_sampler(
+        rnd, model, sampler_init_state_fn, model_init_params_fn
+    )
+    if params is None:
+      return False
+    params, x, state, fn_reshape, breshape = self._prepare_data(
+        params, x, state
+    )
+    compiled_fns = self._compile_fns(step_fn, obj_fn)
+    sample = self._compute_chain(
+        compiled_fns,
+        state,
+        params,
+        rnd,
+        x,
+        x0_ess,
+        saver,
+        evaluator,
+        fn_reshape,
+        breshape,
+    )
+    return sample
+
+
+  def _compute_chain(
+      self,
+      compiled_fns,
+      state,
+      params,
+      rng,
+      x,
+      x0_ess,
+      saver,
+      evaluator,
+      fn_reshape,
+      bshape,
+  ):
+    """Generates the chain of samples."""
+    assert self.config.num_models == 1
+    (
+        chain,
+        acc_ratios,
+        hops,
+        running_time,
+    ) = self._initialize_chain_vars()
+
+    stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
+    get_mapped_samples, eval_metric = self._compile_additional_fns(evaluator)
+
+    # burn in
+    burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
+    for step in tqdm.tqdm(range(1, burn_in_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      new_x, state, acc = stp_burnin(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      if step % self.config.save_every_steps == 0:
+        saved_sample = new_x[0]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      x = new_x
+
+    for step in tqdm.tqdm(range(burn_in_length, 1 + self.config.chain_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      start = time.time()
+      new_x, state, acc = stp_mixing(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      running_time += time.time() - start
+      if step % self.config.save_every_steps == 0:
+        saved_sample = new_x[0]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      chain.append(get_mapped_samples(new_x, x0_ess))
+      x = new_x
+    
+    return x
+    
 class CO_Experiment(Experiment):
 
   def _vmap_evaluator(self, evaluator, model):
