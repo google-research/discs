@@ -4,6 +4,7 @@ import os
 from discs.graph_loader import maxcut_loader
 from discs.graph_loader import mis_loader
 from discs.graph_loader import maxclique_loader
+from discs.graph_loader import normcut_loader
 
 def get_graphs(config):
   """Get graph loader."""
@@ -24,5 +25,11 @@ def get_graphs(config):
     return maxclique_loader.RBTestGraphGen(config.model.data_root, config.model)
   elif config.model.graph_type == 'twitter':
     return maxclique_loader.TwitterGraphs(config.model.data_root, config.model)
+  elif config.model.graph_type == 'nets':
+    return normcut_loader.ComputationGraphs(
+        config.model.data_root, config.model)
+  elif config.model.graph_type == 'gap_rand':
+    return normcut_loader.RandGraphs(
+        config.model.data_root, config.model)
   else:
     raise ValueError('Unknown graph type %s' % config.model.graph_type)

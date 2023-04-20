@@ -14,7 +14,6 @@ def get_model_config(cfg_str):
       rand_type='test-1000',
       penalty=1.0,
       tolerance=0.03,
-      data_root='',
       graph_type='gap_rand',
   )
   return config_dict.ConfigDict(model_config)

@@ -8,7 +8,7 @@ def get_config():
       dict(
           name='maxclique',
           graph_type='rb',
-          data_root='',
+          data_root='./sco/',
       )
   )
   model_config['save_dir_name'] = model_config['name']

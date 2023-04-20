@@ -9,7 +9,7 @@ def get_config():
           name='normcut',
           graph_type='nets',
           cfg_str='r-INCEPTION',
-          data_root='',
+          data_root='./sco/',
       )
   )
   model_config['save_dir_name'] = model_config['name']

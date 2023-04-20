@@ -9,7 +9,7 @@ def get_config():
           name='mis',
           graph_type='ertest',
           cfg_str='r-800',
-          data_root='',
+          data_root='./sco/',
       )
   )
   model_config['save_dir_name'] = model_config['name']

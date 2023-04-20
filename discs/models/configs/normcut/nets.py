@@ -17,7 +17,6 @@ def get_model_config(cfg_str):
       rand_type=extra_cfg['r'],
       penalty=1.0,
       tolerance=0.03,
-      data_root='',
       graph_type='nets',
       stype='span',
   )

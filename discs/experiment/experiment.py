@@ -64,6 +64,7 @@ class Experiment:
         state = self._prepare_dict(state, jax.local_device_count())
         bshape = (jax.local_device_count(), self.config.num_models)
         x_shape = bshape + (batch_size_per_device,) + self.config_model.shape
+        self.sample_idx = jnp.array([self.sample_idx]* (jax.local_device_count() // self.config.num_models))
     else:
       bshape = (self.config.num_models,)
       x_shape = bshape + (self.config.batch_size,) + self.config_model.shape
@@ -388,6 +389,7 @@ class CO_Experiment(Experiment):
         eval_val = obj_fn(samples=new_x, params=params)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
         best_ratio = jnp.maximum(ratio, best_ratio)
+        sample_mask = sample_mask.reshape(best_ratio.shape)
         sample = best_ratio[sample_mask]
         chosen_sample_idx = jnp.argmax(eval_val)
 
@@ -422,6 +424,7 @@ class CO_Experiment(Experiment):
         eval_val = obj_fn(samples=new_x, params=params)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
         best_ratio = jnp.maximum(ratio, best_ratio)
+        sample_mask = sample_mask.reshape(best_ratio.shape)
         sample = best_ratio[sample_mask]
         chosen_sample_idx = jnp.argmax(eval_val)
         chain.append(sample)
