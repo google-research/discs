@@ -22,6 +22,8 @@ def get_config():
                   'r-INCEPTION',
                   'r-VGG',
                   'r-RESNET',
+                  'r-AlexNet',
+                  'r-MNIST',
               ],
           }],
       )
