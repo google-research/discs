@@ -1,15 +1,15 @@
 """Main script for sampling based experiments."""
 import importlib
 import logging
-import discs.common.experiment_saver as saver_mod
-import discs.common.utils as utils
-
+import os
+import pdb
 from absl import app
 from absl import flags
 from discs.common import configs as common_configs
+import discs.common.experiment_saver as saver_mod
+import discs.common.utils as utils
 from ml_collections import config_flags
-import os
-import pdb
+from discs.samplers.locallybalanced import LBWeightFn
 
 
 FLAGS = flags.FLAGS
@@ -22,21 +22,38 @@ _RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
 def get_save_dir(config):
   if _RUN_LOCAL.value:
     save_folder = config.model.get('save_dir_name', config.model.name)
-    save_root = './discs/results/'+ save_folder
+    save_root = './discs/results/' + save_folder
   else:
     save_root = config.experiment.save_root
   return save_root
 
-
+    
+def setup_lbweightfn(config):
+  
+  if config.model.get('balancing_fn_type', None):
+    if _WEIGHT_FN.value == 'RATIO':
+      config.sampler['balancing_fn_type'] = LBWeightFn.RATIO
+    elif _WEIGHT_FN.value == 'MAX':
+      config.sampler['balancing_fn_type'] = LBWeightFn.MAX
+    elif _WEIGHT_FN.value == 'MIN':
+      config.sampler['balancing_fn_type'] = LBWeightFn.MIN
+    else:
+      config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
+  
+  
 def get_main_config():
   config = common_configs.get_config()
+  if not config.model.get('graph_type', None):
+    config.update(_EXPERIMENT_CONFIG.value)
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
+  
+  LBWeightFn.SQRT
 
   if config.model.get('graph_type', None):
     config.update(_EXPERIMENT_CONFIG.value)
     co_exp_default_config = importlib.import_module(
-        'discs.experiments.configs.co_experiment'
+        'discs.experiment.configs.co_experiment'
     )
     config.experiment.update(co_exp_default_config.get_co_default_config())
   return config
@@ -58,7 +75,7 @@ def main(_):
 
   # experiment
   experiment_mod = getattr(
-      importlib.import_module('discs.experiment.experiment'),
+      importlib.import_module('discs.experiment.sampling'),
       f'{config.experiment.name}',
   )
   experiment = experiment_mod(config)

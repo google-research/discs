@@ -7,7 +7,7 @@ def get_config():
   model_config = dict(
           name='rbm',
           visualize = True,
-          data_path='./RBM_Haoran/mnist-2-200/',
+          data_path='gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/,
           num_categories=2,
           )
   return config_dict.ConfigDict(model_config)
