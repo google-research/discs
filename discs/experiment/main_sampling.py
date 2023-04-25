@@ -13,7 +13,7 @@ from discs.samplers.locallybalanced import LBWeightFn
 
 
 FLAGS = flags.FLAGS
-_EXPERIMENT_CONFIG = config_flags.DEFINE_config_file('config', None)
+_EXPERIMENT_CONFIG = config_flags.DEFINE_config_file('config', './discs/common/configs.py')
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 _RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
@@ -26,30 +26,15 @@ def get_save_dir(config):
   else:
     save_root = config.experiment.save_root
   return save_root
-
-    
-def setup_lbweightfn(config):
-  
-  if config.model.get('balancing_fn_type', None):
-    if _WEIGHT_FN.value == 'RATIO':
-      config.sampler['balancing_fn_type'] = LBWeightFn.RATIO
-    elif _WEIGHT_FN.value == 'MAX':
-      config.sampler['balancing_fn_type'] = LBWeightFn.MAX
-    elif _WEIGHT_FN.value == 'MIN':
-      config.sampler['balancing_fn_type'] = LBWeightFn.MIN
-    else:
-      config.sampler['balancing_fn_type'] = LBWeightFn.SQRT
-  
   
 def get_main_config():
   config = common_configs.get_config()
-  if not config.model.get('graph_type', None):
+  if 'graph_type' not in _MODEL_CONFIG.value:
     config.update(_EXPERIMENT_CONFIG.value)
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
-  
-  LBWeightFn.SQRT
 
+  pdb.set_trace()
   if config.model.get('graph_type', None):
     config.update(_EXPERIMENT_CONFIG.value)
     co_exp_default_config = importlib.import_module(
