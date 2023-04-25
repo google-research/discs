@@ -9,11 +9,12 @@ from discs.common import configs as common_configs
 import discs.common.experiment_saver as saver_mod
 import discs.common.utils as utils
 from ml_collections import config_flags
-from discs.samplers.locallybalanced import LBWeightFn
 
 
 FLAGS = flags.FLAGS
-_EXPERIMENT_CONFIG = config_flags.DEFINE_config_file('config', './discs/common/configs.py')
+_EXPERIMENT_CONFIG = config_flags.DEFINE_config_file(
+    'config', './discs/common/configs.py'
+)
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 _RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
@@ -26,7 +27,8 @@ def get_save_dir(config):
   else:
     save_root = config.experiment.save_root
   return save_root
-  
+
+
 def get_main_config():
   config = common_configs.get_config()
   if 'graph_type' not in _MODEL_CONFIG.value:
@@ -34,7 +36,6 @@ def get_main_config():
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
 
-  pdb.set_trace()
   if config.model.get('graph_type', None):
     config.update(_EXPERIMENT_CONFIG.value)
     co_exp_default_config = importlib.import_module(
