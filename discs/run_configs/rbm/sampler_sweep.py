@@ -2,6 +2,7 @@
 
 from ml_collections import config_dict
 
+
 def get_config():
   """Get config."""
 
@@ -11,13 +12,19 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'model_config.data_path': ['gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200', 'gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25'],
+                  'model_config.data_path': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25/',
+                  ],
                   'sampler_config.name': [
                       'randomwalk',
                   ],
               },
               {
-                  'model_config.data_path': ['gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200', 'gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25'],
+                  'model_config.data_path': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25/',
+                  ],
                   'sampler_config.name': [
                       'path_auxiliary',
                       'dlmc',
@@ -29,4 +36,3 @@ def get_config():
       )
   )
   return config
-

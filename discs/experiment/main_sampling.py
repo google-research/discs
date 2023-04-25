@@ -47,6 +47,7 @@ def get_main_config():
 
 def main(_):
   config = get_main_config()
+  print(config)
   utils.setup_logging(config)
 
   # model

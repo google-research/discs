@@ -17,7 +17,6 @@ def get_config():
                   ],
                   'model_config.init_sigma': [1.5],
                   'model_config.num_categories': [4, 8],
-                  'model_config.shape': [(2000,)],
               },
               {
                   'sampler_config.name': [
@@ -27,7 +26,6 @@ def get_config():
                   ],
                   'model_config.init_sigma': [1.5],
                   'model_config.num_categories': [4, 8],
-                  'model_config.shape': [(2000,)],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
           ],
