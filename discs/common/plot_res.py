@@ -10,7 +10,7 @@ import numpy as np
 
 flags.DEFINE_string(
     'results_path',
-    './Sampling_Experiment_55836163',
+    './Sampling_Experiment_55841617',
     'where results are being saved',
 )
 FLAGS = flags.FLAGS
@@ -119,8 +119,6 @@ def main(argv: Sequence[str]) -> None:
 
 
   results = separate_model_based(experiments_results)
-
-  pdb.set_trace()
   for key in results.keys():
     model = model_name +  key
     samplers = results[key]['sampler']
@@ -153,29 +151,29 @@ def main(argv: Sequence[str]) -> None:
     plt.show()
     plt.savefig(FLAGS.results_path + f'/EssEE_{model}.png', bbox_inches='tight')
 
-  #########
-  c = []
-  for key in keys_clock:
-    splits = str.split(key, '_')
-    if splits[0][0] != 'a':
-      alg = splits[0][0:3]
-    else:
-      alg = splits[1][0:3]
-    c.append(color_map[alg])
+    #########
+    c = []
+    for key in keys_clock:
+      splits = str.split(key, '_')
+      if splits[0][0] != 'a':
+        alg = splits[0][0:3]
+      else:
+        alg = splits[1][0:3]
+      c.append(color_map[alg])
 
-  fig = plt.figure(figsize=(10, 6))
-  plt.yscale('log')
-  plt.bar(x_pos, values_clock, width=0.2, color=c)
-  plt.xticks(x_pos, keys_clock)
+    fig = plt.figure(figsize=(10, 6))
+    plt.yscale('log')
+    plt.bar(x_pos, values_clock, width=0.2, color=c)
+    plt.xticks(x_pos, keys_clock)
 
-  plt.grid()
-  plt.xlabel('Samplers')
-  plt.ylabel('ESS')
-  plt.title(f'ESS w.r.t. Wall Clock Time on {model}')
-  plt.show()
-  plt.savefig(
-      FLAGS.results_path + f'/EssClock_{model}.png', bbox_inches='tight'
-  )
+    plt.grid()
+    plt.xlabel('Samplers')
+    plt.ylabel('ESS')
+    plt.title(f'ESS w.r.t. Wall Clock Time on {model}')
+    plt.show()
+    plt.savefig(
+        FLAGS.results_path + f'/EssClock_{model}.png', bbox_inches='tight'
+    )
 
 
 if __name__ == '__main__':
