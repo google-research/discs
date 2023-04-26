@@ -3,7 +3,7 @@ import functools
 import importlib
 import pdb
 import time
-from discs.common import math
+from discs.common import math_util as math
 from discs.common import utils
 import flax
 import jax

@@ -1,6 +1,5 @@
 """Saver Class."""
 
-from discs.samplers.locallybalanced import LBWeightFn
 import ml_collections
 import jax
 import jax.numpy as jnp
@@ -58,11 +57,11 @@ class Saver:
       results['sampler'] = f'a_{self.config.sampler.name}'
 
     if 'balancing_fn_type' in self.config.sampler.keys():
-      if self.config.sampler.balancing_fn_type == LBWeightFn.RATIO:
+      if self.config.sampler.balancing_fn_type == 'RATIO':
         results['sampler'] = results['sampler'] + '(ratio)'
-      elif self.config.sampler.balancing_fn_type == LBWeightFn.MAX:
+      elif self.config.sampler.balancing_fn_type == 'MAX':
         results['sampler'] = results['sampler'] + '(max)'
-      elif self.config.sampler.balancing_fn_type == LBWeightFn.MIN:
+      elif self.config.sampler.balancing_fn_type == 'MIN':
         results['sampler'] = results['sampler'] + '(min)'
       else:
         results['sampler'] = results['sampler'] + '(sqrt)'
