@@ -201,5 +201,6 @@ def update_graph_cfg(config, graphs):
 def get_datagen(config):
   test_graphs = graph_gen.get_graphs(config)
   update_graph_cfg(config, test_graphs)
+  print(config)
   datagen = test_graphs.get_iterator('test', config.experiment.num_models)
   return datagen

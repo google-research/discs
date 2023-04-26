@@ -22,7 +22,7 @@ _RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
 def get_save_dir(config):
   if _RUN_LOCAL.value:
     save_folder = config.model.get('save_dir_name', config.model.name)
-    save_root = config.experiment.save_root + '/' + save_folder
+    save_root = './discs/results/'+ save_folder
   else:
     save_root = config.experiment.save_root
   return save_root
