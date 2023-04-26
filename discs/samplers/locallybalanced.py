@@ -38,26 +38,26 @@ class LocallyBalancedSampler(abstractsampler.AbstractSampler):
 
   def apply_weight_function(self, t):
     """Apply locally balanced weight function."""
-    if self.balancing_fn_type == LBWeightFn.SQRT:
+    if self.balancing_fn_type == 'SQRT':
       return jnp.sqrt(t)
-    elif self.balancing_fn_type == LBWeightFn.RATIO:
+    elif self.balancing_fn_type == 'RATIO':
       return t / (t + 1)
-    elif self.balancing_fn_type == LBWeightFn.MAX:
+    elif self.balancing_fn_type == 'MAX':
       return jnp.clip(t, a_min=1.0)
-    elif self.balancing_fn_type == LBWeightFn.MIN:
+    elif self.balancing_fn_type == 'MIN':
       return jnp.clip(t, a_max=1.0)
     else:
       raise ValueError('Unknown function %s' % str(self.balancing_fn_type))
 
   def apply_weight_function_logscale(self, logt):
     """Apply locally balanced weight function in log scale."""
-    if self.balancing_fn_type == LBWeightFn.SQRT:
+    if self.balancing_fn_type == 'SQRT':
       return logt / 2.0
-    elif self.balancing_fn_type == LBWeightFn.RATIO:
+    elif self.balancing_fn_type == 'RATIO':
       return jax.nn.log_sigmoid(logt)
-    elif self.balancing_fn_type == LBWeightFn.MAX:
+    elif self.balancing_fn_type == 'MAX':
       return jnp.clip(logt, a_min=0.0)
-    elif self.balancing_fn_type == LBWeightFn.MIN:
+    elif self.balancing_fn_type == 'MIN':
       return jnp.clip(logt, a_max=0.0)
     else:
       raise ValueError('Unknown function %s' % str(self.balancing_fn_type))

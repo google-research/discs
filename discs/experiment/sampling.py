@@ -1,16 +1,16 @@
 """Experiment class that runs sampler on the model to generate chains."""
+import functools
+import importlib
+import pdb
+import time
+from discs.common import math
+from discs.common import utils
+import flax
 import jax
 import jax.numpy as jnp
 from ml_collections import config_dict
-from discs.common import math
-from discs.common import utils
-import tqdm
-import pdb
-import time
-import functools
 import optax
-import flax
-import importlib
+import tqdm
 
 
 class Experiment:
@@ -20,6 +20,7 @@ class Experiment:
     self.config = config.experiment
     self.config_model = config.model
     self.parallel = False
+    self.sample_idx = None
     if jax.local_device_count() != 1 and self.config.run_parallel:
       self.parallel = True
 
@@ -64,7 +65,11 @@ class Experiment:
         state = self._prepare_dict(state, jax.local_device_count())
         bshape = (jax.local_device_count(), self.config.num_models)
         x_shape = bshape + (batch_size_per_device,) + self.config_model.shape
-        self.sample_idx = jnp.array([self.sample_idx]* (jax.local_device_count() // self.config.num_models))
+        if self.sample_idx:
+          self.sample_idx = jnp.array(
+              [self.sample_idx]
+              * (jax.local_device_count() // self.config.num_models)
+          )
     else:
       bshape = (self.config.num_models,)
       x_shape = bshape + (self.config.batch_size,) + self.config_model.shape

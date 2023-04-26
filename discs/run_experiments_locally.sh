@@ -8,7 +8,7 @@ do
 for sampler in $samplers
 do
     echo "running $sampler on $model"
-    model=$model sampler=$sampler ./discs/experiments/run_sampling_local.sh 
+    model=$model sampler=$sampler ./discs/experiment/run_sampling_local.sh 
    	 
 done
 done

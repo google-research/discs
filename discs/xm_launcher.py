@@ -1,16 +1,16 @@
+import copy
+from copy import deepcopy
+import getpass
+import itertools
+import pdb
 from absl import app
 from absl import flags
-import getpass
+from ml_collections import config_flags
 import numpy as np
-import itertools
-from copy import deepcopy
 from xmanager import xm
 from xmanager import xm_abc
 from xmanager import xm_local
 from xmanager.contrib import framework_defaults
-from ml_collections import config_flags
-import copy
-import pdb
 
 FLAGS = flags.FLAGS
 
@@ -66,7 +66,7 @@ def main(argv) -> None:
     raise app.UsageError('Too many command-line arguments.')
 
   job_config = FLAGS.config
-
+  num_gpus = _NUM_GPUS.value
   executable_args = {}
   executable_args['model_config'] = (
       f'/workdir/discs/models/configs/{job_config.model}_config.py'
@@ -74,15 +74,17 @@ def main(argv) -> None:
   executable_args['sampler_config'] = (
       f'/workdir/discs/samplers/configs/{job_config.sampler}_config.py'
   )
-
   if job_config.get('graph_type', None):
     executable_args['config'] = (
-        f'/workdir/discs/experiments/configs/{job_config.model}/{job_config.graph_type}.py'
+        f'/workdir/discs/experiment/configs/{job_config.model}/{job_config.graph_type}.py'
     )
     executable_args['model_config.graph_type'] = f'{job_config.graph_type}'
     executable_args['model_config.data_root'] = (
         '/gcs/xcloud-shared/hadai/data/sco'
     )
+  else:
+    executable_args['config'] = '/workdir/discs/common/configs.py'
+    num_gpus = 4
   executable_args.update(
       {
           name: value
@@ -96,21 +98,14 @@ def main(argv) -> None:
       if _LAUNCH_LOCALLY.value
       else xm_abc.create_experiment
   )
-
-  exp_name = (
-      'discs-'
-      + job_config.model
-      + '-'
-      + job_config.sampler
-      + '-'
-      + job_config.graph_type
-  )
+  exp_name = config_flags.get_config_filename(FLAGS['config']).split('/')
+  exp_name = 'discs-' + exp_name[-2] + '-' + exp_name[-1][0:-3]
   with create_experiment(experiment_title=exp_name) as experiment:
     priority = xm.ServiceTier.BATCH if _USE_BATCH.value else xm.ServiceTier.PROD
     job_requirements = xm.JobRequirements(
-        ram=8 * FLAGS.num_gpus * xm.GiB,
-        cpu=4 * FLAGS.num_gpus,
-        v100=FLAGS.num_gpus,
+        ram=8 * num_gpus * xm.GiB,
+        cpu=4 * num_gpus,
+        v100=num_gpus,
         service_tier=priority,
     )
 
@@ -127,7 +122,7 @@ def main(argv) -> None:
     )
     print('Saving Dir is: ', save_dir)
     executable_args['config.experiment.save_root'] = save_dir
-    module = 'discs.experiments.main_sampling'
+    module = 'discs.experiment.main_sampling'
     (executable,) = experiment.package(
         [
             xm.python_container(
@@ -146,6 +141,11 @@ def main(argv) -> None:
     async def make_job(work_unit, **kwargs):
       args = deepcopy(executable_args)
       args.update(kwargs)
+      if 'sampler_config.name' in args.keys():
+        args['sampler_config'] = (
+            f'/workdir/discs/samplers/configs/{args["sampler_config.name"]}_config.py'
+        )
+
       sweep_str_parts = []
       for k, v in kwargs.items():
         if k.startswith('config.'):

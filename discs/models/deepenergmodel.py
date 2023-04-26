@@ -1,10 +1,10 @@
-from discs.models import abstractmodel
-import ml_collections
-import jax
-import jax.numpy as jnp
 import os
 import pickle
+from discs.models import abstractmodel
 import flax
+import jax
+import jax.numpy as jnp
+import ml_collections
 import yaml
 
 
@@ -27,7 +27,9 @@ class DeepEBM(abstractmodel.AbstractModel):
     path = os.path.join(config.data_path, 'params.pkl')
     if os.path.exists(path):
       path = config.data_path
-      model = pickle.load(open(path + 'params.pkl', 'rb'))
+      model = pickle.load(open(os.path.join(path, 'params.pkl'), 'rb'))
       config.params = flax.core.frozen_dict.freeze(model['params'])
-      model_config = yaml.unsafe_load(open(path + 'config.yaml', 'r'))
+      model_config = yaml.unsafe_load(
+          open(os.path.join(path, 'config.yaml'), 'r')
+      )
       config.update(model_config.model)
