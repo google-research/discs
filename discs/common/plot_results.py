@@ -7,7 +7,7 @@ import numpy as np
 
 
 _RESULTS_DIR = flags.DEFINE_boolean(
-    'result_dir', None, 'Folder that contains all the results'
+    'result_dir', './discs/results/bernoulli_hightemp/', 'Folder that contains all the results'
 )
 
 

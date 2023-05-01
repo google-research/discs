@@ -2,6 +2,7 @@
 export XLA_FLAGS='--xla_force_host_platform_device_count=4'
 
 default="default_value"
+graph_type=${graph_type:-$default}
 echo "$model"
 echo "$sampler"
 echo "$graph_type"

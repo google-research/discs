@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 from jax.scipy import special
 import ml_collections
+import pdb
 
 
 class DMALASampler(locallybalanced.LocallyBalancedSampler):
@@ -17,11 +18,12 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     state['num_ll_calls'] += 4
     if not self.adaptive:
       return
-    log_weight_x = local_stats['weights']
-    if cur_step < self.schedule_step or cur_step % self.reset_z_est == 0:
-      log_z = self.set_z(log_weight_x)
-    else:
-      log_z = state['log_z']
+    log_z = jnp.where(
+        cur_step % self.reset_z_est == 0, local_stats['log_z'], state['log_z']
+    )
+    log_z = jnp.where(
+        cur_step < self.schedule_step, local_stats['log_z'], state['log_z']
+    )
     # updating tau
     n = jnp.exp(state['log_tau'] + log_z)
     n = n + 3 * (acc - self.target_acceptance_rate)
@@ -46,7 +48,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     return log_z
 
   def reset_stats(self, log_rates):
-    log_z = self.set_z(log_rates)
+    log_z = jnp.log(self.set_z(log_rates))
     log_tau = math.log(3.0) - log_z
     return {'log_tau': log_tau, 'log_z': log_z}
 
@@ -75,6 +77,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
     _ = x_mask
+    #pdb.set_trace()
     if self.num_categories != 2:
       x = jax.nn.one_hot(x, self.num_categories, dtype=jnp.float32)
     rng_new_sample, rng_acceptance = jax.random.split(rng)
