@@ -19,7 +19,9 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
       return
     log_weight_x = local_stats['weights']
     if cur_step < self.schedule_step or cur_step % self.reset_z_est == 0:
-      log_z = self.init_z(log_weight_x)
+      log_z = self.set_z(log_weight_x)
+    else:
+      log_z = state['log_z']
     # updating tau
     n = jnp.exp(state['log_tau'] + log_z)
     n = n + 3 * (acc - self.target_acceptance_rate)
@@ -36,14 +38,15 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     self.update_sampler_state(new_state, acc, local_stats)
     return y, new_state
 
-  def init_z(self, log_rates):
-    bsize = log_rates.shape[0]
-    log_rates = jnp.reshape(log_rates, [-1])
-    log_z = special.logsumexp(log_rates, axis=0) - math.log(bsize)
+  def set_z(self, log_rates):
+    if self.num_categories > 2:
+      log_z = jnp.mean(jnp.sum(jnp.exp(log_rates), axis=[-2, -1]))
+    else:
+      log_z = jnp.mean(jnp.sum(jnp.exp(log_rates), axis=[-1]))
     return log_z
 
   def reset_stats(self, log_rates):
-    log_z = self.init_z(log_rates)
+    log_z = self.set_z(log_rates)
     log_tau = math.log(3.0) - log_z
     return {'log_tau': log_tau, 'log_z': log_z}
 
