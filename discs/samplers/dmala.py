@@ -1,19 +1,18 @@
 """Discrete Langevin Monte Carlo."""
 
+import pdb
 from discs.common import math_util as math
 from discs.samplers import locallybalanced
 import jax
 import jax.numpy as jnp
 from jax.scipy import special
 import ml_collections
-import pdb
 
 
 class DMALASampler(locallybalanced.LocallyBalancedSampler):
   """DMALA sampler."""
 
   def update_sampler_state(self, state, acc, local_stats):
-    # pdb.set_trace()
     cur_step = state['steps']
     state['num_ll_calls'] += 4
     if not self.adaptive:
@@ -77,7 +76,6 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
     _ = x_mask
-    #pdb.set_trace()
     if self.num_categories != 2:
       x = jax.nn.one_hot(x, self.num_categories, dtype=jnp.float32)
     rng_new_sample, rng_acceptance = jax.random.split(rng)
@@ -110,14 +108,6 @@ class BinaryDMALA(DMALASampler):
   def get_dist_at(self, x, log_tau, log_rate_x):
     _ = x
     log_weight_x = log_rate_x['weights']
-    # if self.solver == 'interpolate':
-    #   log_nu_x = jax.nn.log_sigmoid(log_rate_x['delta'])
-    #   threshold_x = log_nu_x + math.log1mexp(
-    #       -jnp.exp(log_tau + log_weight_x - log_nu_x))
-    # elif self.solver == 'euler_forward':
-    #   threshold_x = log_tau + log_weight_x
-    # else:
-    #   raise ValueError('Unknown solver for DMALA: %s' % self.solver)
     threshold_x = log_tau + log_weight_x
     threshold_x -= jnp.logaddexp(threshold_x, jnp.zeros_like(threshold_x))
     return jnp.exp(
@@ -141,20 +131,10 @@ class CategoricalDMALA(DMALASampler):
 
   def get_dist_at(self, x, log_tau, log_rate_x):
     log_weight_x = log_rate_x['weights']
-    # if self.solver == 'interpolate':
-    #   log_nu_x = jax.nn.log_softmax(log_rate_x['delta'], axis=-1)
-    #   log_posterior_x = log_nu_x + math.log1mexp(
-    #       -jnp.exp(log_tau + log_weight_x - log_nu_x))
-    # elif self.solver == 'euler_forward':
-    #   log_posterior_x = log_tau + log_weight_x
-    # else:
-    #   raise ValueError('Unknown solver for DMALA: %s' % self.solver)
     log_posterior_x = log_tau + log_weight_x
-    log_posterior_x = log_posterior_x * (1 - x) + x * jnp.log1p(
-        -jnp.clip(
-            jnp.sum(jnp.exp(log_posterior_x) * (1 - x), axis=-1, keepdims=True),
-            a_max=1 - 1e-12,
-        )
+    log_posterior_x = log_posterior_x * (1 - x)
+    log_posterior_x -= jnp.log(
+        jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
     )
     return log_posterior_x
 
