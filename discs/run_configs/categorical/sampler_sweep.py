@@ -20,6 +20,7 @@ def get_config():
               },
               {
                   'sampler_config.name': [
+                      'dmala',
                       'path_auxiliary',
                       'dlmc',
                       'gwg',
