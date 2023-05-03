@@ -268,14 +268,28 @@ class Sampling_Experiment(Experiment):
       chain.append(get_mapped_samples(new_x, x0_ess))
       x = new_x
 
-    chain = jnp.array(chain)
-    if self.parallel:
-      chain = jnp.array([chain])
-      rng = jnp.array([rng])
-    ess = float(obj_fn(samples=chain, rnd=rng).reshape(-1))
-    num_ll_calls = int(state['num_ll_calls'][0])
-    metrics = eval_metric(ess, running_time, num_ll_calls)
-    saver.save_results(acc_ratios, hops, metrics, running_time)
+    if self.config.evaluator == 'ess_eval':
+      chain = jnp.array(chain)
+      if self.parallel:
+        chain = jnp.array([chain])
+        rng = jnp.array([rng])
+      ess = float(obj_fn(samples=chain, rnd=rng).reshape(-1))
+      num_ll_calls = int(state['num_ll_calls'][0])
+      metrics = eval_metric(ess, running_time, num_ll_calls)
+      saver.save_results(acc_ratios, hops, metrics, running_time)
+    else:
+      # chain generation
+      sampled_infill_tokens = x
+      sampled_infill_tokens = np.array(sampled_infill_tokens[0,0])
+
+      token_ids = tokenizer(data['sentence'], return_tensors='np')['input_ids'][0]
+      real_infill_pos = [pos for pos in data['infill_pos']]
+      for i in range(len(real_infill_pos)):
+        token_ids[real_infill_pos[i]] = sampled_infill_tokens[i]
+      new_sent = tokenizer.decode(token_ids[1:-1])
+      res = evaluator.evaluate(new_sent)
+      saver.save_results(res)
+
 
   def _initialize_chain_vars(self):
     chain = []
