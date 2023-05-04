@@ -29,6 +29,7 @@ def get_config():
                       'path_auxiliary',
                       'dlmc',
                       'gwg',
+                      'dmala'
                   ],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },

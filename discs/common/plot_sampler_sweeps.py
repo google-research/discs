@@ -36,6 +36,10 @@ def sort_dict(dictionary, x_labels):
       updated_label = 'dlmc(s)'
     elif label == 'a_dlmc(ratio)':
       updated_label = 'dlmc(r)'
+    elif label == 'a_dmala(sqrt)':
+      updated_label = 'dmala(s)'
+    elif label == 'a_dmala(ratio)':
+      updated_label = 'dmala(r)'
     elif label == 'a_dlmcf(sqrt)':
       updated_label = 'fdlmc(s)'
     elif label == 'a_dlmcf(ratio)':
@@ -93,6 +97,7 @@ def main(argv: Sequence[str]) -> None:
   color_map['paf'] = 'saddlebrown'
   color_map['gwg'] = 'red'
   color_map['bg-'] = 'orange'
+  color_map['dma'] = 'purple'
   
 
   x_labels = [
@@ -100,6 +105,8 @@ def main(argv: Sequence[str]) -> None:
       'a_randomwalk',
       'a_gwg(sqrt)',
       'a_gwg(ratio)',
+      'a_dmala(sqrt)',
+      'a_dmala(ratio)',
       'a_path_auxiliary(sqrt)',
       'a_path_auxiliary(ratio)',
       'a_dlmc(sqrt)',
@@ -149,7 +156,6 @@ def main(argv: Sequence[str]) -> None:
     x_pos = 0.5 * np.arange(len(keys_ee))
     c = []
     for key in keys_ee:
-      print(key)
       alg = key[0:3]
       c.append(color_map[alg])
     fig = plt.figure(figsize=(10, 6))
