@@ -55,6 +55,10 @@ class Saver:
     results['sampler'] = self.config.sampler.name
     if 'adaptive' in self.config.sampler.keys():
       results['sampler'] = f'a_{self.config.sampler.name}'
+      
+    if 'solver' in self.config.sampler.keys():
+      if self.config.sampler.solver == 'euler_forward':
+        results['sampler'] = results['sampler'] + 'f'
 
     if 'balancing_fn_type' in self.config.sampler.keys():
       if self.config.sampler.balancing_fn_type == 'RATIO':

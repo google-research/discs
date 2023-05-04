@@ -20,7 +20,7 @@ def get_config():
           batch_size=100,
           chain_length=100000,
           ess_ratio=0.5,
-          run_parallel=True,
+          run_parallel=False,
           get_additional_metrics=False,
           shuffle_buffer_size=0,
           log_every_steps=100,

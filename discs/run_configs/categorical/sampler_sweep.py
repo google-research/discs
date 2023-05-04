@@ -14,13 +14,13 @@ def get_config():
               {
                   'sampler_config.name': [
                       'randomwalk',
+                      'blockgibbs',
                   ],
                   'model_config.init_sigma': [1.5],
                   'model_config.num_categories': [4, 8],
               },
               {
                   'sampler_config.name': [
-                      'gibbs',
                       'dmala',
                       'path_auxiliary',
                       'gwg',
