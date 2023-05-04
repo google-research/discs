@@ -6,12 +6,12 @@ from typing import Any
 
 from absl import logging
 from clu import metric_writers
+from clu.metric_writers.summary_writer import SummaryWriter
 from discs.graph_loader import graph_gen
 import flax
 import jax
 import jax.numpy as jnp
 import numpy as np
-from clu.metric_writers.summary_writer import SummaryWriter
 
 
 @flax.struct.dataclass
@@ -203,3 +203,115 @@ def get_datagen(config):
   update_graph_cfg(config, test_graphs)
   datagen = test_graphs.get_iterator('test', config.experiment.num_models)
   return datagen
+
+
+def create_infill_dataset(
+    data_root,
+    tokenizer,
+    num_of_sentences=10,
+    min_length=10,
+    max_length=20,
+    num_of_masks=4,
+):
+  """data_root: the directory where the datasets are stored (default: './text_infilling_data')
+
+  tokenizer: the tokenizer for the language model
+  num_of_sentences: the number of sentences to sample from TBC and Wiki
+  min_length: the minimal length of sampled sentence
+  max_length: the maximal length of sampled sentence
+  num_of_masks: the number of randomly selected masks to infill words
+  """
+  data = []
+
+  tbc_ref_list = []
+  with open(os.path.join(data_root, 'tbc.5k.txt')) as f:
+    tbc_lines = f.readlines()
+    print('TBC lines:', len(tbc_lines))
+    print('Before Shuffle', tbc_lines[0])
+    random.shuffle(tbc_lines)
+    print('After Shuffle', tbc_lines[0])
+    for tbc in tbc_lines:
+      if len(data) < num_of_sentences:
+        tbc_new = tbc.replace('``', '')
+        tbc_new = tbc_new.replace("''", '')
+        tbc_new = tbc_new.replace('\n', '')
+        tbc_new_list = tbc_new.split(' ')
+        if (len(tbc_new_list) <= max_length) and (
+            len(tbc_new_list) >= min_length
+        ):
+          infill_pos = random.sample(
+              range(1, len(tbc_new_list) - 1), num_of_masks
+          )
+          print(tbc_new_list)
+
+          for pos in infill_pos:
+            tbc_new_list[pos] = '[MASK]'
+          tbc_new_masked = ' '.join(tbc_new_list)
+          tokens = tokenizer.tokenize(tbc_new_masked)
+          infill_pos = []
+          for i in range(len(tokens)):
+            if tokens[i] == '[MASK]':
+              infill_pos.append(i + 1)  ### the starting token 0 will be [CLS]
+
+          data.append({
+              'gt_sentence': tbc_new,
+              'sentence': tbc_new_masked,
+              'infill_pos': infill_pos,
+          })
+        else:
+          tbc_ref_list.append(tbc)
+      else:
+        tbc_ref_list.append(tbc)
+
+  with open(os.path.join(data_root, 'tbc_remove_infill.5k.txt'), 'w') as f:
+    ### NOTE: we remove the sentence to be infilled from the reference dataset  to compute meaningful BLEU score
+    f.writelines(tbc_ref_list)
+
+  wiki_ref_list = []
+  with open(os.path.join(data_root, 'wiki103.5k.txt')) as f:
+    wiki_lines = f.readlines()
+    print('WIKI lines:', len(wiki_lines))
+    print('Before Shuffle', wiki_lines[0])
+    random.shuffle(wiki_lines)
+    print('After Shuffle', wiki_lines[0])
+    for wiki in wiki_lines:
+      if len(data) < (2 * num_of_sentences):
+        wiki_new = wiki.replace('@@unknown@@', '[UNK]')
+        wiki_new = wiki_new.replace('@@UNKNOWN@@', '[UNK]')
+        wiki_new = wiki_new.replace('@-@', '-')
+        wiki_new = wiki_new.replace('\n', '')
+        wiki_new_list = wiki_new.split(' ')
+
+        if (len(wiki_new_list) <= max_length) and (
+            len(wiki_new_list) >= min_length
+        ):
+          infill_pos = random.sample(
+              range(1, len(wiki_new_list) - 1), num_of_masks
+          )
+
+          for pos in infill_pos:
+            wiki_new_list[pos] = '[MASK]'
+          wiki_new_masked = ' '.join(wiki_new_list)
+          tokens = tokenizer.tokenize(wiki_new_masked)
+          infill_pos = []
+          for i in range(len(tokens)):
+            if tokens[i] == '[MASK]':
+              infill_pos.append(i + 1)  ### the starting token 0 will be [CLS]
+
+          data.append({
+              'gt_sentence': wiki_new,
+              'sentence': wiki_new_masked,
+              'infill_pos': infill_pos,
+          })
+        else:
+          wiki_ref_list.append(wiki)
+      else:
+        wiki_ref_list.append(wiki)
+
+  with open(os.path.join(data_root, 'wiki103_remove_infill.5k.txt'), 'w') as f:
+    f.writelines(wiki_ref_list)
+
+  print('Generated Data:')
+  print(data)
+  with open(os.path.join(data_root, 'infilling_task.json'), 'w') as f_obj:
+    json.dump(data, f_obj)

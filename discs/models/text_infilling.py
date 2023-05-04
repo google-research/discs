@@ -1,6 +1,9 @@
 """LLM Factorized Energy Function."""
 
+import json
+import os
 import pdb
+from discs.common import utils
 from discs.models import abstractmodel
 import jax
 from jax import grad, jit, vmap
@@ -15,21 +18,47 @@ from .customized_huggingface_flax_bert import FlaxBertForMaskedLM_Infilling
 class TextInfilling(abstractmodel.AbstractModel):
   """Categorical Distribution."""
 
+  def load_dataset(self, data_root, tokenizer):
+    if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
+      print('Dataset not found! Generating dataset first')
+      utils.create_infill_dataset(
+          data_root,
+          tokenizer,
+          num_of_sentences=10,
+          min_length=15,
+          max_length=25,
+          num_of_masks=4,
+      )
+    with open(
+        os.path.join(data_root, 'infilling_task.json'), 'r', encoding='utf-8'
+    ) as f:
+      infill_dataset = json.load(f)
+    return iter(infill_dataset)
+
   def __init__(self, config: ml_collections.ConfigDict):
+    self.tokenizer = BertTokenizer.from_pretrained(config.bert_model)
+    self.infill_dataset = self.load_dataset(config.data_root, self.tokenizer)
     self.shape = config.shape  ### number of blank spaces
     self.num_categories = config.num_categories  ### for bert: 30522
-    self.tokenizer = BertTokenizer.from_pretrained(config.bert_model)
     self.model = FlaxBertForMaskedLM_Infilling.from_pretrained(
         config.bert_model
     )
-    self.sentence = (
-        config.sentence
-    )  ### this is the original sentence before masking all the infill positions
-    self.infill_pos = config.infill_pos  ### infill positions
 
   def make_init_params(self, rnd):
+    try:
+      params = next(self.infill_dataset)
+    except:
+      return None
+
+    self.sentence = params[
+        'sentence'
+    ]  ### this is the original sentence before masking all the infill positions
+    self.infill_pos = params['infill_pos']  ### infill positions
     inputs = self.tokenizer(self.sentence, return_tensors='jax')
-    params = dict(zip(inputs.keys(), inputs.values()))
+    params['input_ids'] = inputs['input_ids']
+    params['attention_mask'] = inputs['attention_mask']
+    params['token_type_ids'] = inputs['token_type_ids']
+    params['tokenizer'] = self.tokenizer
     print(params['input_ids'])
     self.input_ids = params['input_ids']
     self.attention_mask = params['attention_mask']

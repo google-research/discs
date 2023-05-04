@@ -268,28 +268,14 @@ class Sampling_Experiment(Experiment):
       chain.append(get_mapped_samples(new_x, x0_ess))
       x = new_x
 
-    if self.config.evaluator == 'ess_eval':
-      chain = jnp.array(chain)
-      if self.parallel:
-        chain = jnp.array([chain])
-        rng = jnp.array([rng])
-      ess = float(obj_fn(samples=chain, rnd=rng).reshape(-1))
-      num_ll_calls = int(state['num_ll_calls'][0])
-      metrics = eval_metric(ess, running_time, num_ll_calls)
-      saver.save_results(acc_ratios, hops, metrics, running_time)
-    else:
-      # chain generation
-      sampled_infill_tokens = x
-      sampled_infill_tokens = np.array(sampled_infill_tokens[0,0])
-
-      token_ids = tokenizer(data['sentence'], return_tensors='np')['input_ids'][0]
-      real_infill_pos = [pos for pos in data['infill_pos']]
-      for i in range(len(real_infill_pos)):
-        token_ids[real_infill_pos[i]] = sampled_infill_tokens[i]
-      new_sent = tokenizer.decode(token_ids[1:-1])
-      res = evaluator.evaluate(new_sent)
-      saver.save_results(res)
-
+    chain = jnp.array(chain)
+    if self.parallel:
+      chain = jnp.array([chain])
+      rng = jnp.array([rng])
+    ess = float(obj_fn(samples=chain, rnd=rng).reshape(-1))
+    num_ll_calls = int(state['num_ll_calls'][0])
+    metrics = eval_metric(ess, running_time, num_ll_calls)
+    saver.save_results(acc_ratios, hops, metrics, running_time)
 
   def _initialize_chain_vars(self):
     chain = []
@@ -313,6 +299,98 @@ class Sampling_Experiment(Experiment):
     samples = samples.reshape((-1,) + self.config_model.shape)
     x0_ess = x0_ess.reshape((-1,) + self.config_model.shape)
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
+
+
+class Text_Infilling_Experiment(Sampling_Experiment):
+  
+  def get_results(self, model, sampler, evaluator, saver):
+    while True:
+      if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
+        break
+
+  def _compute_chain(
+      self,
+      compiled_fns,
+      state,
+      params,
+      rng,
+      x,
+      x0_ess,
+      saver,
+      evaluator,
+      fn_reshape,
+      bshape,
+  ):
+    """Generates the chain of samples."""
+    assert self.config.num_models == 1
+    (
+        _,
+        acc_ratios,
+        hops,
+        running_time,
+    ) = self._initialize_chain_vars()
+
+    stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
+    # burn in
+    burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
+    for step in tqdm.tqdm(range(1, burn_in_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      new_x, state, acc = stp_burnin(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      if step % self.config.save_every_steps == 0:
+        saved_sample = new_x[0]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      x = new_x
+
+    for step in tqdm.tqdm(range(burn_in_length, 1 + self.config.chain_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      start = time.time()
+      new_x, state, acc = stp_mixing(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      running_time += time.time() - start
+      if step % self.config.save_every_steps == 0:
+        saved_sample = new_x[0]
+        saver.dump_sample(
+            saved_sample, step, self.config_model.get('visualize', False)
+        )
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+
+      x = new_x
+      
+    # chain generation
+    sampled_infill_tokens = x
+    sampled_infill_tokens = np.array(sampled_infill_tokens[0,0])
+
+    token_ids = params['tokenizer'](params['sentence'], return_tensors='np')['input_ids'][0]
+    real_infill_pos = [pos for pos in params['infill_pos']]
+    for i in range(len(real_infill_pos)):
+      token_ids[real_infill_pos[i]] = sampled_infill_tokens[i]
+    new_sent = tokenizer.decode(token_ids[1:-1])
+    res = evaluator.evaluate(new_sent)
+    saver.save_results(res)
 
 
 class CO_Experiment(Experiment):
