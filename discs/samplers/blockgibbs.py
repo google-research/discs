@@ -2,7 +2,7 @@
 
 from itertools import product
 import pdb
-from discs.common import math_utils as math
+from discs.common import math_util as math
 from discs.samplers import abstractsampler
 import jax
 from jax import random
@@ -25,13 +25,13 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     return state
 
   def update_sampler_state(self, sampler_state):
-    sampler_state = super.sampler_state(sampler_state)
+    sampler_state = super().update_sampler_state(sampler_state)
     dim = math.prod(self.sample_shape)
     sampler_state['index'] = (sampler_state['index'] + self.block_size) % dim
-    sampler_state['num_ll_calls'] += 1
+    sampler_state['num_ll_calls'] += (self.num_categories**self.block_size)
     return sampler_state
 
-  def step(self, model, rnd, x, model_param, state):
+  def step(self, model, rng, x, model_param, state, x_mask=None):
     """Given the current sample, returns the next sample of the chain.
 
     Args:
@@ -45,6 +45,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     Returns:
       New sample.
     """
+    _ = x_mask
 
     def generate_new_samples(indices_to_flip, x):
       x_flatten = x.reshape(1, -1)
@@ -60,27 +61,26 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
 
     def select_new_samples(model_param, x, y, rnd_categorical):
       loglikelihood = model.forward(model_param, y)
-      selected_index = random.categorical(
-          rnd_categorical, loglikelihood, axis=1
-      )
+      selected_index = random.categorical(rnd_categorical, loglikelihood)
       x = jnp.take(y, selected_index, axis=0)
+      x = x.reshape(self.sample_shape)
       return x
 
     def loop_body(i, val):
-      rng_key, x, indices_to_flip, model_param, cur_samples = val
+      rng_key, x, indices_to_flip, model_param = val
       curr_sample = x[i]
       y = generate_new_samples(indices_to_flip, curr_sample)
       rnd_categorical, next_key = jax.random.split(rng_key)
       selected_sample = select_new_samples(
           model_param, curr_sample, y, rnd_categorical
       )
-      all_samples = jnp.concatenate((cur_samples, selected_sample), axis=0)
-      return (next_key, x, indices_to_flip, model_param, all_samples)
+      x = x.at[i].set(selected_sample)
+      return (next_key, x, indices_to_flip, model_param)
 
     start_index = state['index']
     indices_to_flip = jnp.arange(self.block_size) + start_index
-    init_val = (rnd, x, indices_to_flip, model_param, [])
-    _, _, _, _, new_x = jax.lax.fori_loop(0, x.shape[0], loop_body, init_val)
+    init_val = (rng, x, indices_to_flip, model_param)
+    _, new_x, _, _ = jax.lax.fori_loop(0, x.shape[0], loop_body, init_val)
     new_state = self.update_sampler_state(state)
     return new_x, new_state, 1
 
