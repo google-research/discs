@@ -15,6 +15,8 @@ from transformers import BertTokenizer
 import random
 import numpy as np
 
+import pdb
+
 # from discs.experiments import co_setup
 _MODEL_CONFIG = config_flags.DEFINE_config_file('model_config')
 _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
@@ -196,7 +198,7 @@ def self_unique_ngrams(preds, max_n=4):
     return pct_unique
 
 def main(_):
-  data_root = '/home/xcliu/ws/discrete_sampling/discs/discs/experiments/text_infilling_data'
+  data_root = './discs/experiments/text_infilling_data'
   tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
   if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
@@ -210,7 +212,8 @@ def main(_):
   print('Length:', len(infill_dataset))
   
   infill_sents = []
-  for data in infill_dataset: 
+  for data in infill_dataset:
+      pdb.set_trace()
       print(data)
       config = get_main_config(_MODEL_CONFIG.value, _SAMPLER_CONFIG.value, data['sentence'], data['infill_pos'])
 
