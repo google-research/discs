@@ -13,9 +13,15 @@ def get_config():
           sweep=[
               {
                   'sampler_config.name': ['randomwalk', 'blockgibbs'],
-                  'model_config.mu': [0.5, 1],
-                  'model_config.lambdaa': [0.5, 1],
-                  'model_config.sigma': [1.5, 3],
+                  'model_config.mu': [0.5],
+                  'model_config.lambdaa': [0.5],
+                  'model_config.init_sigma': [1.5],
+              },
+              {
+                  'sampler_config.name': ['randomwalk', 'blockgibbs'],
+                  'model_config.mu': [1],
+                  'model_config.lambdaa': [1],
+                  'model_config.init_sigma': [3],
               },
               {
                   'sampler_config.name': [
@@ -23,18 +29,39 @@ def get_config():
                       'path_auxiliary',
                       'gwg',
                   ],
-                  'model_config.mu': [0.5, 1],
-                  'model_config.lambdaa': [0.5, 1],
-                  'model_config.sigma': [1.5, 3],
+                  'model_config.mu': [0.5],
+                  'model_config.lambdaa': [0.5],
+                  'model_config.init_sigma': [1.5],
+                  'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
+              },
+              {
+                  'sampler_config.name': [
+                      'dmala',
+                      'path_auxiliary',
+                      'gwg',
+                  ],
+                  'model_config.mu': [1],
+                  'model_config.lambdaa': [1],
+                  'model_config.init_sigma': [3],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
                   'sampler_config.name': [
                       'dlmc',
                   ],
-                  'model_config.mu': [0.5, 1],
-                  'model_config.lambdaa': [0.5, 1],
-                  'model_config.sigma': [1.5, 3],
+                  'model_config.mu': [0.5],
+                  'model_config.lambdaa': [0.5],
+                  'model_config.init_sigma': [1.5],
+                  'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
+              },
+              {
+                  'sampler_config.name': [
+                      'dlmc',
+                  ],
+                  'model_config.mu': [1],
+                  'model_config.lambdaa': [1],
+                  'model_config.init_sigma': [3],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
