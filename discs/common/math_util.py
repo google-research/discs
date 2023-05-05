@@ -5,6 +5,11 @@ import jax
 import jax.numpy as jnp
 
 
+
+def comb(x, y):
+  return math.comb(x, y)
+
+
 def prod(it):
   base = 1
   for v in it:
