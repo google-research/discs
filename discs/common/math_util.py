@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 
 def comb(x, y):
-  return math.comb(x, y)
+  return math.factorial(x)/(math.factorial(y) * math.factorial(x-y))
 
 
 def prod(it):

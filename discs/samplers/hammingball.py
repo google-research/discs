@@ -6,7 +6,7 @@ import jax
 from jax import random
 import jax.numpy as jnp
 import ml_collections
-
+import pdb
 
 class HammingBallSampler(abstractsampler.AbstractSampler):
   """Random Walk Sampler Base Class."""
@@ -19,7 +19,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
   def make_init_state(self, rng):
     state = super().make_init_state(rng)
     state['radius'] = jnp.ones(shape=(), dtype=jnp.float32)
-
+    pdb.set_trace()
     if self.num_categories == 2:
       num_samples_per_hamming = [
           math.comb(self.block_size, j + 1) for j in range(self.hamming)
@@ -34,7 +34,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       ]
       num_samples_per_hamming = jnp.array([1] + num_samples_per_hamming)
       self.r_init = jax.random.categorical(rng, num_samples_per_hamming)
-
+   
     return state
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
