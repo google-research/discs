@@ -18,7 +18,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     self.hamming = config.sampler.hamming
     self.block_size = config.sampler.block_size
     assert self.hamming <= self.block_size
-    self.hamming_logit = jnp.ones(1)
+    self.hamming_logit = [1.0]
     if self.num_categories == 2:
       num_samples_per_hamming = [
           math.comb(self.block_size, j + 1) for j in range(self.hamming)
@@ -29,7 +29,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
           * (self.num_categories - 1) ** (j + 1)
           for j in range(self.hamming)
       ]
-    self.hamming_logit += jnp.array(num_samples_per_hamming)
+    self.hamming_logit = jnp.array(self.hamming_logit + num_samples_per_hamming)
 
     self.choose_index_vmapped = jax.vmap(
         self.choose_index, in_axes=[0, None, None]
@@ -52,28 +52,29 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     state['index'] = jnp.zeros(shape=(), dtype=jnp.int32)
     return state
 
-  def compute_u(self, rng, rad, x):
+  def compute_u(self, rng, rad, x, block):
     rng_ber, rng_int = random.split(rng)
     indices_to_flip = random.bernoulli(
         rng_ber, p=(rad / self.block_size), shape=[x.shape[0], self.block_size]
     )
     flipping_value = indices_to_flip * random.randint(
         rng_int,
-        shape=x.shape,
+        shape=[x.shape[0], self.block_size],
         minval=1,
         maxval=self.num_categories,
     )
-    u = (flipping_value + x) % self.num_categories
+    u = x.at[:, block].set((x[:, block] + flipping_value)%self.num_categories)
     return u
       
   def step(self, model, rng, x, model_param, state, x_mask=None):
     _ = x_mask
+    pdb.set_trace()
     x_shape = x.shape
     x = x.reshape(x.shape[0], -1)
     rad = jax.random.categorical(rng, self.hamming_logit)
     start_index = state['index']
     block = start_index + jnp.arange(self.block_size)
-    u = jnp.where(rad, self.compute_u(rng, rad, x), x)
+    u = jnp.where(rad, self.compute_u(rng, rad, x, block), x)
 
     # Y = u.unsqueeze(1)
     # for j in range(self.hamming):
