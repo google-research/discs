@@ -10,7 +10,7 @@ import numpy as np
 
 flags.DEFINE_string(
     'results_path',
-    './Sampling_Experiment_55841617',
+    './Sampling_Experiment_56199929',
     'where results are being saved',
 )
 FLAGS = flags.FLAGS
@@ -22,6 +22,8 @@ def sort_dict(dictionary, x_labels):
   for label in x_labels:
     if label == 'a_randomwalk':
       updated_label = 'rwm'
+    elif label == 'blockgibbs':
+      updated_label = 'bg-2'
     elif label == 'a_gwg(sqrt)':
       updated_label = 'gwg(s)'
     elif label == 'a_gwg(ratio)':
@@ -34,8 +36,16 @@ def sort_dict(dictionary, x_labels):
       updated_label = 'dlmc(s)'
     elif label == 'a_dlmc(ratio)':
       updated_label = 'dlmc(r)'
+    elif label == 'a_dmala(sqrt)':
+      updated_label = 'dmala(s)'
+    elif label == 'a_dmala(ratio)':
+      updated_label = 'dmala(r)'
+    elif label == 'a_dlmcf(sqrt)':
+      updated_label = 'fdlmc(s)'
+    elif label == 'a_dlmcf(ratio)':
+      updated_label = 'fdlmc(r)'
     else:
-      print('label not present')
+      print('label not present: ', label)
       continue
     if label in dictionary:
       new_dict[updated_label] = dictionary[label]
@@ -83,17 +93,26 @@ def main(argv: Sequence[str]) -> None:
   color_map = {}
   color_map['rwm'] = 'green'
   color_map['dlm'] = 'pink'
+  color_map['fdl'] = 'gray'
   color_map['paf'] = 'saddlebrown'
   color_map['gwg'] = 'red'
+  color_map['bg-'] = 'orange'
+  color_map['dma'] = 'purple'
+  
 
   x_labels = [
+      'blockgibbs',
       'a_randomwalk',
       'a_gwg(sqrt)',
       'a_gwg(ratio)',
+      'a_dmala(sqrt)',
+      'a_dmala(ratio)',
       'a_path_auxiliary(sqrt)',
       'a_path_auxiliary(ratio)',
       'a_dlmc(sqrt)',
       'a_dlmc(ratio)',
+      'a_dlmcf(sqrt)',
+      'a_dlmcf(ratio)',
   ]
 
   samplers = []
