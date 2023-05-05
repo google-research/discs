@@ -156,6 +156,7 @@ class Experiment:
         evaluator,
         fn_reshape,
         breshape,
+        model
     )
     return True
 
@@ -178,6 +179,7 @@ class Experiment:
       evaluator,
       fn_reshape,
       bshape,
+      model=None,
   ):
     raise NotImplementedError
 
@@ -204,6 +206,7 @@ class Sampling_Experiment(Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
@@ -320,6 +323,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
@@ -379,12 +383,9 @@ class Text_Infilling_Experiment(Sampling_Experiment):
         hops.append(get_hop(x, new_x))
 
       x = new_x
-    sampled_infill_tokens = jnp.array(x[0, 0])
-    token_ids = params['token_type_ids'][0]
-    for i, infill_pos in enumerate(params['infill_pos']):
-      token_ids[infill_pos] = sampled_infill_tokens[i]
-    sampled_sentence = params['tokenizer'].decode(token_ids[1:-1])
-    res = obj_fn(sampled_sentence)
+    
+    sampled_sentence = model.decode(x, params)
+    res = evaluator.evaluate(sampled_sentence)
     saver.save_results(res)
 
 
@@ -445,6 +446,7 @@ class CO_Experiment(Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model,
   ):
     """Generates the chain of samples."""
 
@@ -526,7 +528,7 @@ class CO_Experiment(Experiment):
           saved_sample = new_x[chosen_sample_idx]
           saver.dump_sample(
               saved_sample, step, self.config_model.get('visualize', False)
-          )
+              )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)

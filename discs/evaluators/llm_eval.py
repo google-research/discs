@@ -5,7 +5,7 @@ import os
 from discs.evaluators import abstractevaluator
 from nltk.translate import bleu_score as bleu
 from nltk.util import ngrams
-
+import pdb
 
 class LLMevaluator(abstractevaluator.AbstractEvaluator):
   """Combinotorial optimization evaluator class."""
@@ -92,7 +92,9 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
       pct_unique[i] = n_unique / total
     return pct_unique
 
-  def evaluate(self, sentence, model, params):
+  def evaluate(self, sentence):
+
+    pdb.set_trace()
     ### NOTE: evaluation and save results
     results = {}
     results['infill_sents'] = [sentence]

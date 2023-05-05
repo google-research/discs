@@ -44,8 +44,13 @@ class TextInfilling(abstractmodel.AbstractModel):
         config.bert_model
     )
 
-  def tokenizer(self):
-      return self.tokenizer
+
+  def decode(self, x, params):
+    sampled_infill_tokens = jnp.array(x[0, 0])
+    token_ids = params['input_ids'][0]
+    token_ids = token_ids.at[:, self.infill_pos].set(sampled_infill_tokens)
+    sampled_sentence = self.tokenizer.decode(token_ids[0, 1:-1])
+    return sampled_sentence
 
   def make_init_params(self, rnd):
     try:
@@ -80,7 +85,6 @@ class TextInfilling(abstractmodel.AbstractModel):
     #    dtype=jnp.int32,
     # )
 
-    pdb.set_trace()
     ### NOTE: max init
     mask_dummy_array = jnp.zeros((1, len(self.infill_pos), self.num_categories))
     mask_dummy_array = mask_dummy_array.at[:, :, 103].set(1.0)
