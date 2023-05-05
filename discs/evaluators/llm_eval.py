@@ -2,10 +2,11 @@
 
 from collections import Counter
 import os
+import pdb
 from discs.evaluators import abstractevaluator
 from nltk.translate import bleu_score as bleu
 from nltk.util import ngrams
-import pdb
+
 
 class LLMevaluator(abstractevaluator.AbstractEvaluator):
   """Combinotorial optimization evaluator class."""
@@ -92,45 +93,38 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
       pct_unique[i] = n_unique / total
     return pct_unique
 
-  def evaluate(self, sentence):
-
+  def evaluate(self, sentence, data_root):
     pdb.set_trace()
     ### NOTE: evaluation and save results
     results = {}
     results['infill_sents'] = [sentence]
-    wiki103_file = os.path.join(
-        self.config.experiment.data_root, 'wiki103_remove_infill.5k.txt'
-    )
-    tbc_file = os.path.join(
-        self.config.experiment.data_root, 'tbc_remove_infill.5k.txt'
-    )
+    wiki103_file = os.path.join(data_root, 'wiki103_remove_infill.5k.txt')
+    tbc_file = os.path.join(data_root, 'tbc_remove_infill.5k.txt')
     wiki_data = self.prepare_wiki(wiki103_file)
     tbc_data = self.prepare_tbc(tbc_file)
 
     infill_sents = [sent.strip().split() for sent in results['infill_sents']]
-    tbc_bleu = self.corpus_bleu(infill_sents, tbc_data)
-    wiki_bleu = self.corpus_bleu(infill_sents, wiki_data)
-    tbc_wiki_bleu = self.corpus_bleu(infill_sents, tbc_data[:] + wiki_data[:])
-    self_bleu = self.self_bleu(infill_sents)
-    max_n = 4
-    unique_wiki_grams = self.ref_unique_ngrams(infill_sents, wiki_data, max_n)[
-        1 : max_n + 1
-    ]
-    unique_tbc_grams = self.ref_unique_ngrams(infill_sents, tbc_data, max_n)[
-        1 : max_n + 1
-    ]
-    unique_self_grams = self.self_unique_ngrams(infill_sents, max_n)[
-        1 : max_n + 1
-    ]
-    return (
-        tbc_bleu,
-        wiki_bleu,
-        tbc_wiki_bleu,
-        self_bleu,
-        unique_wiki_grams,
-        unique_tbc_grams,
-        unique_self_grams,
+    results['tbc_bleu'] = self.corpus_bleu(infill_sents, tbc_data)
+    results['wiki_bleu'] = self.corpus_bleu(infill_sents, wiki_data)
+    results['tbc_wiki_bleu'] = self.corpus_bleu(
+        infill_sents, tbc_data[:] + wiki_data[:]
     )
+
+    results['self_bleu'] = self.self_bleu(infill_sents)
+    max_n = 4
+
+    pct_uniques = self.ref_unique_ngrams(infill_sents, wiki_data, max_n)
+    for i in range(1, max_n + 1):
+      results['unique_wiki_%d_grams' % i] = pct_uniques[i]
+
+    pct_uniques = self.ref_unique_ngrams(infill_sents, tbc_data, max_n)
+    for i in range(1, max_n + 1):
+      results['unique_tbc_%d_grams' % i] = pct_uniques[i]
+
+    pct_uniques = self.self_unique_ngrams(infill_sents, max_n)
+    for i in range(1, max_n + 1):
+      results['unique_self_%d_grams' % i] = pct_uniques[i]
+    return results
 
 
 def build_evaluator(config):
