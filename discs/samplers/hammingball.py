@@ -52,19 +52,28 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     state['index'] = jnp.zeros(shape=(), dtype=jnp.int32)
     return state
 
+  def compute_u(self, rng, rad, x):
+    rng_ber, rng_int = random.split(rng)
+    indices_to_flip = random.bernoulli(
+        rng_ber, p=(rad / self.block_size), shape=[x.shape[0], self.block_size]
+    )
+    flipping_value = indices_to_flip * random.randint(
+        rng_int,
+        shape=x.shape,
+        minval=1,
+        maxval=self.num_categories,
+    )
+    u = (flipping_value + x) % self.num_categories
+    return u
+      
   def step(self, model, rng, x, model_param, state, x_mask=None):
     _ = x_mask
     x_shape = x.shape
     x = x.reshape(x.shape[0], -1)
-    b_idx = jnp.arange(x.shape[0])
     rad = jax.random.categorical(rng, self.hamming_logit)
     start_index = state['index']
     block = start_index + jnp.arange(self.block_size)
-    u = copy.deepcopy(x)
-    if rad:
-      rng_v = jax.random.split(rng, x.shape[0])
-      indices = self.choose_index_vmapped(rng_v, block, rad)
-      u[b_idx, block[indices]] = 1 - u[b_idx, block[indices]]
+    u = jnp.where(rad, self.compute_u(rng, rad, x), x)
 
     # Y = u.unsqueeze(1)
     # for j in range(self.hamming):
