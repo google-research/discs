@@ -43,7 +43,7 @@ def get_main_config():
     )
     config.experiment.update(co_exp_default_config.get_co_default_config())
     
-  if config.model.get('graph_type', None):
+  if config.model.get('bert_model', None):
     llm_exp_default_config = importlib.import_module(
         'discs.experiment.configs.llm_experiment'
     )

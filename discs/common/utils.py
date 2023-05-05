@@ -208,10 +208,10 @@ def get_datagen(config):
 def create_infill_dataset(
     data_root,
     tokenizer,
+    num_of_masks,
     num_of_sentences=10,
     min_length=10,
     max_length=20,
-    num_of_masks=4,
 ):
   """data_root: the directory where the datasets are stored (default: './text_infilling_data')
 

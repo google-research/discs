@@ -3,7 +3,7 @@ from ml_collections import config_dict
 
 def get_config():
   model_config = dict(
-      shape=(0,),
+      shape=(4,),
       num_categories=30522,
       name='text_infilling',
       bert_model='bert-base-uncased',
