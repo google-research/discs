@@ -4,15 +4,14 @@ import json
 import os
 import pdb
 from discs.common import utils
+from discs.common.customized_huggingface_flax_bert import FlaxBertForMaskedLM_Infilling
 from discs.models import abstractmodel
 import jax
-from jax import grad, jit, vmap
 from jax import random
 import jax.numpy as jnp
 import ml_collections
 import numpy as np
 from transformers import BertTokenizer, pipeline
-from .customized_huggingface_flax_bert import FlaxBertForMaskedLM_Infilling
 
 
 class TextInfilling(abstractmodel.AbstractModel):

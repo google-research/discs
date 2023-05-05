@@ -92,10 +92,10 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
       pct_unique[i] = n_unique / total
     return pct_unique
 
-  def evaluate(self, samples, model, params):
+  def evaluate(self, sentence, model, params):
     ### NOTE: evaluation and save results
     results = {}
-    results['infill_sents'] = infill_sents
+    results['infill_sents'] = [sentence]
     wiki103_file = os.path.join(
         self.config.experiment.data_root, 'wiki103_remove_infill.5k.txt'
     )

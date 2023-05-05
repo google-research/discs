@@ -302,7 +302,7 @@ class Sampling_Experiment(Experiment):
 
 
 class Text_Infilling_Experiment(Sampling_Experiment):
-  
+
   def get_results(self, model, sampler, evaluator, saver):
     while True:
       if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
@@ -379,17 +379,12 @@ class Text_Infilling_Experiment(Sampling_Experiment):
         hops.append(get_hop(x, new_x))
 
       x = new_x
-      
-    # chain generation
-    sampled_infill_tokens = x
-    sampled_infill_tokens = np.array(sampled_infill_tokens[0,0])
-
-    token_ids = params['tokenizer'](params['sentence'], return_tensors='np')['input_ids'][0]
-    real_infill_pos = [pos for pos in params['infill_pos']]
-    for i in range(len(real_infill_pos)):
-      token_ids[real_infill_pos[i]] = sampled_infill_tokens[i]
-    new_sent = tokenizer.decode(token_ids[1:-1])
-    res = evaluator.evaluate(new_sent)
+    sampled_infill_tokens = jnp.array(x[0, 0])
+    token_ids = params['token_type_ids'][0]
+    for i, infill_pos in enumerate(params['infill_pos']):
+      token_ids[infill_pos] = sampled_infill_tokens[i]
+    sampled_sentence = params['tokenizer'].decode(token_ids[1:-1])
+    res = obj_fn(sampled_sentence)
     saver.save_results(res)
 
 

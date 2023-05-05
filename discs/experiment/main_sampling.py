@@ -42,6 +42,13 @@ def get_main_config():
         'discs.experiment.configs.co_experiment'
     )
     config.experiment.update(co_exp_default_config.get_co_default_config())
+    
+  if config.model.get('graph_type', None):
+    llm_exp_default_config = importlib.import_module(
+        'discs.experiment.configs.llm_experiment'
+    )
+    config.experiment.update(llm_exp_default_config.get_llm_default_config())
+    
   return config
 
 
