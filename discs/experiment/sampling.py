@@ -384,6 +384,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
       x = new_x
     sampled_sentence = model.decode(x, params)
+    print("Sampled Sentence: ", sampled_sentence)
     res = evaluator.evaluate(sampled_sentence, self.config_model.data_root)
     saver.dump_dict(res)
 

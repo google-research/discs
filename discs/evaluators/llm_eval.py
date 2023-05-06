@@ -23,11 +23,11 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
 
   def prepare_wiki(self, data_file, uncased=True):
     replacements = {'@@unknown@@': '[UNK]'}
-    return prepare_data(data_file, replacements=replacements, uncased=uncased)
+    return self.prepare_data(data_file, replacements=replacements, uncased=uncased)
 
   def prepare_tbc(self, data_file):
     replacements = {'``': '"', "''": '"'}
-    return prepare_data(data_file, replacements=replacements)
+    return self.prepare_data(data_file, replacements=replacements)
 
   def corpus_bleu(self, generated, references):
     """Compute similarity between two corpora as measured by
@@ -94,7 +94,6 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
     return pct_unique
 
   def evaluate(self, sentence, data_root):
-    pdb.set_trace()
     ### NOTE: evaluation and save results
     results = {}
     results['infill_sents'] = [sentence]
