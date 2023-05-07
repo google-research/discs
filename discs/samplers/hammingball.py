@@ -18,7 +18,9 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     self.num_categories = config.model.num_categories
     self.hamming = config.sampler.hamming
     self.block_size = config.sampler.block_size
-    self.blockgibbs = blockgibbs.build_sampler(config)
+    config_bg = copy.deepcopy(config)
+    config_bg.block_size = self.hamming
+    self.blockgibbs = blockgibbs.build_sampler(config_bg)
     assert self.hamming <= self.block_size
     self.hamming_logit = [1.0]
     if self.num_categories == 2:
@@ -46,7 +48,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
 
   def make_init_state(self, rng):
     """Init sampler state."""
-    return self.blockgibbs.update_sampler_state(rng)
+    return self.blockgibbs.make_init_state(rng)
 
 
   def compute_u(self, rng, rad, x, block):

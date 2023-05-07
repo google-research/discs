@@ -20,7 +20,9 @@ def sort_dict(dictionary, x_labels):
   new_dict = {}
 
   for label in x_labels:
-    if label == 'a_randomwalk':
+    if label == 'hammingball':
+      updated_label = 'hb-10-1'
+    elif label == 'a_randomwalk':
       updated_label = 'rwm'
     elif label == 'blockgibbs':
       updated_label = 'bg-2'
@@ -98,9 +100,11 @@ def main(argv: Sequence[str]) -> None:
   color_map['gwg'] = 'red'
   color_map['bg-'] = 'orange'
   color_map['dma'] = 'purple'
+  color_map['hb-'] = 'blue'
   
-
+  
   x_labels = [
+      'hammingball',
       'blockgibbs',
       'a_randomwalk',
       'a_gwg(sqrt)',
