@@ -1,0 +1,2 @@
+sampler,model,num_categories,shape,ESS,ESS_M-H,ESS_T,ESS_EE,Time,batch_size,chain_length,ess_ratio
+a_randomwalk,ising,2,"(50, 50)",7.887518,0.00015775036,0.13740736,7.887518e-05,57.40244007110596,100,100000,0.5

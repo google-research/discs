@@ -46,12 +46,9 @@ class Ising(abstractmodel.AbstractModel):
     return params
 
   def get_init_samples(self, rnd, num_samples: int):
-    x0 = jax.random.randint(
+    x0 = jax.random.bernoulli(
         rnd,
         shape=(num_samples,) + self.shape,
-        minval=0,
-        maxval=2,
-        dtype=jnp.int32,
     )
     return x0
 

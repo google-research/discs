@@ -1,0 +1,35 @@
+Mean ESS: 14.869473457336426 
+ESS M-H Steps: 0.0002973894588649273 
+ESS over time: 1.6554162502288818 
+ESS over loglike calls: 7.434736471623182e-05 
+Running time: 8.982316970825195 s 
+experiment:
+  batch_size: 100
+  chain_length: 100000
+  ess_ratio: 0.5
+  evaluator: ess_eval
+  fig_folder: /gcs/xcloud-shared/kgoshvadi/results/discs/discs-categorical-sampler_sweep_56324581/17_sampler_config.name='gwg',model_config.init_sigma=1.5,model_config.num_categories=8,sampler_config.balancing_fn_type='SQRT'/logs/figures
+  get_additional_metrics: false
+  log_every_steps: 100
+  name: Sampling_Experiment
+  num_models: 1
+  plot_every_steps: 10
+  run_parallel: false
+  save_every_steps: 10000
+  save_root: /gcs/xcloud-shared/kgoshvadi/results/discs/discs-categorical-sampler_sweep_56324581/17_sampler_config.name='gwg',model_config.init_sigma=1.5,model_config.num_categories=8,sampler_config.balancing_fn_type='SQRT'
+  shuffle_buffer_size: 0
+  use_tqdm: false
+model:
+  data_root: sco
+  init_sigma: 1.5
+  name: categorical
+  num_categories: 8
+  save_dir_name: categorical_4
+  shape: !!python/tuple
+  - 2000
+sampler:
+  adaptive: true
+  balancing_fn_type: SQRT
+  name: gwg
+  num_flips: 1
+  target_acceptance_rate: 0.574

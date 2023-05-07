@@ -10,7 +10,7 @@ import numpy as np
 
 flags.DEFINE_string(
     'results_path',
-    './discs-ising-sampler_sweep_56214850',
+    './discs-categorical-sampler_sweep_56324581',
     'where results are being saved',
 )
 FLAGS = flags.FLAGS

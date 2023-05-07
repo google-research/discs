@@ -1,0 +1,36 @@
+Mean ESS: 1577.8040771484375 
+ESS M-H Steps: 0.031556081026792526 
+ESS over time: 177.6808624267578 
+ESS over loglike calls: 0.007889020256698132 
+Running time: 8.8799889087677 s 
+experiment:
+  batch_size: 100
+  chain_length: 100000
+  ess_ratio: 0.5
+  evaluator: ess_eval
+  fig_folder: /gcs/xcloud-shared/kgoshvadi/results/discs/discs-categorical-sampler_sweep_56324581/10_sampler_config.name='dmala',model_config.init_sigma=1.5,model_config.num_categories=8,sampler_config.balancing_fn_type='RATIO'/logs/figures
+  get_additional_metrics: false
+  log_every_steps: 100
+  name: Sampling_Experiment
+  num_models: 1
+  plot_every_steps: 10
+  run_parallel: false
+  save_every_steps: 10000
+  save_root: /gcs/xcloud-shared/kgoshvadi/results/discs/discs-categorical-sampler_sweep_56324581/10_sampler_config.name='dmala',model_config.init_sigma=1.5,model_config.num_categories=8,sampler_config.balancing_fn_type='RATIO'
+  shuffle_buffer_size: 0
+  use_tqdm: false
+model:
+  data_root: sco
+  init_sigma: 1.5
+  name: categorical
+  num_categories: 8
+  save_dir_name: categorical_4
+  shape: !!python/tuple
+  - 2000
+sampler:
+  adaptive: true
+  balancing_fn_type: RATIO
+  name: dmala
+  reset_z_est: 20
+  schedule_step: 100
+  target_acceptance_rate: 0.574

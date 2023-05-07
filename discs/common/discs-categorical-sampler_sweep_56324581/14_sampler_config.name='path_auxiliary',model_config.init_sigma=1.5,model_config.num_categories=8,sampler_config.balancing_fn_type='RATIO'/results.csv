@@ -1,0 +1,2 @@
+sampler,model,num_categories,shape,ESS,ESS_M-H,ESS_T,ESS_EE,Time,batch_size,chain_length,ess_ratio
+a_path_auxiliary(ratio),categorical,8,"(2000,)",2141.6846,0.04283369,118.88948,0.010708422,18.014080047607422,100,100000,0.5

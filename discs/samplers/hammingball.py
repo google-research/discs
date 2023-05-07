@@ -19,7 +19,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     self.hamming = config.sampler.hamming
     self.block_size = config.sampler.block_size
     config_bg = copy.deepcopy(config)
-    config_bg.block_size = self.hamming
+    config_bg.sampler.block_size = self.hamming
     self.blockgibbs = blockgibbs.build_sampler(config_bg)
     assert self.hamming <= self.block_size
     self.hamming_logit = [1.0]
@@ -35,21 +35,11 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       ]
     self.hamming_logit = jnp.array(self.hamming_logit + num_samples_per_hamming)
 
-    self.choose_index_vmapped = jax.vmap(
-        self.choose_index, in_axes=[0, None, None]
-    )
-
-  def choose_index(self, rng, arr, rad):
-    res = jax.random.choice(rng, arr, shape=(rad,), replace=False)
-    return res
-
   def update_sampler_state(self, sampler_state):
     return self.blockgibbs.update_sampler_state(sampler_state)
 
   def make_init_state(self, rng):
-    """Init sampler state."""
     return self.blockgibbs.make_init_state(rng)
-
 
   def compute_u(self, rng, rad, x, block):
     rng_ber, rng_int = random.split(rng)
@@ -62,9 +52,9 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
         minval=1,
         maxval=self.num_categories,
     )
-    u = x.at[:, block].set((x[:, block] + flipping_value)%self.num_categories)
+    u = x.at[:, block].set((x[:, block] + flipping_value) % self.num_categories)
     return u
-      
+
   def step(self, model, rng, x, model_param, state, x_mask=None):
     _ = x_mask
     x = x.reshape(x.shape[0], -1)
