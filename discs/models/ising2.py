@@ -4,7 +4,7 @@ from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
-
+import pdb
 
 class Ising(abstractmodel.AbstractModel):
   """Ising Distribution with Cyclic 2D Lattice."""
@@ -54,7 +54,7 @@ class Ising(abstractmodel.AbstractModel):
     ) * self.init_sigma
     for i in range(p):
       for j in range(p):
-        n_w[i, j] += self._weight((i, j), p, self.mu)
+        n_w = n_w.at[i, j].set( n_w[i, j] + self._weight((i, j), p, self.mu))
     params['e_w_h'] = -self.lambdaa * jnp.ones([p, p - 1])
     params['e_w_v'] = -self.lambdaa * jnp.ones([p - 1, p])
     params['n_w'] = n_w
@@ -98,17 +98,17 @@ class Ising(abstractmodel.AbstractModel):
   def forward(self, params, x):
     batch = x.shape[:-1]
     p = self.shape[0]
-    x = x.view(-1, p, p)
+    x = jnp.reshape(x, [-1, p, p])
     message = self.aggr(params, x)
     message = message / 2 + params['n_w']
-    return jnp.reshape(-jnp.sum((2 * x - 1) * message, axis=[-1, -2]), batch)
+    return -jnp.sum((2 * x - 1) * message, axis=[-1, -2])
 
   def aggr(self, params, x):
     message = jnp.zeros_like(x)
-    message[:, :-1, :] += (2 * x[:, 1:, :] - 1) * params['e_w_v']
-    message[:, 1:, :] += (2 * x[:, :-1, :] - 1) * params['e_w_v']
-    message[:, :, :-1] += (2 * x[:, :, 1:] - 1) * params['e_w_h']
-    message[:, :, 1:] += (2 * x[:, :, :-1] - 1) * params['e_w_h']
+    message = message.at[:, :-1, :].set(message[:, :-1, :] + (2 * x[:, 1:, :] - 1) * params['e_w_v'] )
+    message = message.at[:, 1:, :].set(message[:, 1:, :] + (2 * x[:, :-1, :] - 1) * params['e_w_v'] )
+    message = message.at[:, :, :-1].set(message[:, :, :-1] + (2 * x[:, :, 1:] - 1) * params['e_w_h'])
+    message = message.at[:, :, 1:].set( message[:, :, 1:] + (2 * x[:, :, :-1] - 1) * params['e_w_h'])
     return message
 
   def get_value_and_grad(self, params, x):
