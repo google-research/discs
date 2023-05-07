@@ -89,7 +89,7 @@ class Experiment:
       compiled_step = jax.jit(step_fn)
     else:
       compiled_step = jax.pmap(step_fn)
-    return step_fn #compiled_step
+    return compiled_step
 
   def _compile_evaluator(self, obj_fn):
     if not self.parallel:
