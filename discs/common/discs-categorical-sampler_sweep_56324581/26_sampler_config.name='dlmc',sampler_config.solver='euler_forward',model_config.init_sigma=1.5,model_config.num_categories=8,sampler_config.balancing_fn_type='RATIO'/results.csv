@@ -1,2 +1,0 @@
-sampler,model,num_categories,shape,ESS,ESS_M-H,ESS_T,ESS_EE,Time,batch_size,chain_length,ess_ratio
-a_dlmcf(ratio),categorical,8,"(2000,)",6385.527,0.12771054,594.95447,0.031927634,10.73279881477356,100,100000,0.5

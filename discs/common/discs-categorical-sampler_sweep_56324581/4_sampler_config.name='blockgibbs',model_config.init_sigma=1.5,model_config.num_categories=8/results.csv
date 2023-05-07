@@ -1,2 +1,0 @@
-sampler,model,num_categories,shape,ESS,ESS_M-H,ESS_T,ESS_EE,Time,batch_size,chain_length,ess_ratio
-blockgibbs,categorical,8,"(2000,)",47.660572,0.0009532114,0.18543461,1.4893928e-05,257.02090883255005,100,100000,0.5

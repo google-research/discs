@@ -1,2 +1,0 @@
-sampler,model,num_categories,shape,ESS,ESS_M-H,ESS_T,ESS_EE,Time,batch_size,chain_length,ess_ratio
-hammingball,categorical,4,"(2000,)",26.63144,0.0005326288,0.13280231,0.0001331572,200.5344684123993,100,100000,0.5

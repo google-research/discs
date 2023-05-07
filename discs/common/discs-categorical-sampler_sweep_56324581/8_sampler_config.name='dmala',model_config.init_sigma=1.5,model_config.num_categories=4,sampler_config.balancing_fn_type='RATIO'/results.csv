@@ -1,2 +1,0 @@
-sampler,model,num_categories,shape,ESS,ESS_M-H,ESS_T,ESS_EE,Time,batch_size,chain_length,ess_ratio
-a_dmala(ratio),categorical,4,"(2000,)",2095.3752,0.041907504,230.48553,0.010476876,9.091135740280151,100,100000,0.5

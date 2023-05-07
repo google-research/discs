@@ -1,2 +1,0 @@
-sampler,model,num_categories,shape,ESS,ESS_M-H,ESS_T,ESS_EE,Time,batch_size,chain_length,ess_ratio
-a_path_auxiliary(ratio),ising,2,"(50, 50)",64.77243,0.0012954486,0.99870926,0.00032386216,64.8561384677887,100,100000,0.5
