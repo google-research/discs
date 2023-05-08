@@ -15,6 +15,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
   """Random Walk Sampler Base Class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
+    self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
     self.hamming = config.sampler.hamming
     self.block_size = config.sampler.block_size
@@ -60,14 +61,17 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     return u
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
+    state_init = copy.deepcopy(state)
     _ = x_mask
+    x_shape = x.shape
     x = x.reshape(x.shape[0], -1)
     rad = jax.random.categorical(rng, self.hamming_logit)
     start_index = state['index']
     block = start_index + jnp.arange(self.block_size)
     u = jnp.where(rad, self.compute_u(rng, rad, x, block), x)
+    u = jnp.reshape(u, x_shape)
     new_x, _, acc = self.blockgibbs.step(model, rng, u, model_param, state)
-    new_state = self.update_sampler_state(state)
+    new_state = self.update_sampler_state(state_init)
     return new_x, new_state, acc
 
 
