@@ -35,6 +35,15 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       ]
     self.hamming_logit = jnp.array(self.hamming_logit + num_samples_per_hamming)
 
+
+  self.choose_index_vmapped = jax.vmap(
+        self.choose_index, in_axes=[0, None, None]
+    )
+
+  def choose_index(self, rng, arr, rad):
+    res = jax.random.choice(rng, arr, shape=(rad,), replace=False)
+    return res
+  
   def update_sampler_state(self, sampler_state):
     return self.blockgibbs.update_sampler_state(sampler_state)
 
@@ -58,9 +67,19 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
   def step(self, model, rng, x, model_param, state, x_mask=None):
     _ = x_mask
     x = x.reshape(x.shape[0], -1)
+    b_idx = jnp.arange(x.shape[0])
     rad = jax.random.categorical(rng, self.hamming_logit)
     start_index = state['index']
     block = start_index + jnp.arange(self.block_size)
+    rng_v = jax.random.split(rng, x.shape[0])
+    indices_flip = self.choose_index_vmapped(rng_v, block, rad)
+    indices = (jnp.zero_like(block)-1)
+    indices += indices_flip
+    u[b_idx, block[indices]] = 1 - u[b_idx, block[indices]]
+    
+  
+    
+    
     u = jnp.where(rad, self.compute_u(rng, rad, x, block), x)
     return self.blockgibbs.step(model, rng, u, model_param, state)
 
