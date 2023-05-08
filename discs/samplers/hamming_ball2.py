@@ -35,12 +35,17 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       ]
     self.hamming_logit = jnp.array(self.hamming_logit + num_samples_per_hamming)
 
+
+    self.choose_index_vmapped = jax.vmap(
+        self.choose_index, in_axes=[0, None, None]
+    )
+
+  def choose_index(self, rng, arr, rad):
+    res = jax.random.choice(rng, arr, shape=(rad,), replace=False)
+    return res
+  
   def update_sampler_state(self, sampler_state):
-    sampler_state = super().update_sampler_state(sampler_state)
-    dim = math.prod(self.sample_shape)
-    sampler_state['index'] = (sampler_state['index'] + self.block_size) % dim
-    sampler_state['num_ll_calls'] += (self.num_categories**self.block_size)
-    return sampler_state
+    return self.blockgibbs.update_sampler_state(sampler_state)
 
   def make_init_state(self, rng):
     return self.blockgibbs.make_init_state(rng)
@@ -62,13 +67,25 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
   def step(self, model, rng, x, model_param, state, x_mask=None):
     _ = x_mask
     x = x.reshape(x.shape[0], -1)
+    b_idx = jnp.arange(x.shape[0])
+    pdb.set_trace()
     rad = jax.random.categorical(rng, self.hamming_logit)
+    rad = 2
     start_index = state['index']
     block = start_index + jnp.arange(self.block_size)
-    u = jnp.where(rad, self.compute_u(rng, rad, x, block), x)
-    new_x, _, acc = self.blockgibbs.step(model, rng, u, model_param, state)
-    new_state = self.update_sampler_state(state)
-    return new_x, new_state, acc
+    rng_v = jax.random.split(rng, x.shape[0])
+    indices_flip = self.choose_index_vmapped(rng_v, block, self.hamming)
+    blocks = jnp.vstack([block] * x.shape[0])
+    mask = jnp.ones_like(blocks) * (-1)
+    indices = (mask.at[:, 0:indices_flip.shape[1]].set(indices_flip)).astype(jnp.int32)
+    indices = jnp.where( blocks < rad, indices, mask)
+    u = x.at[block[indices]].set( 1 - x[block[indices]] )
+    
+  
+    
+    
+    #u = jnp.where(rad, self.compute_u(rng, rad, x, block), x)
+    return self.blockgibbs.step(model, rng, u, model_param, state)
 
 
 def build_sampler(config):

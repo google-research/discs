@@ -92,7 +92,7 @@ class Ising(abstractmodel.AbstractModel):
     x0 = jax.random.bernoulli(
         rnd,
         shape=(num_samples,) + self.shape,
-    )
+    ).astype(jnp.int32)
     return x0
 
   def forward(self, params, x):
