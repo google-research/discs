@@ -1,7 +1,7 @@
 """Hamming Ball Sampler Class."""
 
-from itertools import product
 import copy
+from itertools import product
 import pdb
 from discs.common import math_util as math
 from discs.samplers import abstractsampler
@@ -37,7 +37,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     sampler_state = super().update_sampler_state(sampler_state)
     dim = math.prod(self.sample_shape)
     sampler_state['index'] = (sampler_state['index'] + self.block_size) % dim
-    sampler_state['num_ll_calls'] += (self.num_categories**self.block_size)
+    sampler_state['num_ll_calls'] += self.num_categories**self.hamming
     return sampler_state
 
   def make_init_state(self, rng):
@@ -60,7 +60,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     return u
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
-    rng1, rng2, rng2 = jax.split(rng)
+    rng1, rng2, rng3 = jax.random.split(rng, 3)
     state_init = copy.deepcopy(state)
     _ = x_mask
     x_shape = x.shape
@@ -70,8 +70,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     block = start_index + jnp.arange(self.block_size)
     u = jnp.where(rad, self.compute_u(rng2, rad, x, block), x)
     u = jnp.reshape(u, x_shape)
-    
-    
+
     def generate_new_samples(indices_to_flip, x):
       x_flatten = x.reshape(1, -1)
       y_flatten = jnp.repeat(
@@ -81,13 +80,15 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
           list(product(range(self.num_categories), repeat=self.block_size))
       )
       y_flatten = y_flatten.at[:, indices_to_flip].set(categories_iter)
-      mask = jnp.where( jnp.sum(y_flatten != x_flatten, axis=-1) <= hamming, 1, 0)
+      mask = jnp.where(
+          jnp.sum(y_flatten != x_flatten, axis=-1) <= self.hamming, 1, 0
+      )
       y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
       return y, mask
 
     def select_new_samples(mask, model_param, x, y, rnd_categorical):
       loglikelihood = model.forward(model_param, y)
-      loglikelihood += (1-mask) * (-1e10)
+      loglikelihood += (1 - mask) * (-1e10)
       selected_index = random.categorical(rnd_categorical, loglikelihood)
       x = jnp.take(y, selected_index, axis=0)
       x = x.reshape(self.sample_shape)
@@ -103,7 +104,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       )
       x = x.at[i].set(selected_sample)
       return (next_key, x, indices_to_flip, model_param)
-  
+
     init_val = (rng3, u, block, model_param)
     _, new_x, _, _ = jax.lax.fori_loop(0, x.shape[0], loop_body, init_val)
     new_state = self.update_sampler_state(state_init)
