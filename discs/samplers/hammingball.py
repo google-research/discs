@@ -72,23 +72,24 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     u = jnp.reshape(u, x_shape)
 
     def generate_new_samples(indices_to_flip, x):
-      x_flatten = x.reshape(1, -1)
-      y_flatten = jnp.repeat(
-          x_flatten, self.num_categories**self.block_size, axis=0
-      )
-      categories_iter = jnp.array(
-          list(product(range(self.num_categories), repeat=self.block_size))
-      )
-      y_flatten = y_flatten.at[:, indices_to_flip].set(categories_iter)
-      mask = jnp.where(
-          jnp.sum(y_flatten != x_flatten, axis=-1) <= self.hamming, 1, 0
-      )
-      y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
-      return y, mask
+      
+      def func(_, hamming_dist):
+        x_flatten = x.reshape(1, -1)
+        y_flatten = jnp.repeat(
+            x_flatten, self.num_categories**hamming_dist, axis=0
+        )
+        categories_iter = jnp.array(
+            list(product(range(self.num_categories), repeat=hamming_dist))
+        )
+        y_flatten = y_flatten.at[:, indices_to_flip].set(categories_iter)
+        y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
+        return None, y
+      
+      _, y_all = jax.lax.scan(func, None, jnp.arange(1, self.hamming))
+      return y_all
 
-    def select_new_samples(mask, model_param, x, y, rnd_categorical):
+    def select_new_samples(model_param, x, y, rnd_categorical):
       loglikelihood = model.forward(model_param, y)
-      loglikelihood += (1 - mask) * (-1e10)
       selected_index = random.categorical(rnd_categorical, loglikelihood)
       x = jnp.take(y, selected_index, axis=0)
       x = x.reshape(self.sample_shape)
@@ -97,10 +98,10 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     def loop_body(i, val):
       rng_key, x, indices_to_flip, model_param = val
       curr_sample = x[i]
-      y, mask = generate_new_samples(indices_to_flip, curr_sample)
+      y = generate_new_samples(indices_to_flip, curr_sample)      
       rnd_categorical, next_key = jax.random.split(rng_key)
       selected_sample = select_new_samples(
-          mask, model_param, curr_sample, y, rnd_categorical
+          model_param, curr_sample, y, rnd_categorical
       )
       x = x.at[i].set(selected_sample)
       return (next_key, x, indices_to_flip, model_param)
