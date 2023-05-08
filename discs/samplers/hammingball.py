@@ -73,8 +73,9 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
 
     def generate_new_samples(indices_to_flip, x):
       
-      def func(_, hamming_dist):
+      def loop_body(hamming_dist, val):
         pdb.set_trace()
+        x, cur_y = val
         x_flatten = x.reshape(1, -1)
         y_flatten = jnp.vstack( [x_flatten]*(self.num_categories**hamming_dist))
         categories_iter = jnp.array(
@@ -82,10 +83,12 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
         )
         y_flatten = y_flatten.at[:, indices_to_flip].set(categories_iter)
         y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
-        return None, y
+        all_y = jnp.concatenate((cur_y, y), axis=1)
+        return (x, all_y)
       
       pdb.set_trace()
-      _, y_all = jax.lax.scan(func, None, jnp.arange(0, 1 + self.hamming))
+      init_val = [x, x]
+      _, new_x, _, _ = jax.lax.fori_loop(1, self.hamming+1, loop_body, init_val)
       return y_all
 
     def select_new_samples(model_param, x, y, rnd_categorical):

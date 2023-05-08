@@ -18,8 +18,14 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     if not self.adaptive:
       return
     log_z = jnp.where(
-            cur_step < self.schedule_step, local_stats['log_z'], jnp.where(cur_step%self.reset_z_est == 0, local_stats['log_z'], state['log_z']))
-    
+        cur_step < self.schedule_step,
+        local_stats['log_z'],
+        jnp.where(
+            cur_step % self.reset_z_est == 0,
+            local_stats['log_z'],
+            state['log_z'],
+        ),
+    )
     # updating tau
     n = jnp.exp(state['log_tau'] + log_z)
     n = n + 3 * (acc - self.target_acceptance_rate)
