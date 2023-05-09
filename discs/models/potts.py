@@ -65,18 +65,17 @@ class Potts(abstractmodel.AbstractModel):
 
     loglikelihood = jnp.zeros((x.shape[0],) + self.shape)
     loglikelihood = loglikelihood.at[:, :, :-1].set(
-        loglikelihood[:, :, :-1] + x[:, :, :-1] * x[:, :, 1:] * w_h
+        loglikelihood[:, :, :-1] + x[:, :, 1:] * w_h
     )  # right
     loglikelihood = loglikelihood.at[:, :, 1:].set(
-        loglikelihood[:, :, 1:] + x[:, :, 1:] * x[:, :, :-1] * w_h
+        loglikelihood[:, :, 1:] + x[:, :, :-1] * w_h
     )  # left
     loglikelihood = loglikelihood.at[:, :-1, :].set(
-        loglikelihood[:, :-1, :] + x[:, :-1, :] * x[:, 1:, :] * w_v
+        loglikelihood[:, :-1, :] + x[:, 1:, :] * w_v
     )  # down
     loglikelihood = loglikelihood.at[:, 1:, :].set(
-        loglikelihood[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v
+        loglikelihood[:, 1:, :] + x[:, :-1, :] * w_v
     )  # up
-
     w_b = params[2]
     loglikelihood = loglikelihood / 2 + w_b
     loglike = x * loglikelihood
