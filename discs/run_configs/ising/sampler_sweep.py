@@ -27,6 +27,7 @@ def get_config():
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
+                      'gwg',
                   ],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [0.5],
@@ -37,6 +38,7 @@ def get_config():
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
+                      'gwg',
                   ],
                   'model_config.mu': [1],
                   'model_config.lambdaa': [1],
