@@ -14,7 +14,8 @@ def get_config():
                   'model_config.init_sigma': [0.5, 1.5],
                   'sampler_config.name': [
                       'randomwalk',
-                      'blockgibbs'
+                      'blockgibbs',
+                      'hammingball',
                   ],
               },
               {

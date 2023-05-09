@@ -8,17 +8,17 @@ def get_config():
 
   config = config_dict.ConfigDict(
       dict(
-          model='ising',
+          model='ising2',
           sampler='path_auxiliary',
           sweep=[
               {
-                  'sampler_config.name': ['randomwalk', 'blockgibbs', 'hammingball'],
+                  'sampler_config.name': ['randomwalk', 'blockgibbs'],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [0.5],
                   'model_config.init_sigma': [1.5],
               },
               {
-                  'sampler_config.name': ['randomwalk', 'blockgibbs', 'hammingball'],
+                  'sampler_config.name': ['randomwalk', 'blockgibbs'],
                   'model_config.mu': [1],
                   'model_config.lambdaa': [1],
                   'model_config.init_sigma': [3],
@@ -27,6 +27,7 @@ def get_config():
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
+                      'gwg',
                   ],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [0.5],
@@ -37,6 +38,7 @@ def get_config():
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
+                      'gwg',
                   ],
                   'model_config.mu': [1],
                   'model_config.lambdaa': [1],

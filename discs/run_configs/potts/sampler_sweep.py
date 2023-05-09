@@ -14,7 +14,8 @@ def get_config():
               {
                   'sampler_config.name': [
                       'randomwalk',
-                      'blockgibbs'
+                      'blockgibbs',
+                      'hammingball',
                   ],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [1],
