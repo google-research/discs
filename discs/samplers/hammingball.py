@@ -33,6 +33,14 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       ]
     self.hamming_logit = jnp.array(self.hamming_logit + num_samples_per_hamming)
 
+    self.choose_index_vmapped = jax.vmap(
+        self.choose_index, in_axes=[0, None]
+    )
+
+  def choose_index(self, rng, arr):
+    res = jax.random.choice(rng, arr, shape=(1,), replace=False)
+    return res
+
   def update_sampler_state(self, sampler_state):
     sampler_state = super().update_sampler_state(sampler_state)
     dim = math.prod(self.sample_shape)
@@ -45,18 +53,21 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     state['index'] = jnp.zeros(shape=(), dtype=jnp.int32)
     return state
 
-  def compute_u(self, rng, rad, x, block):
-    rng_ber, rng_int = random.split(rng)
-    indices_to_flip = random.bernoulli(
-        rng_ber, p=(rad / self.block_size), shape=[x.shape[0], self.block_size]
-    )
-    flipping_value = indices_to_flip * random.randint(
+  def compute_u(self, rng, x, block):
+    rng_spl, rng_int = random.split(rng)
+    flipping_value = random.randint(
         rng_int,
-        shape=[x.shape[0], self.block_size],
+        shape=[x.shape[0]],
         minval=1,
         maxval=self.num_categories,
     )
-    u = x.at[:, block].set((x[:, block] + flipping_value) % self.num_categories)
+    rng_v = jax.random.split(rng_spl, x.shape[0])
+    flip_index = self.choose_index_vmapped(rng_v, block)
+    flip_index = jnp.reshape(flip_index, [-1])
+    b_idx = jnp.arange(x.shape[0])
+    u = x.at[b_idx, flip_index].set(
+        (x[b_idx, flip_index] + flipping_value) % self.num_categories
+    )
     return u
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
@@ -68,7 +79,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     rad = jax.random.categorical(rng1, self.hamming_logit)
     start_index = state['index']
     block = start_index + jnp.arange(self.block_size)
-    u = jnp.where(rad, self.compute_u(rng2, rad, x, block), x)
+    u = jnp.where(rad, self.compute_u(rng2, x, block), x)
     u = jnp.reshape(u, x_shape)
 
     def generate_new_samples(indices_to_flip, x):
