@@ -46,8 +46,10 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
 
   def set_z(self, log_rates):
     if self.num_categories > 2:
+      log_rates = log_rates.reshape(log_rates.shape[0], -1, self.num_categories)
       log_z = jnp.mean(jnp.sum(jnp.exp(log_rates), axis=[-2, -1]))
     else:
+      log_rates = log_rates.reshape(log_rates.shape[0], -1)
       log_z = jnp.mean(jnp.sum(jnp.exp(log_rates), axis=[-1]))
     return log_z
 
@@ -55,8 +57,6 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     log_z = jnp.log(self.set_z(log_rates))
     log_tau = math.log(3.0) - log_z
     return {'log_tau': log_tau, 'log_z': log_z}
-  
-  self.Z = log_weight_x.exp().sum(dim=[-1, -2]).mean()
 
   def get_value_and_rates(self, model, model_param, x):
     ll_x, grad_x = model.get_value_and_grad(model_param, x)
