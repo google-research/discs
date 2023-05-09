@@ -15,7 +15,6 @@ class Potts(abstractmodel.AbstractModel):
     self.num_categories = config.num_categories
     self.shape = self.sample_shape + (self.num_categories,)
     self.mu = config.mu
-    self.external_field_type = config.external_field_type
     self.init_sigma = config.init_sigma
 
   def inner_or_outter(self, n, shape):
@@ -27,29 +26,24 @@ class Potts(abstractmodel.AbstractModel):
   def make_init_params(self, rnd):
     params = {}
     # connectivity strength
-    params_weight_h = self.lambdaa * jnp.ones(self.shape)
-    params_weight_v = self.lambdaa * jnp.ones(self.shape)
+    params_weight_h = -self.lambdaa * jnp.ones(self.shape)
+    params_weight_v = -self.lambdaa * jnp.ones(self.shape)
+    params_b = (
+        2 * jax.random.uniform(rnd, shape=self.shape) - 1
+    ) * self.init_sigma
+    indices = jnp.indices(self.shape)
+    inner_outter = self.mu * jnp.where(
+        (indices[0] / self.shape[0] - 0.5) ** 2
+        + (indices[1] / self.shape[1] - 0.5) ** 2
+        < 0.5 / jnp.pi,
+        1,
+        -1,
+    )
 
-    if self.external_field_type == 1:
-      params_b = (
-          2 * jax.random.uniform(rnd, shape=self.shape) - 1
-      ) * self.init_sigma
-      indices = jnp.indices(self.shape)
-      inner_outter = self.mu * jnp.where(
-          (indices[0] / self.shape[0] - 0.5) ** 2
-          + (indices[1] / self.shape[1] - 0.5) ** 2
-          < 0.5 / jnp.pi,
-          1,
-          -1,
-      )
-
-      params_b += inner_outter
-      params_b = -1 * params_b
-      params['params'] = jnp.array([params_weight_h, params_weight_v, params_b])
-      return params
-
-    params['params'] = jnp.array([params_weight_h, params_weight_v])
+    params_b += inner_outter
+    params['params'] = jnp.array([params_weight_h, params_weight_v, params_b])
     return params
+
 
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
@@ -83,12 +77,12 @@ class Potts(abstractmodel.AbstractModel):
         loglikelihood[:, 1:, :] + x[:, 1:, :] * x[:, :-1, :] * w_v
     )  # up
 
-    if self.external_field_type == 1:
-      w_b = params[2]
-      loglikelihood += w_b * x
-
-    return jnp.sum((loglikelihood).reshape(x.shape[0], -1), axis=-1)
-
+    w_b = params[2]
+    loglikelihood = loglikelihood / 2 + w_b
+    loglike = x * loglikelihood
+    loglike = loglike.reshape(x.shape[0], -1)
+    return -jnp.sum(loglike, axis=-1)
+  
   def get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
