@@ -87,7 +87,8 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
           (y_flatten[b_idx, indices_to_flip] + categories_iter)
           % self.num_categories
       )
-      return y_flatten
+      y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
+      return y
 
     def select_new_samples(model_param, x, y, rnd_categorical):
       loglikelihood = model.forward(model_param, y)
@@ -100,7 +101,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       rng_key, x, indices_to_flip, model_param = val
       curr_sample = x[i]
       y = generate_new_samples(indices_to_flip, curr_sample)
-      y_all = jnp.concatenate([curr_sample, y], axis=0)
+      y_all = jnp.concatenate([jnp.array([curr_sample]), y], axis=0)
       rnd_categorical, next_key = jax.random.split(rng_key)
       selected_sample = select_new_samples(
           model_param, curr_sample, y_all, rnd_categorical
