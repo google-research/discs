@@ -26,9 +26,8 @@ class Potts(abstractmodel.AbstractModel):
   def make_init_params(self, rnd):
     params = {}
     # connectivity strength
-    p = self.sample_shape[0]
-    params_weight_h = -self.lambdaa * jnp.ones([p, p - 1, self.num_categories])
-    params_weight_v = -self.lambdaa * jnp.ones([p - 1, p, self.num_categories])
+    params_weight_h = -self.lambdaa * jnp.ones(self.shape)
+    params_weight_v = -self.lambdaa * jnp.ones(self.shape)
 
     params_b = (
         2 * jax.random.uniform(rnd, shape=self.shape) - 1
@@ -61,10 +60,10 @@ class Potts(abstractmodel.AbstractModel):
     params = params['params']
     if len(x.shape) - 1 == len(self.sample_shape):
       x = jax.nn.one_hot(x, self.num_categories)
-    w_h = params[0]
-    w_v = params[1]
+    w_h = params[0][:, :-1, :]
+    w_v = params[1][:-1, :, :]
 
-    loglikelihood = jnp.zeros((x.shape[0],) + self.shape)
+    loglikelihood = jnp.zeros_like(x)
     loglikelihood = loglikelihood.at[:, :, :-1].set(
         loglikelihood[:, :, :-1] + x[:, :, 1:] * w_h
     )  # right
