@@ -18,19 +18,21 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     if not self.adaptive:
       return
     if self.reset_z_est > 0:
-      log_z = jnp.where(
-          cur_step % self.reset_z_est == 0, local_stats['log_z'], state['log_z']
-      )
+      log_z = jnp.where(cur_step % self.reset_z_est == 0,
+                        local_stats['log_z'], state['log_z'])
     else:
-      log_z = jnp.where(cur_step == 1, local_stats['log_z'], state['log_z'])
-    # TODO: add scheduling of logz_ema
+      log_z = jnp.where(
+          cur_step == 1, local_stats['log_z'], state['log_z'])
+    #TODO: add scheduling of logz_ema
     logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
-    log_z = (logs_ema * log_z) + ((1 - logs_ema) * local_stats['log_z'])
+    log_z = (logs_ema * log_z) + ( (1 - logs_ema)*local_stats['log_z'])
+    
     # updating tau
     n = jnp.exp(state['log_tau'] + log_z)
     n = n + 3 * (acc - self.target_acceptance_rate)
     state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
     state['log_z'] = log_z
+
 
   def select_sample(
       self, rng, local_stats, log_acc, current_sample, new_sample, sampler_state
@@ -43,14 +45,18 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     return y, new_state
 
   def set_z(self, log_rates):
-    axis = jnp.arange(len(log_rates.shape)) - len(log_rates.shape)[1:]
-    log_z = jnp.mean(jnp.sum(jnp.exp(log_rates), axis=axis))
+    if self.num_categories > 2:
+      log_z = jnp.mean(jnp.sum(jnp.exp(log_rates), axis=[-2, -1]))
+    else:
+      log_z = jnp.mean(jnp.sum(jnp.exp(log_rates), axis=[-1]))
     return log_z
 
   def reset_stats(self, log_rates):
     log_z = jnp.log(self.set_z(log_rates))
     log_tau = math.log(3.0) - log_z
     return {'log_tau': log_tau, 'log_z': log_z}
+  
+  self.Z = log_weight_x.exp().sum(dim=[-1, -2]).mean()
 
   def get_value_and_rates(self, model, model_param, x):
     ll_x, grad_x = model.get_value_and_grad(model_param, x)
@@ -137,11 +143,10 @@ class CategoricalDMALA(DMALASampler):
     log_posterior_x -= jnp.log(
         jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
     )
-    log_posterior_x = log_posterior_x * (1 - x) + x * jnp.log1p(
-        -jnp.clip(
-            jnp.sum(jnp.exp(log_posterior_x) * (1 - x), axis=-1, keepdims=True),
-            a_max=1 - 1e-12,
-        )
+    log_posterior_x = (
+        log_posterior_x * (1 - x) + x * jnp.log1p(
+            -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
+                              axis=-1, keepdims=True), a_max=1-1e-12))
     )
     return log_posterior_x
 
