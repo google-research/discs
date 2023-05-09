@@ -17,15 +17,16 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     state['num_ll_calls'] += 4
     if not self.adaptive:
       return
-    log_z = jnp.where(
-        cur_step < self.schedule_step,
-        local_stats['log_z'],
-        jnp.where(
-            cur_step % self.reset_z_est == 0,
-            local_stats['log_z'],
-            state['log_z'],
-        ),
-    )
+    if self.reset_z_est > 0:
+      log_z = jnp.where(cur_step % self.reset_z_est == 0,
+                        local_stats['log_z'], state['log_z'])
+    else:
+      log_z = jnp.where(
+          cur_step == 1, local_stats['log_z'], state['log_z'])
+    #TODO: add scheduling of logz_ema
+    logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
+    log_z = (logs_ema * log_z) + ( (1 - logs_ema)*local_stats['log_z'])
+    
     # updating tau
     n = jnp.exp(state['log_tau'] + log_z)
     n = n + 3 * (acc - self.target_acceptance_rate)
@@ -69,7 +70,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.get('schedule_step', 100)
-    self.reset_z_est = config.sampler.get('reset_z_est', 20)
+      self.reset_z_est = config.sampler.get('reset_z_est', 20)
 
   def make_init_state(self, rng):
     state = super().make_init_state(rng)
@@ -138,6 +139,11 @@ class CategoricalDMALA(DMALASampler):
     log_posterior_x = log_posterior_x * (1 - x)
     log_posterior_x -= jnp.log(
         jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
+    )
+    log_posterior_x = (
+        log_posterior_x * (1 - x) + x * jnp.log1p(
+            -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
+                              axis=-1, keepdims=True), a_max=1-1e-12))
     )
     return log_posterior_x
 
