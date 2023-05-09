@@ -17,7 +17,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
-    self.hamming = config.sampler.hamming
+    self.hamming = 1  # config.sampler.hamming
     self.block_size = config.sampler.block_size
     assert self.hamming <= self.block_size
     self.hamming_logit = [1.0]
@@ -70,54 +70,21 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     block = start_index + jnp.arange(self.block_size)
     u = jnp.where(rad, self.compute_u(rng2, rad, x, block), x)
     u = jnp.reshape(u, x_shape)
-    
-    
-    def generate_new_samples(indices_to_flip, x, hamming_dist):
+
+    def generate_new_samples(indices_to_flip, x):
       x_flatten = x.reshape(1, -1)
       y_flatten = jnp.repeat(
-          x_flatten, self.num_categories**hamming_dist, axis=0
+          x_flatten, self.num_categories * self.block_size, axis=0
       )
-      categories_iter = jnp.array(
-          list(product(range(self.num_categories), repeat=hamming_dist))
+      indices_to_flip = jnp.repeat(indices_to_flip, self.num_categories, axis=0)
+      categories_iter = jnp.tile(
+          jnp.arange(self.num_categories), self.block_size
       )
-      print(categories_iter)
-      print(indices_to_flip)
-      y_flatten = y_flatten.at[:, indices_to_flip].set(categories_iter)
-      return y_flatten
-    
-    def create_all_hammings(x, hamming_dist, indices_to_flip):
-
-      fn_ll(None, indices):
-        y = generate_new_samples(indices, x, hamming_dist)
-        return None, y      
-      all_indices = jnp.array(list(combinations(indices_to_flip, hamming_dist)) )
-      _, all_y = jax.lax.scan(fn_ll, None, all_indices)
-      return all_y
-    
-    
-    def get_all_neighs(x, indices_to_flip):
-      
-      def loop_body(hamming_dist, val):
-        all_y, indices_to_flip = val
-        y = create_all_hammings(x, hamming_dist, indices_to_flip)
-        all_y = jnp.concatenate([all_y, y], axis=0)
-        return all_y    
-      
-      init_val = [x, indices_to_flip]
-      all_y = jax.lax.fori_loop(1, self.hamming_dist+1, loop_body, init_val)
-      return all_y
-
-    def loop_body(i, val):
-      rng_key, x, indices_to_flip, model_param = val
-      curr_sample = x[i]
-      y = get_all_neighs(curr_sample, indices_to_flip)
-      pdb.set_trace()
-      rnd_categorical, next_key = jax.random.split(rng_key)
-      selected_sample = select_new_samples(
-          model_param, curr_sample, y, rnd_categorical
-      )
-      x = x.at[i].set(selected_sample)
-      return (next_key, x, indices_to_flip, model_param)
+      y_flatten = y_flatten.at[
+          jnp.arange(y_flatten.shape[0]), indices_to_flip
+      ].set(categories_iter)
+      y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
+      return y
 
     def select_new_samples(model_param, x, y, rnd_categorical):
       loglikelihood = model.forward(model_param, y)
@@ -125,7 +92,18 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
       x = jnp.take(y, selected_index, axis=0)
       x = x.reshape(self.sample_shape)
       return x
-    
+
+    def loop_body(i, val):
+      rng_key, x, indices_to_flip, model_param = val
+      curr_sample = x[i]
+      y = generate_new_samples(indices_to_flip, curr_sample)
+      rnd_categorical, next_key = jax.random.split(rng_key)
+      selected_sample = select_new_samples(
+          model_param, curr_sample, y, rnd_categorical
+      )
+      x = x.at[i].set(selected_sample)
+      return (next_key, x, indices_to_flip, model_param)
+
     init_val = (rng3, u, block, model_param)
     _, new_x, _, _ = jax.lax.fori_loop(0, x.shape[0], loop_body, init_val)
     new_state = self.update_sampler_state(state_init)
