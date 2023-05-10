@@ -297,7 +297,9 @@ class Sampling_Experiment(Experiment):
 
   def _get_mapped_samples(self, samples, x0_ess):
     samples = samples.reshape((-1,) + self.config_model.shape)
+    samples = samples.reshape(samples.shape[0], -1)
     x0_ess = x0_ess.reshape((-1,) + self.config_model.shape)
+    x0_ess = x0_ess.reshape(x0_ess.shape[0], -1)
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
 
 

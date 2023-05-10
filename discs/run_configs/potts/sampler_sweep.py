@@ -14,31 +14,25 @@ def get_config():
               {
                   'sampler_config.name': [
                       'randomwalk',
-                      'blockgibbs'
+                      'blockgibbs',
+                      'hammingball',
                   ],
-                  'model_config.mu': [0.5],
-                  'model_config.lambdaa': [1],
-                  'model_config.sigma': [1.5, 3],
+                  'model_config.num_categories': [4, 8],
               },
               {
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
-                      'dlmc',
                       'gwg',
                   ],
-                  'model_config.mu': [0.5],
-                  'model_config.lambdaa': [1],
-                  'model_config.sigma': [1.5, 3],
+                  'model_config.num_categories': [4, 8],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
                   'sampler_config.name': [
                       'dlmc',
                   ],
-                  'model_config.mu': [0.5],
-                  'model_config.lambdaa': [1],
-                  'model_config.sigma': [1.5, 3],
+                  'model_config.num_categories': [4, 8],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
               },

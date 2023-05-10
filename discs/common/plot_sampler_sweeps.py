@@ -10,7 +10,7 @@ import numpy as np
 
 flags.DEFINE_string(
     'results_path',
-    './Sampling_Experiment_56199929',
+    './discs-categorical-sampler_sweep_56430662',
     'where results are being saved',
 )
 FLAGS = flags.FLAGS
@@ -20,7 +20,9 @@ def sort_dict(dictionary, x_labels):
   new_dict = {}
 
   for label in x_labels:
-    if label == 'a_randomwalk':
+    if label == 'hammingball':
+      updated_label = 'hb-10-1'
+    elif label == 'a_randomwalk':
       updated_label = 'rwm'
     elif label == 'blockgibbs':
       updated_label = 'bg-2'
@@ -98,9 +100,11 @@ def main(argv: Sequence[str]) -> None:
   color_map['gwg'] = 'red'
   color_map['bg-'] = 'orange'
   color_map['dma'] = 'purple'
+  color_map['hb-'] = 'blue'
   
-
+  
   x_labels = [
+      'hammingball',
       'blockgibbs',
       'a_randomwalk',
       'a_gwg(sqrt)',
