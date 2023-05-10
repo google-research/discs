@@ -135,12 +135,18 @@ class Saver:
   def dump_results(self, trajectory):
     root_path = os.path.join(self.save_dir, self.config.sampler.name)
     if not os.path.isdir(root_path):
-        os.makedirs(root_path)
+      os.makedirs(root_path)
     path = os.path.join(root_path, 'results.pkl')
     results = {}
     results['best_ratio'] = jnp.array(trajectory)
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
+    csv_path = f'{self.save_dir}/results.csv'
+    with open(f'{root_path}/results.csv', 'w') as csvfile:
+      writer = csv.DictWriter(csvfile, fieldnames=list(results.keys()))
+      writer.writeheader()
+      writer.writerow(results)
+      csvfile.close()
 
 def build_saver(save_dir, config):
   return Saver(save_dir, config)
