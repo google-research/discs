@@ -7,15 +7,14 @@ def get_config():
   """Get config for er benchmark graphs."""
   exp_config = dict(
       experiment=dict(
-          num_models=128,
-          batch_size=32,
+          batch_size=8,
           t_schedule='exp_decay',
-          chain_length=50000,
+          chain_length=500000,
           log_every_steps=100,
           save_every_steps=100,
           init_temperature=1,
-          decay_rate=0.01,
-          final_temperature=0.0001,
+          decay_rate=0.005,
+          final_temperature=0.0000001,
           save_root='',
       )
   )
