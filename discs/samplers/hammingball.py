@@ -17,9 +17,8 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
-    self.hamming = 1  # config.sampler.hamming
     self.block_size = config.sampler.block_size
-    assert self.hamming <= self.block_size
+    self.hamming = 1
     self.hamming_logit = [1.0]
     if self.num_categories == 2:
       num_samples_per_hamming = [
@@ -32,10 +31,7 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
           for j in range(self.hamming)
       ]
     self.hamming_logit = jnp.array(self.hamming_logit + num_samples_per_hamming)
-
-    self.choose_index_vmapped = jax.vmap(
-        self.choose_index, in_axes=[0, None]
-    )
+    self.choose_index_vmapped = jax.vmap(self.choose_index, in_axes=[0, None])
 
   def choose_index(self, rng, arr):
     res = jax.random.choice(rng, arr, shape=(1,), replace=False)
@@ -45,7 +41,9 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     sampler_state = super().update_sampler_state(sampler_state)
     dim = math.prod(self.sample_shape)
     sampler_state['index'] = (sampler_state['index'] + self.block_size) % dim
-    sampler_state['num_ll_calls'] += self.num_categories**self.hamming
+    sampler_state['num_ll_calls'] += (self.num_categories - 1) * (
+        self.block_size
+    ) + 1
     return sampler_state
 
   def make_init_state(self, rng):
