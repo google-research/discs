@@ -1,17 +1,17 @@
 """Potts Energy Function."""
 
 import functools
+import os
+import pdb
+import pickle
 from typing import Any
 from discs.models import deepenergmodel
+import flax
 from flax import linen as nn
 from flax.linen import initializers
 import jax
 import jax.numpy as jnp
 import ml_collections
-import os
-import pickle
-import flax
-import pdb
 
 
 class NNBinary(nn.Module):
@@ -73,7 +73,7 @@ class NNCategorical(nn.Module):
     pass
 
 
-class RBM(deepenergmodel.DeepEBM):  
+class RBM(deepenergmodel.DeepEBM):
   """RBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
@@ -91,7 +91,9 @@ class RBM(deepenergmodel.DeepEBM):
     self.data_mean = data_mean
 
   def get_init_samples(self, rng, num_samples: int):
-    return self.init_dist(key=rng, shape=(num_samples, self.num_visible)).astype(jnp.int32)
+    return self.init_dist(
+        key=rng, shape=(num_samples, self.num_visible)
+    ).astype(jnp.int32)
 
   def make_init_params(self, rng):
     if self.params:
@@ -159,6 +161,7 @@ class CategoricalRBM(RBM):
   def build_init_dist(self, data_mean):
     if data_mean is None:
       pass
+
 
 def build_model(config):
   config_model = config.model
