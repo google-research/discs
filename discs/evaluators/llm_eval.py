@@ -109,7 +109,8 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
         infill_sents, tbc_data[:] + wiki_data[:]
     )
 
-    results['self_bleu'] = self.self_bleu(infill_sents)
+    if len(infill_sents) > 1:
+      results['self_bleu'] = self.self_bleu(infill_sents)
     max_n = 4
 
     pct_uniques = self.ref_unique_ngrams(infill_sents, wiki_data, max_n)

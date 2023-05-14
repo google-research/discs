@@ -126,7 +126,7 @@ class Experiment:
   def get_results(self, model, sampler, evaluator, saver):
     self._get_chains_and_evaluations(model, sampler, evaluator, saver)
 
-  def _get_chains_and_evaluations(self, model, sampler, evaluator, saver):
+  def _get_chains_and_evaluations(self, model, sampler, evaluator, saver, rnd_key=0):
     """Sets up the model and the samlping alg and gets the chain of samples."""
     (
         model_init_params_fn,
@@ -134,7 +134,7 @@ class Experiment:
         step_fn,
         obj_fn,
     ) = self._get_vmapped_functions(sampler, model, evaluator)
-    rnd = jax.random.PRNGKey(0)
+    rnd = jax.random.PRNGKey(rnd_key)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
@@ -307,9 +307,18 @@ class Sampling_Experiment(Experiment):
 class Text_Infilling_Experiment(Sampling_Experiment):
 
   def get_results(self, model, sampler, evaluator, saver):
+    rnd_key = 0
+    infill_sents = []
     while True:
-      if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
+      res = self._get_chains_and_evaluations(model, sampler, evaluator, saver, rnd_key = rnd_key)
+      rnd_key += 1
+      if not res:
         break
+      else:
+        infill_sents.append(res)
+    pdb.set_trace()
+    res = evaluator.evaluate(res, self.config_model.data_root)
+    saver.dump_dict(res)
 
   def _compute_chain(
       self,
@@ -385,8 +394,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       x = new_x
     sampled_sentence = model.decode(x, params)
     print("Sampled Sentence: ", sampled_sentence)
-    res = evaluator.evaluate(sampled_sentence, self.config_model.data_root)
-    saver.dump_dict(res)
+    return sampled_sentence
 
 
 class CO_Experiment(Experiment):
