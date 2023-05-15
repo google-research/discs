@@ -126,8 +126,7 @@ class Experiment:
   def get_results(self, model, sampler, evaluator, saver):
     self._get_chains_and_evaluations(model, sampler, evaluator, saver)
 
-  def _get_chains_and_evaluations(self, model, sampler, evaluator, saver, rnd_key=0):
-    """Sets up the model and the samlping alg and gets the chain of samples."""
+  def preprocess(self, model, sampler, evaluator, saver, rnd_key=0):
     (
         model_init_params_fn,
         sampler_init_state_fn,
@@ -140,12 +139,12 @@ class Experiment:
     )
     if params is None:
       print('Params is NONE')
-      return False, _
+      return False
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
     )
     compiled_fns = self._compile_fns(step_fn, obj_fn)
-    res = self._compute_chain(
+    return (
         compiled_fns,
         state,
         params,
@@ -156,9 +155,21 @@ class Experiment:
         evaluator,
         fn_reshape,
         breshape,
-        model
+        model,
     )
-    return True, res
+
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, saver, rnd_key=0
+  ):
+    """Sets up the model and the samlping alg and gets the chain of samples."""
+
+    preprocessed_info = self.preprocess(
+        model, sampler, evaluator, saver, rnd_key=0
+    )
+    if len(preprocessed_info) == 1:
+      return False
+    self._compute_chain(*preprocessed_info)
+    return True
 
   def _get_hop(self, x, new_x):
     return (
@@ -206,7 +217,7 @@ class Sampling_Experiment(Experiment):
       evaluator,
       fn_reshape,
       bshape,
-      model
+      model,
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
@@ -310,14 +321,38 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     rnd_key = 0
     infill_sents = []
     while True:
-      contin, res = self._get_chains_and_evaluations(model, sampler, evaluator, saver, rnd_key = rnd_key)
+      contin, res = self._get_chains_and_evaluations(
+          model, sampler, evaluator, saver, rnd_key=rnd_key
+      )
       if res:
-        infill_sents.append(res)
+        infill_sents.extend(res)
       rnd_key += 1
       if rnd_key == 2 or not contin:
         break
     res = evaluator.evaluate(infill_sents, self.config_model.data_root)
     saver.dump_dict(res)
+
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, saver, rnd_key=0
+  ):
+    preprocessed_info = self.preprocess(
+        model, sampler, evaluator, saver, rnd_key=0
+    )
+    if len(preprocessed_info) == 1:
+      return False, _
+
+    def body_fun(_, val):
+      preprocessed_info, sentences = val
+      sent, rng = self._compute_chain(*preprocessed_info)
+      preprocessed_info = preprocessed_info.at[3].set(rng)
+      sentences.append(sent)
+      return (preprocessed_info, sentences)
+
+    init_val = (preprocessed_info, [])
+    _, sentences = jax.lax.fori_loop(
+        0, self.config.num_same_resample, body_fun, init_val
+    )
+    return True, sentences
 
   def _compute_chain(
       self,
@@ -331,7 +366,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       evaluator,
       fn_reshape,
       bshape,
-      model
+      model,
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
@@ -342,7 +377,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
         running_time,
     ) = self._initialize_chain_vars()
 
-    stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
+    stp_burnin, stp_mixing, get_hop, _ = compiled_fns
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
     for step in tqdm.tqdm(range(1, burn_in_length)):
@@ -392,8 +427,8 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
       x = new_x
     sampled_sentence = model.decode(x, params)
-    print("Sampled Sentence: ", sampled_sentence)
-    return sampled_sentence
+    print('Sampled Sentence: ', sampled_sentence)
+    return sampled_sentence, rng
 
 
 class CO_Experiment(Experiment):
@@ -404,8 +439,7 @@ class CO_Experiment(Experiment):
 
   def get_results(self, model, sampler, evaluator, saver):
     while True:
-      contin, res = self._get_chains_and_evaluations(model, sampler, evaluator, saver)
-      if not contin:
+      if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
         break
 
   def _initialize_model_and_sampler(
@@ -536,7 +570,7 @@ class CO_Experiment(Experiment):
           saved_sample = new_x[chosen_sample_idx]
           saver.dump_sample(
               saved_sample, step, self.config_model.get('visualize', False)
-              )
+          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
