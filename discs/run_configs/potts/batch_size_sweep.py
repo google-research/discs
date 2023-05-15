@@ -1,5 +1,3 @@
-"""Config for maxclique twitter."""
-
 from ml_collections import config_dict
 
 
@@ -8,12 +6,12 @@ def get_config():
 
   config = config_dict.ConfigDict(
       dict(
-          model='maxclique',
-          sampler='path_auxiliary',
-          graph_type='twitter',
+          model='potts',
+          sampler='dlmc',
           sweep=[
               {
-                  'config.experiment.chain_length': [1000, 800, 500],
+                  'config.experiment.batch_size': [4, 8, 128, 512, 1024],
+                  'sampler_config.balancing_fn_type': ['SQRT'],
               },
           ],
       )

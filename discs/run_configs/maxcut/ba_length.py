@@ -22,6 +22,7 @@ def get_config():
                       50000,
                   ],
                   'model_config.cfg_str': ['r-ba-4-n-1024-1100'],
+                  'config.experiment.log_every_steps': [100],
               },
           ],
       )

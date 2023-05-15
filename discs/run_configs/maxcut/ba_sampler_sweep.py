@@ -19,6 +19,8 @@ def get_config():
                       'hammingball',
                   ],
                   'model_config.cfg_str': ['r-ba-4-n-1024-1100'],
+                  'config.experiment.log_every_steps': [100],
+                  
               },
               {
                   'sampler_config.name': [
@@ -28,6 +30,8 @@ def get_config():
                   ],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
                   'model_config.cfg_str': ['r-ba-4-n-1024-1100'],
+                  'config.experiment.log_every_steps': [100],
+                  
               },
               {
                   'sampler_config.name': [
@@ -36,6 +40,8 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
                   'model_config.cfg_str': ['r-ba-4-n-1024-1100'],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
+                  'config.experiment.log_every_steps': [100],
+                  
               },
           ],
       )

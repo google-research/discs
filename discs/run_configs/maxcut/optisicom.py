@@ -15,6 +15,8 @@ def get_config():
               {
                   'config.experiment.num_models': [10],
                   'config.experiment.batch_size': [16],
+                  'config.experiment.log_every_steps': [100],
+                  
               },
           ],
       )

@@ -18,6 +18,7 @@ def get_config():
               'config.experiment.chain_length': [800000],
               'config.experiment.init_temperature': [2, 5],
               'model_config.tolerance': [0.045, 0.048, 0.05, 0.052],
+              'config.experiment.log_every_steps': [100],
               'model_config.cfg_str': [
                   'r-INCEPTION',
                   'r-VGG',

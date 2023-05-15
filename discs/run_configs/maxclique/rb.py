@@ -24,6 +24,7 @@ def get_config():
                       5001,
                   ],
                   'config.experiment.init_temperature': [1.0, 0.5],
+                  'config.experiment.log_every_steps': [100],
               },
           ],
       )

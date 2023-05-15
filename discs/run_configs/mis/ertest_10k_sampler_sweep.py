@@ -20,6 +20,7 @@ def get_config():
                   ],
                   'model_config.cfg_str': ['r-10k'],
                   'config.experiment.log_every_steps': [100],
+                  
               },
               {
                   'sampler_config.name': [

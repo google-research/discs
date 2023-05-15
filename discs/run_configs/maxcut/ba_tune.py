@@ -21,6 +21,8 @@ def get_config():
                   ],
                   'config.experiment.decay_rate': [0.01, 0.1],
                   'config.experiment.init_temperature': [0.1, 0.5, 1],
+                  'config.experiment.log_every_steps': [100],
+                  
               },
           ],
       )

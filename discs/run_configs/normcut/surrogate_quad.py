@@ -19,6 +19,7 @@ def get_config():
               'config.experiment.batch_size': [32],
               'config.experiment.chain_length': [800000],
               'model_config.penalty': [0.0005, 0.001],
+              'config.experiment.log_every_steps': [100],
               'config.experiment.init_temperature': [2, 5]},
           {
               'model_config.cfg_str': 'r-RESNET',
@@ -28,6 +29,7 @@ def get_config():
               'config.experiment.batch_size': [32],
               'config.experiment.chain_length': [800000],
               'model_config.penalty': [0.0005, 0.001],
+              'config.experiment.log_every_steps': [100],
               'config.experiment.init_temperature': [2, 5]}
       ]
   ))
