@@ -140,12 +140,12 @@ class Experiment:
     )
     if params is None:
       print('Params is NONE')
-      return False
+      return False, _
     params, x, state, fn_reshape, breshape = self._prepare_data(
         params, x, state
     )
     compiled_fns = self._compile_fns(step_fn, obj_fn)
-    self._compute_chain(
+    res = self._compute_chain(
         compiled_fns,
         state,
         params,
@@ -158,7 +158,7 @@ class Experiment:
         breshape,
         model
     )
-    return True
+    return True, res
 
   def _get_hop(self, x, new_x):
     return (
@@ -310,14 +310,13 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     rnd_key = 0
     infill_sents = []
     while True:
-      res = self._get_chains_and_evaluations(model, sampler, evaluator, saver, rnd_key = rnd_key)
-      rnd_key += 1
-      if not res:
-        break
-      else:
+      contin, res = self._get_chains_and_evaluations(model, sampler, evaluator, saver, rnd_key = rnd_key)
+      if res:
         infill_sents.append(res)
-    pdb.set_trace()
-    res = evaluator.evaluate(res, self.config_model.data_root)
+      rnd_key += 1
+      if rnd_key == 2 or not contin:
+        break
+    res = evaluator.evaluate(infill_sents, self.config_model.data_root)
     saver.dump_dict(res)
 
   def _compute_chain(
@@ -405,7 +404,8 @@ class CO_Experiment(Experiment):
 
   def get_results(self, model, sampler, evaluator, saver):
     while True:
-      if not self._get_chains_and_evaluations(model, sampler, evaluator, saver):
+      contin, res = self._get_chains_and_evaluations(model, sampler, evaluator, saver)
+      if not contin:
         break
 
   def _initialize_model_and_sampler(

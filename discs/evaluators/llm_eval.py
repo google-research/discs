@@ -93,10 +93,10 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
       pct_unique[i] = n_unique / total
     return pct_unique
 
-  def evaluate(self, sentence, data_root):
+  def evaluate(self, sentences, data_root):
     ### NOTE: evaluation and save results
     results = {}
-    results['infill_sents'] = [sentence]
+    results['infill_sents'] = sentences
     wiki103_file = os.path.join(data_root, 'wiki103_remove_infill.5k.txt')
     tbc_file = os.path.join(data_root, 'tbc_remove_infill.5k.txt')
     wiki_data = self.prepare_wiki(wiki103_file)
@@ -111,7 +111,8 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
 
     if len(infill_sents) > 1:
       results['self_bleu'] = self.self_bleu(infill_sents)
-    max_n = 4
+    
+    max_n = self.config.max_n
 
     pct_uniques = self.ref_unique_ngrams(infill_sents, wiki_data, max_n)
     for i in range(1, max_n + 1):
