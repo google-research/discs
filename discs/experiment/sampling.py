@@ -144,7 +144,7 @@ class Experiment:
         params, x, state
     )
     compiled_fns = self._compile_fns(step_fn, obj_fn)
-    return (
+    return [
         compiled_fns,
         state,
         params,
@@ -156,7 +156,7 @@ class Experiment:
         fn_reshape,
         breshape,
         model,
-    )
+        ]
 
   def _get_chains_and_evaluations(
       self, model, sampler, evaluator, saver, rnd_key=0
@@ -341,17 +341,22 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     if len(preprocessed_info) == 1:
       return False, _
 
-    def body_fun(_, val):
-      preprocessed_info, sentences = val
+    def body_fun(i, val):
+      pdb.set_trace()
+      sentences, preprocces_info =  val
       sent, rng = self._compute_chain(*preprocessed_info)
       preprocessed_info = preprocessed_info.at[3].set(rng)
       sentences.append(sent)
-      return (preprocessed_info, sentences)
-
-    init_val = (preprocessed_info, [])
-    _, sentences = jax.lax.fori_loop(
-        0, self.config.num_same_resample, body_fun, init_val
-    )
+      return (sentence, preprocessed_info) 
+    #init_val = ([], preprocessed_info)
+    #_ = jax.lax.fori_loop(
+    #    0, self.config.num_same_resample, body_fun, init_val
+    #)
+    sentences = []
+    for _ in range(self.config.num_same_resample):
+      sent, rng = self._compute_chain(*preprocessed_info)
+      preprocessed_info[3] = rng
+      sentences.append(sent)
     return True, sentences
 
   def _compute_chain(
