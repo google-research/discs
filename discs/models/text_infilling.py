@@ -46,6 +46,7 @@ class TextInfilling(abstractmodel.AbstractModel):
         config.bert_model
     )
     self.mask_token = 103
+    self.random_init_sample = config.random_init_sample
 
   def decode(self, x, params):
     sampled_infill_tokens = jnp.array(x[0, 0])
@@ -80,28 +81,31 @@ class TextInfilling(abstractmodel.AbstractModel):
         num_samples == 1
     )  ### currently only works with one sentence at a time
 
-    ### NOTE: random init
-    # x0 = jax.random.randint(
-    #    rnd,
-    #    shape=(num_samples,) + self.shape,
-    #    minval=0,
-    #    maxval=self.num_categories,
-    #    dtype=jnp.int32,
-    # )
-
-    ### NOTE: max init
-    mask_dummy_array = jnp.zeros((1, len(self.infill_pos), self.num_categories))
-    mask_dummy_array = mask_dummy_array.at[:, :, self.mask_token].set(1.0)
-    outputs = self.model(
-        input_ids=self.input_ids,
-        infill_one_hots=mask_dummy_array,
-        infill_pos=self.infill_pos,
-        attention_mask=self.attention_mask,
-        token_type_ids=self.token_type_ids,
-    )
-    logits = outputs.logits
-    infill_logits = logits[:, self.infill_pos, :]
-    x0 = jnp.argmax(infill_logits, axis=-1)
+    if self.random_init_sample:
+      ### NOTE: random init
+      x0 = jax.random.randint(
+          rnd,
+          shape=(num_samples,) + self.shape,
+          minval=0,
+          maxval=self.num_categories,
+          dtype=jnp.int32,
+      )
+    else:
+      ### NOTE: max init
+      mask_dummy_array = jnp.zeros(
+          (1, len(self.infill_pos), self.num_categories)
+      )
+      mask_dummy_array = mask_dummy_array.at[:, :, self.mask_token].set(1.0)
+      outputs = self.model(
+          input_ids=self.input_ids,
+          infill_one_hots=mask_dummy_array,
+          infill_pos=self.infill_pos,
+          attention_mask=self.attention_mask,
+          token_type_ids=self.token_type_ids,
+      )
+      logits = outputs.logits
+      infill_logits = logits[:, self.infill_pos, :]
+      x0 = jnp.argmax(infill_logits, axis=-1)
 
     return x0
 

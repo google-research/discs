@@ -8,6 +8,7 @@ def get_config():
       name='text_infilling',
       bert_model='bert-base-uncased',
       data_root='./text_infilling_data/',
+      random_init_sample=False,
   )
   model_config['save_dir_name'] = 'text_infilling_'+str(model_config['num_categories'])  
   return config_dict.ConfigDict(model_config)
