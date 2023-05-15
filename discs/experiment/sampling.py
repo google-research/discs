@@ -341,13 +341,13 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     if len(preprocessed_info) == 1:
       return False, _
 
-    def body_fun(i, val):
-      pdb.set_trace()
-      sentences, preprocces_info =  val
-      sent, rng = self._compute_chain(*preprocessed_info)
-      preprocessed_info = preprocessed_info.at[3].set(rng)
-      sentences.append(sent)
-      return (sentence, preprocessed_info) 
+    # def body_fun(i, val):
+    #   pdb.set_trace()
+    #   sentences, preprocces_info =  val
+    #   sent, rng = self._compute_chain(*preprocessed_info)
+    #   preprocessed_info = preprocessed_info.at[3].set(rng)
+    #   sentences.append(sent)
+    #   return (sentence, preprocessed_info) 
     #init_val = ([], preprocessed_info)
     #_ = jax.lax.fori_loop(
     #    0, self.config.num_same_resample, body_fun, init_val
