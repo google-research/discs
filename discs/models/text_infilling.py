@@ -18,19 +18,25 @@ from transformers import BertTokenizer, pipeline
 class TextInfilling(abstractmodel.AbstractModel):
   """Categorical Distribution."""
 
-  def load_dataset(self, data_root, tokenizer, num_of_masks):
-    if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
+  def load_dataset(
+      self, config: ml_collections.ConfigDict, tokenizer, num_of_masks
+  ):
+    if not os.path.exists(
+        os.path.join(config.data_root, 'infilling_task.json')
+    ):
       print('Dataset not found! Generating dataset first')
       utils.create_infill_dataset(
-          data_root,
+          config.data_root,
           tokenizer,
           num_of_masks,
-          num_of_sentences=10,
-          min_length=15,
-          max_length=25,
+          num_of_sentences=config.num_of_sentences,
+          min_length=config.min_sentence_len,
+          max_length=config.max_sentence_len,
       )
     with open(
-        os.path.join(data_root, 'infilling_task.json'), 'r', encoding='utf-8'
+        os.path.join(config.data_root, 'infilling_task.json'),
+        'r',
+        encoding='utf-8',
     ) as f:
       infill_dataset = json.load(f)
     return iter(infill_dataset)
@@ -38,9 +44,7 @@ class TextInfilling(abstractmodel.AbstractModel):
   def __init__(self, config: ml_collections.ConfigDict):
     self.tokenizer = BertTokenizer.from_pretrained(config.bert_model)
     num_of_mask = config.shape[0]
-    self.infill_dataset = self.load_dataset(
-        config.data_root, self.tokenizer, num_of_mask
-    )
+    self.infill_dataset = self.load_dataset(config, self.tokenizer, num_of_mask)
     self.num_categories = config.num_categories  ### for bert: 30522
     self.model = FlaxBertForMaskedLM_Infilling.from_pretrained(
         config.bert_model
