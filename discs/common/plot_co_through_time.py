@@ -22,6 +22,7 @@ GRAPHLABEL = flags.DEFINE_string('graphlabel', 'sampler', 'title of the graph')
 
 FLAGS = flags.FLAGS
 
+DEFAULT_SAMPLER = 'dlmc(s)'
 
 def get_diff_key(key_diff, dict1, dict2):
   if key_diff in dict1 and key_diff in dict2:
@@ -62,6 +63,8 @@ def get_clusters_key_based(key, results_dict_list):
 
 def plot_results_keybased(key, results_dict_list):
   results_index_cluster = get_clusters_key_based(key, results_dict_list)
+  if not results_index_cluster:
+    results_index_cluster = [np.arange(len(results_dict_list))]
   print(results_index_cluster)
   for num, cluster in enumerate(results_index_cluster):
     plot_graph_cluster(num, key, results_dict_list, cluster)
@@ -142,7 +145,7 @@ def plot_graph_cluster(num, key, dict_results, indeces):
     keys = dict_labels.keys()
     keys = [int(x) for x in keys]
     if key == 'chain_length':
-      keys = keys * int(dict_results[index]['log_every_steps'])
+      keys = keys * int(dict_results[index]['results']['log_every_steps'])
     keys = sorted(keys)
     sorted_keys = [str(x) for x in keys]
   dict_labels = {key_d: dict_labels[key_d] for key_d in sorted_keys}
@@ -226,15 +229,20 @@ def get_experiment_config(exp_config):
     key_value = str.split(split, '=')
     if len(key_value) == 2:
       key, value = key_value
-      value = value[1:-1]
+      if value[0] == "'":
+        value = value[1:-1]
       if key != 'cfg_str':
         keys.append(str.split(key, '.')[-1])
         values.append(value)
   keys.append('cfg_str')
   idx = exp_config.find('cfg_str')
-  string = str.split(exp_config[len('cfg_str') + idx + 4 :], "'")[0]
-  method = str.split(string, ',')[0]
-  values.append(method)
+  if idx != -1:
+    string = str.split(exp_config[len('cfg_str') + idx + 4 :], "'")[0]
+    method = str.split(string, ',')[0]
+    values.append(method)
+  else:
+    values.append(DEFAULT_SAMPLER)
+    
   return dict(zip(keys, values))
 
 
@@ -247,12 +255,15 @@ def main(argv) -> None:
   folders = sorted(folders)
   for subfolder in folders:
     subfolderpath = os.path.join(FLAGS.gcs_results_path, subfolder)
-    if subfolder[1] == '_' or subfolder[2] == '_':
+    # if subfolder[1] == '_' or subfolder[2] == '_':
+    if True:
       results_path = os.path.join(subfolderpath, 'results.pkl')
       experiment_result = get_experiment_config(subfolder)
-      # print(experiment_result)
+      print(experiment_result)
+      print("*******")
       experiment_result = process_keys(experiment_result)
       print(experiment_result)
+      print("######")
       experiment_result['results'] = {}
       if os.path.exists(results_path):
         results = pickle.load(open(results_path, 'rb'))

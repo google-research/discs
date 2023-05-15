@@ -26,6 +26,7 @@ def get_config():
                       'MAX',
                       'MIN',
                   ],
+                  'sampler_config.name': ['dlmc'],
               },
           ],
       )

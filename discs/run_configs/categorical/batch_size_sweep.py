@@ -12,6 +12,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [4, 8, 128, 512, 1024],
                   'sampler_config.balancing_fn_type': ['SQRT'],
+                  'model_config.init_sigma': [1.5],
+                  'model_config.num_categories': [4, 8],
+                  'sampler_config.name': ['dlmc'],
               },
           ],
       )

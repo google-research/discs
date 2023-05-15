@@ -21,8 +21,8 @@ FLAGS = flags.FLAGS
 
 def get_diff_key(key_diff, dict1, dict2):
   if key_diff in dict1 and key_diff in dict2:
-      if dict1[key_diff] == dict2[key_diff]:
-        return False
+    if dict1[key_diff] == dict2[key_diff]:
+      return False
   else:
     return False
   for key in dict1.keys():
@@ -60,6 +60,7 @@ def plot_results(results_index_cluster, results_dict_list, key):
   for num, cluster in enumerate(results_index_cluster):
     plot_graph_cluster(num, results_dict_list, cluster, key)
 
+
 def plot_graph_cluster(num, dict_results, indeces, key_diff):
   result_keys = dict_results[0]['results'].keys()
   for key in result_keys:
@@ -71,8 +72,8 @@ def plot_graph_cluster(num, dict_results, indeces, key_diff):
     xticks = []
     for i, index in enumerate(indeces):
       value = float(dict_results[index]['results'][key])
-      xticks.append( str(dict_results[index][key_diff]) )
-      print("Valueeueeeeeee: ", float(value))
+      xticks.append(str(dict_results[index][key_diff]))
+      print('Valueeueeeeeee: ', float(value))
       if FLAGS.evaluation_type == 'ess':
         plt.yscale('log')
         plt.bar(x_poses[i], value, width=bar_width)
@@ -81,12 +82,15 @@ def plot_graph_cluster(num, dict_results, indeces, key_diff):
         value = value - 1.0 - threshold
         plt.ylim([0.98, 1.02])
         plt.bar(x_poses[i], value, width=bar_width, bottom=1)
-        
+
     plt.xticks(x_poses, xticks)
     plt.grid()
     plt.show()
-    plt.savefig(FLAGS.gcs_results_path + f'/{key_diff}.png', bbox_inches='tight')
-  
+    plt.savefig(
+        FLAGS.gcs_results_path + f'/{key_diff}.png', bbox_inches='tight'
+    )
+
+
 def get_diff_key(key_diff, dict1, dict2):
   if key_diff in dict1 and key_diff in dict2:
     if dict1[key_diff] == dict2[key_diff]:
@@ -101,6 +105,7 @@ def get_diff_key(key_diff, dict1, dict2):
     if dict1[key] != dict2[key] and key != key_diff:
       return None
   return True
+
 
 def get_clusters_key_based(key, results_dict_list):
   results_index_cluster = []
@@ -122,23 +127,26 @@ def get_clusters_key_based(key, results_dict_list):
 
   return results_index_cluster
 
+
 def get_experiment_config(exp_config):
+  exp_config = exp_config[1 + exp_config.find('_') :]
   keys = []
   values = []
   splits = str.split(exp_config, ',')
   for split in splits:
     key_value = str.split(split, '=')
-    if len(key_value) == 2:
-      key, value = key_value
+    # if len(key_value) == 2:
+    key, value = key_value
+    if value[0] == "'":
       value = value[1:-1]
-      if key != 'cfg_str':
-        keys.append(str.split(key, '.')[-1])
-        values.append(value)
-  keys.append('cfg_str')
-  idx = exp_config.find('cfg_str')
-  string = str.split(exp_config[len('cfg_str') + idx + 4 :], "'")[0]
-  method = str.split(string, ',')[0]
-  values.append(method)
+    # if key != 'cfg_str':
+    keys.append(str.split(key, '.')[-1])
+    values.append(value)
+  # keys.append('cfg_str')
+  # idx = exp_config.find('cfg_str')
+  # string = str.split(exp_config[len('cfg_str') + idx + 4 :], "'")[0]
+  # method = str.split(string, ',')[0]
+  # values.append(method)
   return dict(zip(keys, values))
 
 
@@ -152,21 +160,22 @@ def process_keys(dict_o_keys):
       dict_o_keys['name'] = 'rmwl'
     elif dict_o_keys['name'] == 'path_auxiliary':
       dict_o_keys['name'] = 'pafs'
-        
+
   if 'solver' in dict_o_keys:
     if dict_o_keys['solver'] == 'euler_forward':
-      dict_o_keys['name'] = str(dict_o_keys['name'])+"f"
+      dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
     del dict_o_keys['solver']
   if 'balancing_fn_type' in dict_o_keys:
-    if  dict_o_keys['balancing_fn_type'] == 'SQRT':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + "(s)"
-    elif  dict_o_keys['balancing_fn_type'] == 'RATIO':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + "(r)" 
-    elif  dict_o_keys['balancing_fn_type'] == 'MIN':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + "(min)" 
-    elif  dict_o_keys['balancing_fn_type'] == 'MAX':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + "(max)" 
-    del dict_o_keys['balancing_fn_type']
+    if 'name' in dict_o_keys:
+      if dict_o_keys['balancing_fn_type'] == 'SQRT':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)'
+      elif dict_o_keys['balancing_fn_type'] == 'RATIO':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
+      elif dict_o_keys['balancing_fn_type'] == 'MIN':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
+      elif dict_o_keys['balancing_fn_type'] == 'MAX':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(max)'
+      del dict_o_keys['balancing_fn_type']
   return dict_o_keys
 
 
@@ -176,11 +185,17 @@ def main(argv) -> None:
 
   experiments_results = []
   folders = os.listdir(FLAGS.gcs_results_path)
+  folders = sorted(folders)
   for folder in folders:
     if folder[1] == '_' or folder[2] == '_':
       subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
       res_dic = get_experiment_config(folder)
+      print(res_dic)
+      print('******************')
       res_dic = process_keys(res_dic)
+      print(res_dic)
+      print('******************')
+
       filename = os.path.join(subfolderpath, 'results.csv')
       filename = open(filename, 'r')
       # creating dictreader object
@@ -188,7 +203,6 @@ def main(argv) -> None:
       results = {}
       for col in file:
         if FLAGS.evaluation_type == 'ess':
-          results['sampler'] = col['sampler']
           results['ess_ee'] = float(col['ESS_EE']) * 50000
           results['ess_clock'] = float(col['ESS_T'])
         else:
@@ -196,7 +210,6 @@ def main(argv) -> None:
           # results['running_time'] = col['running_time']
       res_dic['results'] = results
       experiments_results.append(res_dic)
-  pdb.set_trace()
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
   print(FLAGS.key, results_index_cluster)
   plot_results(results_index_cluster, experiments_results, FLAGS.key)
