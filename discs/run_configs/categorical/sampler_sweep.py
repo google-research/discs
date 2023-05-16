@@ -1,5 +1,3 @@
-"""Config for rb job."""
-
 from ml_collections import config_dict
 
 
