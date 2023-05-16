@@ -340,9 +340,12 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     )
     if len(preprocessed_info) == 1:
       return False, _
-
-    compute_chain_vmapped = jax.vmap(self._compute_chain, in_axes=3)
-    preprocessed_info[3] = jax.random.split(rng_param, self.config.num_same_resample)
+    pdb.set_trace()
+    rnd_index = 3
+    vmapped_axis = [None]*len(preprocessed_info)
+    vmapped_axis[rnd_index] = rnd_index
+    compute_chain_vmapped = jax.vmap(self._compute_chain, in_axes=vmapped_axis)
+    preprocessed_info[rnd_index] = jax.random.split(preprocessed_info[rnd_index], self.config.num_same_resample)
     sentences = compute_chain_vmapped(*preprocessed_info)
     return True, sentences
 
