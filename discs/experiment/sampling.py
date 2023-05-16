@@ -145,10 +145,10 @@ class Experiment:
     )
     compiled_fns = self._compile_fns(step_fn, obj_fn)
     return [
+        rnd,
         compiled_fns,
         state,
         params,
-        rnd,
         x,
         x0_ess,
         saver,
@@ -180,10 +180,10 @@ class Experiment:
 
   def _compute_chain(
       self,
+      rng,
       compiled_fns,
       state,
       params,
-      rng,
       x,
       x0_ess,
       saver,
@@ -207,10 +207,10 @@ class Sampling_Experiment(Experiment):
 
   def _compute_chain(
       self,
+      rng,
       compiled_fns,
       state,
       params,
-      rng,
       x,
       x0_ess,
       saver,
@@ -341,7 +341,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     if len(preprocessed_info) == 1:
       return False, _
     pdb.set_trace()
-    rnd_index = 3
+    rnd_index = 0
     vmapped_axis = [None]*len(preprocessed_info)
     vmapped_axis[rnd_index] = rnd_index
     compute_chain_vmapped = jax.vmap(self._compute_chain, in_axes=vmapped_axis)
@@ -351,10 +351,10 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
   def _compute_chain(
       self,
+      rng,
       compiled_fns,
       state,
       params,
-      rng,
       x,
       x0_ess,
       saver,
@@ -473,10 +473,10 @@ class CO_Experiment(Experiment):
 
   def _compute_chain(
       self,
+      rng,
       compiled_fns,
       state,
       params,
-      rng,
       x,
       x0_ess,
       saver,
