@@ -63,14 +63,23 @@ def plot_results(results_index_cluster, results_dict_list, key):
 
 def plot_graph_cluster(num, dict_results, indeces, key_diff):
   result_keys = dict_results[0]['results'].keys()
-  for key in result_keys:
+  for key in result_keys:    
     f = plt.figure()
     f.set_figwidth(12)
     f.set_figheight(4)
     bar_width = 0.15
     x_poses = 0.5 * np.arange(len(indeces))
     xticks = []
+    save_title_set = False
     for i, index in enumerate(indeces):
+      # computing graph name config-based
+      if not save_title_set:
+        graph_save = ''
+        for key_dict, val_dict in dict_results[index].items():
+          if key_dict not in [key_diff, 'results']:
+            graph_save += str(key_dict) + '=' + str(val_dict) + ','
+        save_title_set = True
+      
       value = float(dict_results[index]['results'][key])
       xticks.append(str(dict_results[index][key_diff]))
       print('Valueeueeeeeee: ', float(value))
@@ -87,7 +96,7 @@ def plot_graph_cluster(num, dict_results, indeces, key_diff):
     plt.grid()
     plt.show()
     plt.savefig(
-        FLAGS.gcs_results_path + f'/{key_diff}.png', bbox_inches='tight'
+        FLAGS.gcs_results_path + f'/{key}_{key_diff}_based_{graph_save}.png', bbox_inches='tight'
     )
 
 
@@ -135,10 +144,10 @@ def get_experiment_config(exp_config):
   splits = str.split(exp_config, ',')
   for split in splits:
     key_value = str.split(split, '=')
-    # if len(key_value) == 2:
-    key, value = key_value
-    if value[0] == "'":
-      value = value[1:-1]
+    if len(key_value) == 2:
+      key, value = key_value
+      if value[0] == "'":
+        value = value[1:-1]
     # if key != 'cfg_str':
     keys.append(str.split(key, '.')[-1])
     values.append(value)
@@ -190,8 +199,8 @@ def main(argv) -> None:
     if folder[1] == '_' or folder[2] == '_':
       subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
       res_dic = get_experiment_config(folder)
-      print(res_dic)
-      print('******************')
+      # print(res_dic)
+      # print('******************')
       res_dic = process_keys(res_dic)
       print(res_dic)
       print('******************')

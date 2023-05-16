@@ -19,6 +19,13 @@ graphkey=init_temperature
 graphtitle='init_temp'
 graphlabel='init_temp'
 
+
+experiment_folder=discs-mis-ertest_10k_sampler_sweep_56643607
+graphtype=mis
+graphkey=name
+graphtitle='Sampler'
+graphlabel='sampler'
+
 data_path="./${experiment_folder}"
 
 python -m plot_co_through_time \

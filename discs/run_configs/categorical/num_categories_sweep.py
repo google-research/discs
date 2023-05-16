@@ -14,6 +14,8 @@ def get_config():
               {
                   'model_config.num_categories': [4, 8, 16, 32],
                   'sampler_config.balancing_fn_type': ['SQRT'],
+                  'model_config.init_sigma': [1.5],
+                  'sampler_config.name': ['dlmc'],
               },
           ],
       )
