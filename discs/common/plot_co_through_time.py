@@ -169,12 +169,10 @@ def plot_graph_cluster(num, key, dict_results, indeces):
   plt.xticks(fontsize=16)
   plt.yticks(fontsize=16)
   plt.xlabel('Steps', fontsize=16)
-  if GRAPHTYPE.value == 'MIS':
+  if GRAPHTYPE.value == 'mis':
     plt.ylabel('Size of Independent Set', fontsize=16)
-  if GRAPHTYPE.value == 'MAXCUT':
+  if GRAPHTYPE.value == 'maxcut':
     plt.ylabel('Ratio \u03B1', fontsize=16)
-  if GRAPHTYPE.value == 'TSP':
-    plt.ylabel('Negative Tour Length', fontsize=16)
   ax = plt.gca()
   ax.set_axisbelow(True)
   for item in (

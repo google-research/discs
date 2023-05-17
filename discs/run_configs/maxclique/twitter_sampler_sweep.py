@@ -6,9 +6,9 @@ def get_config():
 
   config = config_dict.ConfigDict(
       dict(
-          model='maxcut',
+          model='maxclique',
           sampler='path_auxiliary',
-          graph_type='optsicom',
+          graph_type='twitter',
           sweep=[
               {
                   'sampler_config.name': [

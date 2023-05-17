@@ -1,5 +1,3 @@
-"""Config for ba job."""
-
 from ml_collections import config_dict
 
 
@@ -18,30 +16,29 @@ def get_config():
                       'blockgibbs',
                       'hammingball',
                   ],
-                  'model_config.cfg_str': ['r-ba-4-n-1024-1100'],
+                  'model_config.cfg_str': [
+                      'r-ba-4-n-1024-1100',
+                      'r-ba-4-n-512-600',
+                      'r-ba-4-n-256-300',
+                  ],
                   'config.experiment.log_every_steps': [100],
-                  
               },
               {
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
                       'gwg',
-                  ],
-                  'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
-                  'model_config.cfg_str': ['r-ba-4-n-1024-1100'],
-                  'config.experiment.log_every_steps': [100],
-                  
-              },
-              {
-                  'sampler_config.name': [
                       'dlmc',
                   ],
-                  'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
-                  'model_config.cfg_str': ['r-ba-4-n-1024-1100'],
-                  'sampler_config.solver': ['interpolate', 'euler_forward'],
+                  'model_config.cfg_str': [
+                      'r-ba-4-n-1024-1100',
+                      'r-ba-4-n-512-600',
+                      'r-ba-4-n-256-300',
+                  ],
                   'config.experiment.log_every_steps': [100],
-                  
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                  ],
               },
           ],
       )

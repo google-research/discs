@@ -19,6 +19,24 @@ flags.DEFINE_string('key', 'name', 'what key to plot against')
 FLAGS = flags.FLAGS
 
 
+color_map = {}
+color_map['rwm'] = 'green'
+color_map['fdl'] = 'gray'
+color_map['paf'] = 'saddlebrown'
+color_map['gwg'] = 'red'
+color_map['bg-'] = 'orange'
+color_map['dma'] = 'purple'
+color_map['hb-'] = 'blue'
+
+def get_color(sampler):
+  
+  if sampler[0:4] != 'dlmc':
+    return color_map[sampler[0:3]]
+  else:
+    if sampler[0:5] == 'dlmcf':
+      return 'gray'
+  return 'pink'
+  
 def get_diff_key(key_diff, dict1, dict2):
   if key_diff in dict1 and key_diff in dict2:
     if dict1[key_diff] == dict2[key_diff]:
@@ -79,6 +97,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         )
         local_pos = np.arange(num_samplers) - (num_samplers / 2)
 
+      values = res_cluster[sampler][res_key]
+      c = get_color(sampler)
+      
       assert len(x_poses) == len(xticks)
       if FLAGS.evaluation_type == 'ess':
         plt.yscale('log')
@@ -86,27 +107,36 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           plt.ylabel('ESS EE')
         else:
           plt.ylabel('ESS Clock')
+          
+        if (len(values) != len(x_poses)):
+          print("Gonna be Appending 0")
+        while(len(values) < len(x_poses)):
+          values.append(0)
+        plt.bar(x_poses + local_pos[i] * bar_width, values, bar_width, label = sampler, color=c)
       else:
         threshold = 0.00025
-        value = value - 1.0 - threshold
-        plt.ylim([0.98, 1.02])
+        # values = [float(values[0])]
+        values = [float(values[0]) - 1.0 - threshold]
+        plt.bar(x_poses + local_pos[i] * bar_width, values, bar_width, label = sampler, bottom=1, color=c)
+        plt.ylim([0.8, 1.2])
       
-      # pdb.set_trace()
-      values = res_cluster[sampler][res_key]
-      plt.bar(x_poses + local_pos[i] * bar_width, values, bar_width, label = sampler)
+
       
     plt.title(f'The effect of {key_diff}', fontsize=16)
     plt.xticks(x_poses, xticks)
     plt.legend(
       loc='lower right',
-      fontsize=16,
+      fontsize=10,
       fancybox=True,
       framealpha=0.4,)
     plt.grid()
     plt.show()
+    
+    plot_dir = f'./plots/{FLAGS.gcs_results_path}/'
+    if not os.path.exists(plot_dir):
+      os.makedirs(plot_dir)
     plt.savefig(
-        FLAGS.gcs_results_path
-        + f'/{res_key}_{key_diff}_based.png',
+        f'{plot_dir}/{num}_{res_key}_{key_diff}_based.png',
         bbox_inches='tight',
     )
 
@@ -221,7 +251,7 @@ def process_keys(dict_o_keys):
   elif dict_o_keys['name'] == 'blockgibbs':
     dict_o_keys['name'] = 'bg-2'
   elif dict_o_keys['name'] == 'randomwalk':
-    dict_o_keys['name'] = 'rmwl'
+    dict_o_keys['name'] = 'rwm'
   elif dict_o_keys['name'] == 'path_auxiliary':
     dict_o_keys['name'] = 'pafs'
 
@@ -279,11 +309,10 @@ def sort_based_on_key(folders, key_diff):
       value_of_keydiff = value_of_keydiff[0:value_of_keydiff.find(',')]
     if value_of_keydiff.find('(') != -1:
       value_of_keydiff = value_of_keydiff[1+value_of_keydiff.find('('):]
-    
-    if isinstance(value_of_keydiff, str):
-      keydiff_vals.append(value_of_keydiff)
-    else:
+    try:
       keydiff_vals.append(float(value_of_keydiff))
+    except ValueError:
+      keydiff_vals.append(value_of_keydiff)
   xticks = sorted(keydiff_vals)
   dict_to_sort = dict(zip(folders, keydiff_vals))
   sorted_dict = {k: v for k, v in sorted(dict_to_sort.items(), key=lambda item: item[1])}
@@ -359,8 +388,11 @@ def main(argv) -> None:
   for key in all_mapped_names[0].keys():
     print(key, " ", all_mapped_names[0][key])
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
+  if FLAGS.key == 'name' and FLAGS.evaluation_type == 'co':
+    x_ticks = ['samplers']
   print("xtickssssss: ", x_ticks)
-  plot_results(all_mapped_names, FLAGS.key, x_ticks)
+  
+  plot_results(all_mapped_names, key_diff, x_ticks)
 
 
 if __name__ == '__main__':
