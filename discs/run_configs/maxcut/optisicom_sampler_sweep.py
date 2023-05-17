@@ -8,7 +8,7 @@ def get_config():
       dict(
           model='maxcut',
           sampler='path_auxiliary',
-          graph_type='er',
+          graph_type='optsicom',
           sweep=[
               {
                   'sampler_config.name': [
@@ -17,37 +17,19 @@ def get_config():
                       'hammingball',
                   ],
                   'model_config.cfg_str': [
-                      'r-ba-4-n-1024-1100',
-                      'r-ba-4-n-512-600',
-                      'r-ba-4-n-256-300',
+                      'r-b',
                   ],
                   'config.experiment.log_every_steps': [100],
               },
               {
                   'sampler_config.name': [
                       'dmala',
+                      'path_auxiliary',
                       'gwg',
                       'dlmc',
                   ],
                   'model_config.cfg_str': [
-                      'r-ba-4-n-1024-1100',
-                      'r-ba-4-n-512-600',
-                      'r-ba-4-n-256-300',
-                  ],
-                  'config.experiment.log_every_steps': [100],
-                  'sampler_config.balancing_fn_type': [
-                      'SQRT',
-                  ],
-              },
-              {
-                  'sampler_config.name': [
-                      'path_auxiliary',
-                  ],
-                  'sampler_config.approx_with_grad': [False],
-                  'model_config.cfg_str': [
-                      'r-ba-4-n-1024-1100',
-                      'r-ba-4-n-512-600',
-                      'r-ba-4-n-256-300',
+                      'r-b',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [

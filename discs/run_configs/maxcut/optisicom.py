@@ -11,24 +11,12 @@ def get_config():
           graph_type='optsicom',
           sweep=[
               {
-                  'sampler_config.name': [
-                      'randomwalk',
-                      'blockgibbs',
-                      'hammingball',
+                  'model_config.cfg_str': [
+                      'r-b',
                   ],
                   'config.experiment.log_every_steps': [100],
-              },
-              {
-                  'sampler_config.name': [
-                      'dmala',
-                      'path_auxiliary',
-                      'gwg',
-                      'dlmc',
-                  ],
-                  'config.experiment.log_every_steps': [100],
-                  'sampler_config.balancing_fn_type': [
-                      'SQRT',
-                  ],
+                  'config.experiment.num_models': [10],
+                  'config.experiment.batch_size': [16],
               },
           ],
       )

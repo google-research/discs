@@ -5,6 +5,7 @@ from ml_collections import config_dict
 
 def get_model_config(cfg_str):
   """Get config for er benchmark graphs."""
+  _ = cfg_str
   num_nodes = 1347
   num_edges = 5978
   num_instances = 500
