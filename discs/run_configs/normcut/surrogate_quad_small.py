@@ -13,7 +13,7 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'model_config.cfg_str': 'r-VGG',
+                  'model_config.cfg_str': ['r-VGG'],
                   'model_config.stype': ['quad'],
                   'config.experiment.decay_rate': [0.1, 0.05],
                   'config.experiment.t_schedule': ['exp_decay'],

@@ -4,6 +4,7 @@ from ml_collections import config_dict
 
 
 def get_model_config(cfg_str):
+  _ = cfg_str
   model_config = dict(
       max_num_nodes=1000,
       max_num_edges=50369,

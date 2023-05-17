@@ -16,6 +16,5 @@ def get_model_config(cfg_str):
       rand_type=extra_cfg['r'],
       penalty=1.0,
       tolerance=0.03,
-      stype='span',
   )
   return config_dict.ConfigDict(model_config)
