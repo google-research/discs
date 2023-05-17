@@ -16,15 +16,27 @@ def get_config():
                       'dmala',
                       'path_auxiliary',
                       'gwg',
-                      'dlmc',
                   ],
-                  'model_config.num_categories': [4, 8],
+                  'model_config.num_categories': [4],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                       'RATIO',
                       'MAX',
                       'MIN',
                   ],
+              },
+              {
+                  'sampler_config.name': [
+                      'dlmc',
+                  ],
+                  'model_config.num_categories': [4],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                      'RATIO',
+                      'MAX',
+                      'MIN',
+                  ],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
           ],
       )

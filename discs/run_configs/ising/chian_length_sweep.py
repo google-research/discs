@@ -12,14 +12,14 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'config.experiment.chain_length': [10000, 100000, 500000],
+                  'config.experiment.chain_length': [100, 1000, 10000, 100000],
                   'sampler_config.name': ['randomwalk', 'blockgibbs', 'hammingball'],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [0.5],
                   'model_config.init_sigma': [1.5],
               },
               {
-                  'config.experiment.chain_length': [10000, 100000, 500000],
+                  'config.experiment.chain_length': [100, 1000, 10000, 100000],
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
@@ -31,7 +31,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT'],
               },
               {
-                  'config.experiment.chain_length': [10000, 100000, 500000],
+                  'config.experiment.chain_length': [100, 1000, 10000, 100000],
                   'sampler_config.name': [
                       'dlmc',
                   ],
