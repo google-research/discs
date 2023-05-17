@@ -66,7 +66,8 @@ class TextInfilling(abstractmodel.AbstractModel):
       return None
     self.sentence = data[
         'sentence'
-    ]  ### this is the original sentence before masking all the infill positions
+    ]
+    print(self.sentence)
     self.infill_pos = data['infill_pos']  ### infill positions
     self.shape = (len(self.infill_pos),)
     inputs = self.tokenizer(self.sentence, return_tensors='jax')
@@ -120,9 +121,10 @@ class TextInfilling(abstractmodel.AbstractModel):
 
     mask_dummy_array = jnp.zeros((1, self.num_categories))
     mask_dummy_array = mask_dummy_array.at[1, self.mask_token].set(1.0)
-    loglikelihood = 0.0
+    '''loglikelihood = 0.0
 
     def func_body(i, val):
+      pdb.set_trace()
       x, params, mask_dummy_array, loglikelihood = val
       x_new = x.at[:, i, :].set(mask_dummy_array)
       outputs = self.model(
@@ -141,7 +143,22 @@ class TextInfilling(abstractmodel.AbstractModel):
     init_val = (x, params, mask_dummy_array, loglikelihood)
     _, _, _, loglikelihood = jax.lax.fori_loop(
         0, len(self.infill_pos), func_body, init_val
-    )
+    )'''
+
+    loglikelihood = 0.0
+    for i in range(len(self.infill_pos)):
+      x_new = x.at[:, i, :].set(mask_dummy_array)
+      outputs = self.model(
+          input_ids=params['input_ids'],
+          infill_one_hots=x_new,
+          infill_pos=self.infill_pos,
+          attention_mask=params['attention_mask'],
+          token_type_ids=params['token_type_ids'],
+      )
+      logits = outputs.logits
+      loglikelihood = loglikelihood + jnp.sum(
+          logits[:, self.infill_pos[i], :] * x[:, i, :], axis=-1
+      )
     return loglikelihood
 
   def get_value_and_grad(self, params, x):

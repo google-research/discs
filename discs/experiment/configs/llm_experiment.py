@@ -9,5 +9,5 @@ def get_llm_default_config():
   exp_config.batch_size = 1
   exp_config.chain_length = 1000
   exp_config.max_n = 4
-  exp_config.num_same_resample = 4
+  exp_config.num_same_resample = 5
   return exp_config

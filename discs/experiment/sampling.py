@@ -145,10 +145,10 @@ class Experiment:
     )
     compiled_fns = self._compile_fns(step_fn, obj_fn)
     return [
-        rnd,
         compiled_fns,
         state,
         params,
+        rnd,
         x,
         x0_ess,
         saver,
@@ -180,10 +180,10 @@ class Experiment:
 
   def _compute_chain(
       self,
-      rng,
       compiled_fns,
       state,
       params,
+      rng,
       x,
       x0_ess,
       saver,
@@ -207,10 +207,10 @@ class Sampling_Experiment(Experiment):
 
   def _compute_chain(
       self,
-      rng,
       compiled_fns,
       state,
       params,
+      rng,
       x,
       x0_ess,
       saver,
@@ -318,16 +318,16 @@ class Sampling_Experiment(Experiment):
 class Text_Infilling_Experiment(Sampling_Experiment):
 
   def get_results(self, model, sampler, evaluator, saver):
-    rnd_key = 0
     infill_sents = []
+    rnd_key = 0
     while True:
       contin, res = self._get_chains_and_evaluations(
           model, sampler, evaluator, saver, rnd_key=rnd_key
       )
+      rnd_key += 1
       if res:
         infill_sents.extend(res)
-      rnd_key += 1
-      if rnd_key == 2 or not contin:
+      if not contin:
         break
     res = evaluator.evaluate(infill_sents, self.config_model.data_root)
     saver.dump_dict(res)
@@ -338,23 +338,33 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     preprocessed_info = self.preprocess(
         model, sampler, evaluator, saver, rnd_key=0
     )
-    if len(preprocessed_info) == 1:
-      return False, _
-    pdb.set_trace()
-    rnd_index = 0
-    vmapped_axis = [None]*len(preprocessed_info)
-    vmapped_axis[rnd_index] = rnd_index
-    compute_chain_vmapped = jax.vmap(self._compute_chain, in_axes=vmapped_axis)
-    preprocessed_info[rnd_index] = jax.random.split(preprocessed_info[rnd_index], self.config.num_same_resample)
-    sentences = compute_chain_vmapped(*preprocessed_info)
+    if preprocessed_info == False:
+      return False, None
+
+    # def body_fun(i, val):
+    #   pdb.set_trace()
+    #   sentences, preprocces_info =  val
+    #   sent, rng = self._compute_chain(*preprocessed_info)
+    #   preprocessed_info = preprocessed_info.at[3].set(rng)
+    #   sentences.append(sent)
+    #   return (sentence, preprocessed_info) 
+    #init_val = ([], preprocessed_info)
+    #_ = jax.lax.fori_loop(
+    #    0, self.config.num_same_resample, body_fun, init_val
+    #)
+    sentences = []
+    for _ in range(self.config.num_same_resample):
+      sent, rng = self._compute_chain(*preprocessed_info)
+      preprocessed_info[3] = rng
+      sentences.append(sent)
     return True, sentences
 
   def _compute_chain(
       self,
-      rng,
       compiled_fns,
       state,
       params,
+      rng,
       x,
       x0_ess,
       saver,
@@ -473,10 +483,10 @@ class CO_Experiment(Experiment):
 
   def _compute_chain(
       self,
-      rng,
       compiled_fns,
       state,
       params,
+      rng,
       x,
       x0_ess,
       saver,
