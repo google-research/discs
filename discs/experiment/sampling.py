@@ -393,6 +393,7 @@ class CO_Experiment(Experiment):
 
       if step % self.config.log_every_steps == 0:
         eval_val = obj_fn(samples=new_x, params=params)
+        eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
@@ -422,6 +423,7 @@ class CO_Experiment(Experiment):
       running_time += time.time() - start
       if step % self.config.log_every_steps == 0:
         eval_val = obj_fn(samples=new_x, params=params)
+        eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
