@@ -8,12 +8,9 @@ def get_config():
       dict(
           name='maxclique',
           graph_type='rb',
+          cfg_str='_',
           data_root='./sco/',
       )
   )
   model_config['save_dir_name'] = model_config['name']
-  graph_config = importlib.import_module(
-      'discs.models.configs.maxclique.%s' % model_config['graph_type']
-  )
-  model_config.update(graph_config.get_model_config())
   return model_config
