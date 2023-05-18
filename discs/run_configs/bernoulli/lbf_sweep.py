@@ -1,5 +1,3 @@
-"""Config for rb job."""
-
 from ml_collections import config_dict
 
 
@@ -12,13 +10,25 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'model_config.init_sigma': [0.5, 1.5],
+                  'config.experiment.chain_length': [10000, 100000],
                   'sampler_config.name': [
-                      'dlmc',
                       'dmala',
                       'path_auxiliary',
                       'gwg',
                   ],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                      'RATIO',
+                      'MAX',
+                      'MIN',
+                  ],
+              },
+              {
+                  'config.experiment.chain_length': [10000, 100000],
+                  'sampler_config.name': [
+                      'dlmc',
+                  ],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                       'RATIO',

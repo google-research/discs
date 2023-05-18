@@ -24,6 +24,7 @@ def get_model_config(cfg_str):
       num_categories=2,
       shape=(0,),
       rand_type=rand_type,
+      num_instances=1000,
   )
   
   return config_dict.ConfigDict(model_config)

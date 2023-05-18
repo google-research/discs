@@ -17,9 +17,9 @@ def get_config():
                       'hammingball',
                   ],
                   'model_config.cfg_str': [
-                      'r-ba-4-n-1024-1100',
-                      'r-ba-4-n-512-600',
-                      'r-ba-4-n-256-300',
+                      'r-er-0.15-n-1024-1100',
+                      'r-er-0.15-n-512-600',
+                      'r-er-0.15-n-256-300',
                   ],
                   'config.experiment.log_every_steps': [100],
               },
@@ -30,9 +30,9 @@ def get_config():
                       'dlmc',
                   ],
                   'model_config.cfg_str': [
-                      'r-ba-4-n-1024-1100',
-                      'r-ba-4-n-512-600',
-                      'r-ba-4-n-256-300',
+                      'r-er-0.15-n-1024-1100',
+                      'r-er-0.15-n-512-600',
+                      'r-er-0.15-n-256-300',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
@@ -45,9 +45,9 @@ def get_config():
                   ],
                   'sampler_config.approx_with_grad': [False],
                   'model_config.cfg_str': [
-                      'r-ba-4-n-1024-1100',
-                      'r-ba-4-n-512-600',
-                      'r-ba-4-n-256-300',
+                      'r-er-0.15-n-1024-1100',
+                      'r-er-0.15-n-512-600',
+                      'r-er-0.15-n-256-300',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [

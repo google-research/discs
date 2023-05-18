@@ -1,10 +1,12 @@
 #!/bin/bash
 
-experiment_folder=discs-mis-ertest_10k_sampler_sweep_56757032
-graphtype=mis
+experiment_folder=discs-normcut-nets_sampler_sweep_56834938
+graphtype=normcut
 graphkey=name
 graphtitle='Sampler'
 graphlabel='sampler'
+
+
 
 data_path="./${experiment_folder}"
 

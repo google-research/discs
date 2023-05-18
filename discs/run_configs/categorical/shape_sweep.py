@@ -12,11 +12,10 @@ def get_config():
               {
                   'config.experiment.chain_length': [100000],
                   'model_config.shape': [
-                      '(200,)',
+                      '(250,)',
                       '(2000,)',
-                      '(8000,)',
                       '(32000,)',
-                      '(128000,)',
+                      '(512000,)',
                   ],
                   'sampler_config.name': [
                       'randomwalk',
@@ -29,11 +28,10 @@ def get_config():
               {
                   'config.experiment.chain_length': [100000],
                   'model_config.shape': [
-                      '(200,)',
+                      '(250,)',
                       '(2000,)',
-                      '(8000,)',
                       '(32000,)',
-                      '(128000,)',
+                      '(512000,)',
                   ],
                   'sampler_config.name': [
                       'dmala',
@@ -49,11 +47,10 @@ def get_config():
               {
                   'config.experiment.chain_length': [100000],
                   'model_config.shape': [
-                      '(200,)',
+                      '(250,)',
                       '(2000,)',
-                      '(8000,)',
                       '(32000,)',
-                      '(128000,)',
+                      '(512000,)',
                   ],
                   'sampler_config.name': [
                       'dlmc',

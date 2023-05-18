@@ -21,6 +21,9 @@ def get_config():
                   'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.batch_size': [16],
                   'config.experiment.init_temperature': [1.0],
+                  'config.experiment.chain_length': [10001],
+                  
+                  
               },
               {
                   'sampler_config.name': [
@@ -37,6 +40,7 @@ def get_config():
                   'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.batch_size': [16],
                   'config.experiment.init_temperature': [1.0],
+                  'config.experiment.chain_length': [10001],
               },
           ],
       )

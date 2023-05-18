@@ -10,7 +10,7 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'config.experiment.chain_length': [100000],
+                  'config.experiment.chain_length': [10000, 100000],
                   'model_config.shape': [
                       '(2000,)',
                   ],
@@ -20,10 +20,10 @@ def get_config():
                       'hammingball',
                   ],
                   'model_config.init_sigma': [1.5],
-                  'model_config.num_categories': [4, 8, 18, 32, 64],
+                  'model_config.num_categories': [4, 16, 64, 256],
               },
               {
-                  'config.experiment.chain_length': [100000],
+                  'config.experiment.chain_length': [10000, 100000],
                   'model_config.shape': [
                       '(2000,)',
                   ],
@@ -33,13 +33,13 @@ def get_config():
                       'gwg',
                   ],
                   'model_config.init_sigma': [1.5],
-                  'model_config.num_categories': [4, 8, 18, 32, 64],
+                  'model_config.num_categories': [4, 16, 64, 256],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
               },
               {
-                  'config.experiment.chain_length': [100000],,
+                  'config.experiment.chain_length': [10000, 100000],
                   'model_config.shape': [
                       '(2000,)',
                   ],
@@ -48,7 +48,7 @@ def get_config():
                   ],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
                   'model_config.init_sigma': [1.5],
-                  'model_config.num_categories': [4, 8, 18, 32, 64],
+                  'model_config.num_categories': [4, 16, 64, 256],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],

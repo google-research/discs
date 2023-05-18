@@ -15,12 +15,14 @@ flags.DEFINE_string(
 )
 flags.DEFINE_string('evaluation_type', 'co', 'where results are being saved')
 flags.DEFINE_string('key', 'name', 'what key to plot against')
+GRAPHTYPE = flags.DEFINE_string('graphtype', 'mis', 'graph type')
+
 
 FLAGS = flags.FLAGS
 
 
 color_map = {}
-color_map['rwm'] = 'green'
+color_map['rmw'] = 'green'
 color_map['fdl'] = 'gray'
 color_map['paf'] = 'saddlebrown'
 color_map['gwg'] = 'red'
@@ -77,17 +79,19 @@ def plot_results(all_mapped_names, key_diff, xticks):
   for num, res_cluster in enumerate(all_mapped_names):
     plot_graph_cluster(num, res_cluster, key_diff, xticks)
 
-
 def plot_graph_cluster(num, res_cluster, key_diff, xticks):
   key0 = list(res_cluster.keys())[0]
   result_keys = res_cluster[key0].keys()
   num_samplers = len(res_cluster.keys())
-  for res_key in result_keys:
+  for res_key in result_keys:      
     f = plt.figure()
     f.set_figwidth(12)
     f.set_figheight(4)
     bar_width = 0.1
-    for i, sampler in enumerate(res_cluster.keys()):
+    for i, sampler in enumerate(res_cluster.keys()):    
+      if sampler == 'save_title':
+        save_title = res_cluster[sampler]
+        continue
       if i == 0:
         x_poses = (
             2
@@ -115,20 +119,29 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         plt.bar(x_poses + local_pos[i] * bar_width, values, bar_width, label = sampler, color=c)
       else:
         threshold = 0.00025
-        # values = [float(values[0])]
+        # values = [float(values[0])-1.0]
         values = [float(values[0]) - 1.0 - threshold]
         plt.bar(x_poses + local_pos[i] * bar_width, values, bar_width, label = sampler, bottom=1, color=c)
-        plt.ylim([0.8, 1.2])
       
 
-      
+    if key_diff == 'name':
+      key_diff = 'sampler'
     plt.title(f'The effect of {key_diff}', fontsize=16)
     plt.xticks(x_poses, xticks)
     plt.legend(
-      loc='lower right',
+      loc='upper right',
       fontsize=10,
       fancybox=True,
       framealpha=0.4,)
+    
+    if GRAPHTYPE.value == 'mis':
+      if values[-1] >100:
+        plt.ylabel('Size of Independent Set', fontsize=16)
+      else:
+        plt.ylabel('Ratio \u03B1', fontsize=16)
+    elif GRAPHTYPE.value == 'maxclique':
+      plt.ylabel('Ratio \u03B1', fontsize=16)
+      # plt.ylim(0.5, 1.1)
     plt.grid()
     plt.show()
     
@@ -136,60 +149,12 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
     if not os.path.exists(plot_dir):
       os.makedirs(plot_dir)
     plt.savefig(
-        f'{plot_dir}/{num}_{res_key}_{key_diff}_based.png',
+        f'{plot_dir}/{res_key}_{key_diff}_based_{save_title}.png',
         bbox_inches='tight',
     )
 
-  # result_keys = res_cluster[0].keys()
-  # for key in result_keys:
-  #   if key == 'indices':
-  #     continue
-  #   f = plt.figure()
-  #   f.set_figwidth(12)
-  #   f.set_figheight(4)
-  #   bar_width = 0.15
-  #   x_poses = 0.5 * np.arange(len(mapped_names))
-
-  #   for name in mapped_names:
-
-  # xticks = []
-  # save_title_set = False
-  # for i, index in enumerate(indeces):
-  #   # computing graph name config-based
-  #   if not save_title_set:
-  #     graph_save = ''
-  #     for key_dict, val_dict in dict_results[index].items():
-  #       if key_dict not in [key_diff, 'results']:
-  #         graph_save += str(key_dict) + '=' + str(val_dict) + ','
-  #     save_title_set = True
-
-  #   value = float(dict_results[index]['results'][key])
-  #   xticks.append(str(dict_results[index][key_diff]))
-  #   print('Valueeueeeeeee: ', float(value))
-  #   if FLAGS.evaluation_type == 'ess':
-  #     plt.yscale('log')
-  #     plt.bar(x_poses[i], value, width=bar_width)
-  #   else:
-  #     threshold = 0.00025
-  #     value = value - 1.0 - threshold
-  #     plt.ylim([0.98, 1.02])
-  #     plt.bar(x_poses[i], value, width=bar_width, bottom=1)
-
-  # plt.xticks(x_poses, xticks)
-  # plt.grid()
-  # plt.show()
-  # plt.savefig(
-  #     FLAGS.gcs_results_path + f'/{key}_{key_diff}_based_{graph_save}.png', bbox_inches='tight'
-  # )
-
 
 def get_diff_key(key_diff, dict1, dict2):
-  # pdb.set_trace()
-  # if key_diff in dict1 and key_diff in dict2:
-  #   if dict1[key_diff] == dict2[key_diff]:
-  #     return False
-  # else:
-  #   return False
   for key in dict1.keys():
     if key in ['results', 'name']:
       continue
@@ -251,7 +216,7 @@ def process_keys(dict_o_keys):
   elif dict_o_keys['name'] == 'blockgibbs':
     dict_o_keys['name'] = 'bg-2'
   elif dict_o_keys['name'] == 'randomwalk':
-    dict_o_keys['name'] = 'rwm'
+    dict_o_keys['name'] = 'rmw'
   elif dict_o_keys['name'] == 'path_auxiliary':
     dict_o_keys['name'] = 'pafs'
 
@@ -277,7 +242,14 @@ def organize_experiments(results_index_cluster, experiments_results, key_diff):
   all_mapped_names = []
   for i, cluster in enumerate(results_index_cluster):
     name_mapped_index = {}
-    for index in cluster:
+    for i, index in enumerate(cluster):
+      if i == 0:
+        dict_o_keys = experiments_results[index]
+        graph_save = ''
+        for key_dict, val_dict in dict_o_keys.items():
+          if key_dict != 'results':
+            graph_save += str(key_dict) + '=' + str(val_dict) + ','
+        name_mapped_index['save_title'] = graph_save
       dict_o_keys = experiments_results[index]
       curr_name = dict_o_keys['name']
       if key_diff == 'balancing_fn_type':
@@ -328,6 +300,8 @@ def sort_based_on_samplers(all_mapped_names):
     
     sampler_to_index = {}
     for key in cluster_dict.keys():
+      if key == 'save_title':
+        continue
       for sampler_id, sampler in enumerate(sampler_list):
         if key.startswith(sampler):
           sampler_to_index[key] = sampler_id
@@ -340,6 +314,7 @@ def sort_based_on_samplers(all_mapped_names):
       print(cluster_dict[key])
     print("***********************")
     sorted_res = {key: cluster_dict[key] for key in sorted_keys_based_on_list}
+    sorted_res['save_title'] = cluster_dict['save_title']
     print("%%%%%%%%")
     print(sorted_res)
     print("%%%%%%%%")
@@ -377,6 +352,7 @@ def main(argv) -> None:
           results['ess_clock'] = float(col['ESS_T'])
         else:
           results['best_ratio_mean'] = col['best_ratio_mean']
+          # results['best_ratio_mean'] = float(col['best_ratio_mean']) / float(col['running_time'])
           # results['running_time'] = col['running_time']
       res_dic['results'] = results
       experiments_results.append(res_dic)

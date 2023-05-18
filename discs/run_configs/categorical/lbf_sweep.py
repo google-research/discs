@@ -10,7 +10,7 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'config.experiment.chain_length': [100000],
+                  'config.experiment.chain_length': [10000, 100000],
                   'model_config.shape': [
                       '(2000,)',
                   ],
@@ -29,7 +29,7 @@ def get_config():
                   ],
               },
               {
-                  'config.experiment.chain_length': [100000],
+                  'config.experiment.chain_length': [10000, 100000],
                   'model_config.shape': [
                       '(2000,)',
                   ],
