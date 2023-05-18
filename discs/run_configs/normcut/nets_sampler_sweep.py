@@ -1,3 +1,4 @@
+#TODO:  'r-TRANSFORMER' is not working
 from ml_collections import config_dict
 
 
@@ -11,6 +12,7 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
+                  'config.experiment.chain_length': [1000000],
                   'sampler_config.name': [
                       'randomwalk',
                       'blockgibbs',
@@ -24,13 +26,13 @@ def get_config():
                       'r-MNIST',
                       'r-BABELFISH',
                       'r-NMT',
-                      'r-TRANSFORMER',
                       'r-TTS',
                   ],
                   'model_config.stype': ['quad', 'span'],
                   'config.experiment.log_every_steps': [100],
               },
               {
+                  'config.experiment.chain_length': [1000000],
                   'model_config.cfg_str': [
                       'r-INCEPTION',
                       'r-VGG',
@@ -39,7 +41,6 @@ def get_config():
                       'r-MNIST',
                       'r-BABELFISH',
                       'r-NMT',
-                      'r-TRANSFORMER',
                       'r-TTS',
                   ],
                   'sampler_config.name': [
