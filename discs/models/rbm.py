@@ -87,19 +87,18 @@ class NNCategorical(nn.Module):
         initializers.glorot_uniform(),
         (self.num_visible, self.num_hidden, self.num_categories),
         jnp.float32,
-    ) 
-    self.w = self.w / jnp.sqrt(self.num_visible*self.num_categories + 2)
+    )
+    self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
 
   def __call__(self, v):
-      sp = jnp.sum(
+    sp = jnp.sum(
         jax.nn.softplus(
-            jnp.sum(jnp.expand_dims(v, -2) * self.w, axis=[-1, -3])
-              + self.b_h
-          ),
-          -1,
-      )
-      vt = jnp.sum(v * self.b_v, axis=[-1, -2])
-      return sp + vt
+            jnp.sum(jnp.expand_dims(v, -2) * self.w, axis=[-1, -3]) + self.b_h
+        ),
+        -1,
+    )
+    vt = jnp.sum(v * self.b_v, axis=[-1, -2])
+    return sp + vt
 
 
 class RBM(deepenergmodel.DeepEBM):
@@ -121,7 +120,9 @@ class RBM(deepenergmodel.DeepEBM):
     self.shape = config.shape
 
   def get_init_samples(self, rng, num_samples: int):
-    return self.init_dist(key=rng, shape=(num_samples, self.num_visible)).astype(jnp.int32)
+    return self.init_dist(
+        key=rng, shape=(num_samples, self.num_visible)
+    ).astype(jnp.int32)
 
   def make_init_params(self, rng):
     if self.params:
@@ -188,13 +189,16 @@ class CategoricalRBM(RBM):
         num_categories=self.num_categories,
     )
 
-  #TODO: Kati check thiss.
+  # TODO: Kati check thiss.
   def build_init_dist(self, data_mean):
     if data_mean is None:
       return functools.partial(jax.random.categorical)
     else:
+      logits = jax.nn.logsumexp(data_mean, axis=-1, keepdims=True) + jnp.log(
+          data_mean
+      )
       return functools.partial(
-        jax.random.categorical, logits=jnp.array(data_mean, dtype=jnp.float32)
+          jax.random.categorical, logits=jnp.array(logits, dtype=jnp.float32)
       )
 
 
