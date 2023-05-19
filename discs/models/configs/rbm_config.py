@@ -7,7 +7,7 @@ def get_config():
   model_config = dict(
           name='rbm',
           visualize = True,
-          data_path='./RBM_Haoran/mnist-2-200/',
-          num_categories=2,
+          data_path='./RBM_DATA/fashion_mnist-4-50/',
+          num_categories=4,
           )
   return config_dict.ConfigDict(model_config)

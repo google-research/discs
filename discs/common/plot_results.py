@@ -295,7 +295,7 @@ def sort_based_on_key(folders, key_diff):
   
 def sort_based_on_samplers(all_mapped_names):
   
-  sampler_list = ['h', 'b', 'r', 'g', 'dma', 'p', 'dlmcf', 'dlmc']
+  sampler_list = ['h', 'b', 'r', 'gwg(s', 'gwg(r', 'dmala(s', 'dmala(r', 'pafs(s', 'pafs(r', 'dlmcf(s', 'dlmcf(r', 'dlmc(s', 'dlmc(r']
   for i, cluster_dict in enumerate(all_mapped_names):
     
     sampler_to_index = {}
@@ -364,7 +364,7 @@ def main(argv) -> None:
   for key in all_mapped_names[0].keys():
     print(key, " ", all_mapped_names[0][key])
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
-  if FLAGS.key == 'name' and FLAGS.evaluation_type == 'co':
+  if FLAGS.key == 'name':
     x_ticks = ['samplers']
   print("xtickssssss: ", x_ticks)
   

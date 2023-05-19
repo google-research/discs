@@ -67,10 +67,38 @@ class NNCategorical(nn.Module):
   num_visible: int
   num_hidden: int
   num_categories: int
+  data_mean: Any = None
 
-  @nn.compact
+  def setup(self):
+    if self.data_mean is None:
+      bv_init = initializers.zeros
+    else:
+      data_mean = jnp.array(self.data_mean, dtype=jnp.float32)
+      b_v = jnp.log(data_mean)
+      bv_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
+    self.b_v = self.param(
+        'b_v', bv_init, (self.num_visible, self.num_categories), jnp.float32
+    )
+    self.b_h = self.param(
+        'b_h', initializers.zeros, (self.num_hidden,), jnp.float32
+    )
+    self.w = self.param(
+        'w',
+        initializers.glorot_uniform(),
+        (self.num_visible, self.num_hidden, self.num_categories),
+        jnp.float32,
+    )
+    self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
+
   def __call__(self, v):
-    pass
+    sp = jnp.sum(
+        jax.nn.softplus(
+            jnp.sum(jnp.expand_dims(v, -2) * self.w, axis=[-1, -3]) + self.b_h
+        ),
+        -1,
+    )
+    vt = jnp.sum(v * self.b_v, axis=[-1, -2])
+    return sp + vt
 
 
 class RBM(deepenergmodel.DeepEBM):
@@ -89,6 +117,7 @@ class RBM(deepenergmodel.DeepEBM):
       data_mean = self.params['data_mean']
     self.init_dist = self.build_init_dist(data_mean)
     self.data_mean = data_mean
+    self.shape = config.shape
 
   def get_init_samples(self, rng, num_samples: int):
     return self.init_dist(
@@ -103,6 +132,8 @@ class RBM(deepenergmodel.DeepEBM):
     return self.net.init({'params': model_rng}, v=v)['params']
 
   def forward(self, params, x):
+    if self.num_categories != 2 and len(x.shape) - 1 == len(self.shape):
+      x = jax.nn.one_hot(x, self.num_categories)
     return self.net.apply({'params': params}, v=x)
 
   def get_value_and_grad(self, params, x):
@@ -158,9 +189,17 @@ class CategoricalRBM(RBM):
         num_categories=self.num_categories,
     )
 
+  # TODO: Kati check thiss.
   def build_init_dist(self, data_mean):
     if data_mean is None:
-      pass
+      return functools.partial(jax.random.categorical)
+    else:
+      logits = jax.nn.logsumexp(data_mean, axis=-1, keepdims=True) + jnp.log(
+          data_mean
+      )
+      return functools.partial(
+          jax.random.categorical, logits=jnp.array(logits, dtype=jnp.float32)
+      )
 
 
 def build_model(config):
