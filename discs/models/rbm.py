@@ -67,10 +67,7 @@ class NNCategorical(nn.Module):
   num_visible: int
   num_hidden: int
   num_categories: int
-
-  @nn.compact
-  def __call__(self, v):
-    pass
+  data_mean: Any = None
 
   def setup(self):
     if self.data_mean is None:
@@ -80,23 +77,23 @@ class NNCategorical(nn.Module):
       b_v = jnp.log(data_mean)
       bv_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
     self.b_v = self.param(
-        'b_v', bv_init, (self.num_visible, self, num_categories), jnp.float32
+        'b_v', bv_init, (self.num_visible, self.num_categories), jnp.float32
     )
     self.b_h = self.param(
         'b_h', initializers.zeros, (self.num_hidden,), jnp.float32
     )
     self.w = self.param(
         'w',
-        initializers.glorot_uniform()
-        / jnp.sqrt(self.num_visible * self.num_categories + 2),
+        initializers.glorot_uniform(),
         (self.num_visible, self.num_hidden, self.num_categories),
         jnp.float32,
-    )
+    ) 
+    self.w = self.w / jnp.sqrt(self.num_visible*self.num_categories + 2)
 
-    def __call__(self, v):
+  def __call__(self, v):
       sp = jnp.sum(
-          jnp.sum(
-              jax.nn.Softplus((jnp.expand_dims(v, -3) * self.w), dim=[-1, -2])
+        jax.nn.softplus(
+            jnp.sum(jnp.expand_dims(v, -2) * self.w, axis=[-1, -3])
               + self.b_h
           ),
           -1,
@@ -192,7 +189,11 @@ class CategoricalRBM(RBM):
 
   def build_init_dist(self, data_mean):
     if data_mean is None:
-      pass
+      return functools.partial(jax.random.categorical)
+    else:
+      return functools.partial(
+        jax.random.categorical, logits=jnp.array(data_mean, dtype=jnp.float32)
+      )
 
 
 def build_model(config):
