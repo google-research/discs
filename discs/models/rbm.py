@@ -118,6 +118,7 @@ class RBM(deepenergmodel.DeepEBM):
       data_mean = self.params['data_mean']
     self.init_dist = self.build_init_dist(data_mean)
     self.data_mean = data_mean
+    self.shape = config.shape
 
   def get_init_samples(self, rng, num_samples: int):
     return self.init_dist(key=rng, shape=(num_samples, self.num_visible)).astype(jnp.int32)
@@ -130,6 +131,8 @@ class RBM(deepenergmodel.DeepEBM):
     return self.net.init({'params': model_rng}, v=v)['params']
 
   def forward(self, params, x):
+    if self.num_categories != 2 and len(x.shape) - 1 == len(self.shape):
+      x = jax.nn.one_hot(x, self.num_categories)
     return self.net.apply({'params': params}, v=x)
 
   def get_value_and_grad(self, params, x):
