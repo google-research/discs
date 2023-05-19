@@ -187,6 +187,7 @@ class CategoricalRBM(RBM):
         num_categories=self.num_categories,
     )
 
+  #TODO: Kati check thiss.
   def build_init_dist(self, data_mean):
     if data_mean is None:
       return functools.partial(jax.random.categorical)

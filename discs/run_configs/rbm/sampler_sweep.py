@@ -15,6 +15,8 @@ def get_config():
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-4-50/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-8-50/',
                   ],
                   'sampler_config.name': [
                       'randomwalk',
@@ -26,6 +28,8 @@ def get_config():
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-4-50/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-8-50/',
                   ],
                   'sampler_config.name': ['path_auxiliary', 'gwg', 'dmala'],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
@@ -34,6 +38,8 @@ def get_config():
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-4-50/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-8-50/',
                   ],
                   'sampler_config.name': [
                       'dlmc',
