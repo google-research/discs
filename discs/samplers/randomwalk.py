@@ -6,6 +6,7 @@ import jax
 from jax import random
 import jax.numpy as jnp
 import ml_collections
+import pdb
 
 class RandomWalkSampler(abstractsampler.AbstractSampler):
   """Random Walk Sampler Base Class."""
@@ -38,12 +39,16 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
       New sample.
     """
     _ = x_mask
+    if self.num_categories != 2:
+      x = jax.nn.one_hot(x, self.num_categories, dtype=jnp.float32)
     rng_new_sample, rng_acceptance = jax.random.split(rng)
     ll_x = model.forward(model_param, x)
     y = self.sample_from_proposal(rng_new_sample, x, state)
     ll_y = model.forward(model_param, y)
     log_acc = ll_y - ll_x
     new_x, new_state = self.select_sample(rng_acceptance, log_acc, x, y, state)
+    if self.num_categories != 2:
+      new_x = jnp.argmax(y, axis=-1)
     acc = jnp.mean(jnp.clip(jnp.exp(log_acc), a_max=1))
     return new_x, new_state, acc
 

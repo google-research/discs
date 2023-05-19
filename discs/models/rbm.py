@@ -120,9 +120,7 @@ class RBM(deepenergmodel.DeepEBM):
     self.data_mean = data_mean
 
   def get_init_samples(self, rng, num_samples: int):
-    return self.init_dist(
-        key=rng, shape=(num_samples, self.num_visible)
-    ).astype(jnp.int32)
+    return self.init_dist(key=rng, shape=(num_samples, self.num_visible)).astype(jnp.int32)
 
   def make_init_params(self, rng):
     if self.params:
