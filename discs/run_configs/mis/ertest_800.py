@@ -16,6 +16,7 @@ def get_config():
               'config.experiment.chain_length': [50000, 100000, 200000],
               'config.experiment.decay_rate': [0.01, 0.05, 0.08],
               'config.experiment.t_schedule': ['exp_decay'],
+              'config.experiment.log_every_steps': [100],
           }],
       )
   )

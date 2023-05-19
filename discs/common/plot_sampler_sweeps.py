@@ -10,7 +10,7 @@ import numpy as np
 
 flags.DEFINE_string(
     'results_path',
-    './discs-categorical-sampler_sweep_56430662',
+    './discs-maxcut-ba_sampler_sweep_56525558',
     'where results are being saved',
 )
 FLAGS = flags.FLAGS
@@ -108,15 +108,9 @@ def main(argv: Sequence[str]) -> None:
       'blockgibbs',
       'a_randomwalk',
       'a_gwg(sqrt)',
-      'a_gwg(ratio)',
       'a_dmala(sqrt)',
-      'a_dmala(ratio)',
       'a_path_auxiliary(sqrt)',
-      'a_path_auxiliary(ratio)',
       'a_dlmc(sqrt)',
-      'a_dlmc(ratio)',
-      'a_dlmcf(sqrt)',
-      'a_dlmcf(ratio)',
   ]
 
   samplers = []

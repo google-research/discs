@@ -18,6 +18,8 @@ def get_config():
                   ],
                   'sampler_config.name': [
                       'randomwalk',
+                      'blockgibbs',
+                      'hammingball',
                   ],
               },
               {
@@ -25,13 +27,19 @@ def get_config():
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25/',
                   ],
+                  'sampler_config.name': ['path_auxiliary', 'gwg', 'dmala'],
+                  'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
+              },
+              {
+                  'model_config.data_path': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
+                      '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-25/',
+                  ],
                   'sampler_config.name': [
-                      'path_auxiliary',
                       'dlmc',
-                      'gwg',
-                      'dmala'
                   ],
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
           ],
       )

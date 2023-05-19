@@ -21,6 +21,7 @@ def get_config():
                   'config.experiment.chain_length': [800000],
                   'sampler_config.approx_with_grad': [False, True],
                   'config.experiment.init_temperature': [0.002, 0.005, 0.01],
+                  'config.experiment.log_every_steps': [100],
               },
               {
                   'model_config.cfg_str': 'r-MNIST',
@@ -31,6 +32,7 @@ def get_config():
                   'config.experiment.chain_length': [800000],
                   'sampler_config.approx_with_grad': [False, True],
                   'config.experiment.init_temperature': [0.002, 0.005, 0.01],
+                  'config.experiment.log_every_steps': [100],
               },
               {
                   'model_config.cfg_str': 'r-ALEXNET',
@@ -41,6 +43,7 @@ def get_config():
                   'config.experiment.chain_length': [800000],
                   'sampler_config.approx_with_grad': [False, True],
                   'config.experiment.init_temperature': [0.002, 0.005, 0.01],
+                  'config.experiment.log_every_steps': [100],
               },
           ],
       )

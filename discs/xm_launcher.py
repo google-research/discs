@@ -152,6 +152,7 @@ def main(argv) -> None:
           k = k[len('config.') :]
         sweep_str_parts.append(f'{k}={v!r}')
       sweep_str = ','.join(sweep_str_parts)
+      sweep_str = sweep_str.replace('/','-')
       args[
           'config.experiment.save_root'
       ] += f'/{work_unit.work_unit_id}_{sweep_str}'

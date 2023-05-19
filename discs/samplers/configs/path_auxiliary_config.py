@@ -11,5 +11,6 @@ def get_config():
       adaptive=True,
       target_acceptance_rate=0.574,
       balancing_fn_type='SQRT',
+      approx_with_grad=True,
   )
   return config_dict.ConfigDict(model_config)

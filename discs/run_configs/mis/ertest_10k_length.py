@@ -21,9 +21,10 @@ def get_config():
                       300000,
                       400000,
                   ],
-                  'cfg_str': 'r-10k',
+                  'model_config.cfg_str': ['r-10k'],
                   'config.experiment.final_temperature': [0.0001],
                   'config.experiment.t_schedule': ['linear'],
+                  'config.experiment.log_every_steps': [100],
               },
               {
                   'config.experiment.chain_length': [
@@ -34,9 +35,10 @@ def get_config():
                       300000,
                       400000,
                   ],
-                  'cfg_str': 'r-10k',
+                  'model_config.cfg_str': ['r-10k'],
                   'config.experiment.decay_rate': [0.05],
                   'config.experiment.t_schedule': ['exp_decay'],
+                  'config.experiment.log_every_steps': [100],
               },
           ],
       )

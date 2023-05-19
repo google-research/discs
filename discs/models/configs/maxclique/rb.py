@@ -1,9 +1,9 @@
 from ml_collections import config_dict
 
 
-def get_model_config():
+def get_model_config(cfg_str):
   """Get config for RB graphs."""
-
+  _ = cfg_str
   num_nodes = 475
   num_edges = 90585
   num_instances = 500
@@ -17,7 +17,6 @@ def get_model_config():
       shape=(0,),
       rand_type='',
       penalty=1.0,
-      graph_type='rb',
   )
 
   return config_dict.ConfigDict(model_config)

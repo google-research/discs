@@ -16,6 +16,7 @@ def get_config():
            'model_config.cfg_str': 'r-10k',
            'config.experiment.decay_rate': [0.05],
            'config.experiment.t_schedule': ['exp_decay']},
+           'config.experiment.log_every_steps': [100],
       ]
   ))
   return config
