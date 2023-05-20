@@ -10,11 +10,8 @@ def get_config():
           graph_type='nets',
           cfg_str='r-INCEPTION',
           data_root='./sco/',
+          stype='span',
       )
   )
   model_config['save_dir_name'] = model_config['name']
-  graph_config = importlib.import_module(
-      'discs.models.configs.normcut.%s' % model_config['graph_type']
-  )
-  model_config.update(graph_config.get_model_config(model_config['cfg_str']))
   return model_config

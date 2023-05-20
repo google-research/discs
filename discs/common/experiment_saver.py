@@ -55,6 +55,10 @@ class Saver:
     results['sampler'] = self.config.sampler.name
     if 'adaptive' in self.config.sampler.keys():
       results['sampler'] = f'a_{self.config.sampler.name}'
+      
+    if 'solver' in self.config.sampler.keys():
+      if self.config.sampler.solver == 'euler_forward':
+        results['sampler'] = results['sampler'] + 'f'
 
     if 'balancing_fn_type' in self.config.sampler.keys():
       if self.config.sampler.balancing_fn_type == 'RATIO':
@@ -128,15 +132,26 @@ class Saver:
       image_path = os.path.join(root_path, f'sample_{step}.jpeg')
       plt.imsave(image_path, np.array(sample), cmap=cm.gray)
   
-  def dump_results(self, trajectory):
-    root_path = os.path.join(self.save_dir, self.config.sampler.name)
-    if not os.path.isdir(root_path):
-        os.makedirs(root_path)
-    path = os.path.join(root_path, 'results.pkl')
+  def dump_results(self, trajectory, best_ratio, running_time):
+
+    if not os.path.isdir(self.save_dir):
+      os.makedirs(self.save_dir)
+    path = os.path.join(self.save_dir, 'results.pkl')
     results = {}
-    results['best_ratio'] = jnp.array(trajectory)
+    results['trajectory'] = np.array(trajectory)
+    results['best_ratio'] = np.array(best_ratio)
+    results['running_time'] = running_time
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    results = {}
+    results['best_ratio_mean'] = np.mean(np.array(best_ratio))
+    results['running_time'] = running_time
+    with open(f'{self.save_dir}/results.csv', 'w') as csvfile:
+      writer = csv.DictWriter(csvfile, fieldnames=list(results.keys()))
+      writer.writeheader()
+      writer.writerow(results)
+      csvfile.close()
       
   def dump_dict(self, results):
     root_path = os.path.join(self.save_dir, self.config.sampler.name)

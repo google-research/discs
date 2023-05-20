@@ -33,3 +33,5 @@ class DeepEBM(abstractmodel.AbstractModel):
           open(os.path.join(path, 'config.yaml'), 'r')
       )
       config.update(model_config.model)
+    else:
+      raise ValueError("The provided path doesn't exist")

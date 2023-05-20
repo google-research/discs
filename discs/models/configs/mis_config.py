@@ -13,8 +13,4 @@ def get_config():
       )
   )
   model_config['save_dir_name'] = model_config['name']
-  graph_config = importlib.import_module(
-      'discs.models.configs.mis.%s' % model_config['graph_type']
-  )
-  model_config.update(graph_config.get_model_config(model_config['cfg_str']))
   return model_config

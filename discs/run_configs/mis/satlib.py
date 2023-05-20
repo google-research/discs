@@ -13,6 +13,7 @@ def get_config():
       sweep=[
           {'config.experiment.t_schedule': ['exp_decay'],
            'config.experiment.decay_rate': [0.05, 0.08, 0.1],
+           'config.experiment.log_every_steps': [100],
            'config.experiment.chain_length': [100001, 200001, 500001, 1000001]},
       ]
   ))

@@ -19,7 +19,6 @@ def get_model_config(cfg_str):
     num_instances = 16
 
   model_config = dict(
-      name='mis',
       max_num_nodes=num_nodes,
       max_num_edges=num_edges,
       num_instances=num_instances,
@@ -27,6 +26,5 @@ def get_model_config(cfg_str):
       shape=(0,),
       rand_type=rand_type,
       penalty=1.001,
-      graph_type='ertest',
   )
   return config_dict.ConfigDict(model_config)

@@ -35,8 +35,12 @@ def get_main_config():
     config.update(_EXPERIMENT_CONFIG.value)
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
-
   if config.model.get('graph_type', None):
+    graph_config = importlib.import_module(
+        'discs.models.configs.%s.%s'
+        % (config.model['name'], config.model['graph_type'])
+    )
+    config.model.update(graph_config.get_model_config(config.model['cfg_str']))
     config.update(_EXPERIMENT_CONFIG.value)
     co_exp_default_config = importlib.import_module(
         'discs.experiment.configs.co_experiment'
@@ -54,7 +58,6 @@ def get_main_config():
 
 def main(_):
   config = get_main_config()
-  print(config)
   utils.setup_logging(config)
 
   # model

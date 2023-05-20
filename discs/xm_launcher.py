@@ -118,7 +118,7 @@ def main(argv) -> None:
 
     uname = getpass.getuser()
     save_dir = FLAGS.save_folder_pattern.format(
-        user=uname, exp_name=_EXP_NAME.value, exp_id=experiment.experiment_id
+        user=uname, exp_name=exp_name, exp_id=experiment.experiment_id
     )
     print('Saving Dir is: ', save_dir)
     executable_args['config.experiment.save_root'] = save_dir
@@ -152,6 +152,7 @@ def main(argv) -> None:
           k = k[len('config.') :]
         sweep_str_parts.append(f'{k}={v!r}')
       sweep_str = ','.join(sweep_str_parts)
+      sweep_str = sweep_str.replace('/','-')
       args[
           'config.experiment.save_root'
       ] += f'/{work_unit.work_unit_id}_{sweep_str}'

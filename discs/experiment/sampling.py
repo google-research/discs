@@ -11,7 +11,7 @@ import jax.numpy as jnp
 from ml_collections import config_dict
 import optax
 import tqdm
-
+import numpy as np
 
 class Experiment:
   """Experiment class that generates chains of samples."""
@@ -311,7 +311,9 @@ class Sampling_Experiment(Experiment):
 
   def _get_mapped_samples(self, samples, x0_ess):
     samples = samples.reshape((-1,) + self.config_model.shape)
+    samples = samples.reshape(samples.shape[0], -1)
     x0_ess = x0_ess.reshape((-1,) + self.config_model.shape)
+    x0_ess = x0_ess.reshape(x0_ess.shape[0], -1)
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
 
 
@@ -509,7 +511,6 @@ class CO_Experiment(Experiment):
     ) = self._initialize_chain_vars(bshape)
 
     stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
-
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
 
@@ -528,18 +529,13 @@ class CO_Experiment(Experiment):
 
       if step % self.config.log_every_steps == 0:
         eval_val = obj_fn(samples=new_x, params=params)
+        eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
-        sample = best_ratio[sample_mask]
-        chosen_sample_idx = jnp.argmax(eval_val)
+        chain.append(np.array(best_ratio[sample_mask]))
 
       if self.config.get_additional_metrics:
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[chosen_sample_idx]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -563,19 +559,13 @@ class CO_Experiment(Experiment):
       running_time += time.time() - start
       if step % self.config.log_every_steps == 0:
         eval_val = obj_fn(samples=new_x, params=params)
+        eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
-        sample = best_ratio[sample_mask]
-        chosen_sample_idx = jnp.argmax(eval_val)
-        chain.append(sample)
+        chain.append(np.array(best_ratio[sample_mask]))
 
       if self.config.get_additional_metrics:
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[chosen_sample_idx]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -583,7 +573,7 @@ class CO_Experiment(Experiment):
         hops.append(get_hop(x, new_x))
       x = new_x
 
-    saver.dump_results(best_ratio[sample_mask])
+    saver.dump_results(chain, best_ratio[sample_mask], running_time)
     saver.save_results(acc_ratios, hops, None, running_time)
 
   def _initialize_chain_vars(self, bshape):
