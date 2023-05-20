@@ -9,7 +9,7 @@ def get_config():
       bert_model='bert-base-uncased',
       data_root='./text_infilling_data/',
       random_init_sample=False,
-      num_of_sentences=10,
+      num_of_sentences=20,
       min_sentence_len=15,
       max_sentence_len=25,
   )

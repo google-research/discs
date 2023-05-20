@@ -7,7 +7,7 @@ def get_llm_default_config():
   exp_config.evaluator = 'llm_eval'
   exp_config.name = 'Text_Infilling_Experiment'
   exp_config.batch_size = 1
-  exp_config.chain_length = 1000
+  exp_config.chain_length = 50
   exp_config.max_n = 4
-  exp_config.num_same_resample = 5
+  exp_config.num_same_resample = 25
   return exp_config
