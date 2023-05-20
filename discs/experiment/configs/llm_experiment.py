@@ -10,4 +10,5 @@ def get_llm_default_config():
   exp_config.chain_length = 50
   exp_config.max_n = 4
   exp_config.num_same_resample = 25
+  exp_config.run_parallel = False
   return exp_config

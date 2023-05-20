@@ -88,15 +88,10 @@ class NNCategorical(nn.Module):
         (self.num_visible, self.num_hidden, self.num_categories),
         jnp.float32,
     )
-    self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
+    # self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
 
   def __call__(self, v):
-    sp = jnp.sum(
-        jax.nn.softplus(
-            jnp.sum(jnp.expand_dims(v, -2) * self.w, axis=[-1, -3]) + self.b_h
-        ),
-        -1,
-    )
+    sp = jnp.sum(jax.nn.softplus(v @ self.w + self.b_h), -1)
     vt = jnp.sum(v * self.b_v, axis=[-1, -2])
     return sp + vt
 

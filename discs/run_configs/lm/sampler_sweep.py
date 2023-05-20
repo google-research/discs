@@ -12,33 +12,45 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'model_config.data_path': [
+                  'model_config.data_root': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
                   ],
                   'sampler_config.name': [
                       'randomwalk',
-                      'blockgibbs',
-                      'hammingball',
                   ],
-              },
-              {
-                  'model_config.data_path': [
-                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
-                  ],
-                  'sampler_config.name': ['path_auxiliary', 'gwg', 'dmala'],
-                  'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
-              },
-              {
-                  'model_config.data_path': [
-                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',                      
-                  ],
-                  'sampler_config.name': [
-                      'dlmc',
-                  ],
-                  'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
-                  'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
           ],
       )
   )
   return config
+
+
+
+
+            #  {
+            #       'model_config.data_path': [
+            #           '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
+            #       ],
+            #       'sampler_config.name': [
+            #           'randomwalk',
+            #           'blockgibbs',
+            #           'hammingball',
+            #       ],
+            #   },
+            #   {
+            #       'model_config.data_path': [
+            #           '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
+            #       ],
+            #       'sampler_config.name': ['path_auxiliary', 'gwg', 'dmala'],
+            #       'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
+            #   },
+            #   {
+            #       'model_config.data_path': [
+            #           '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',                      
+            #       ],
+            #       'sampler_config.name': [
+            #           'dlmc',
+            #       ],
+            #       'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
+            #       'sampler_config.solver': ['interpolate', 'euler_forward'],
+            #   },
