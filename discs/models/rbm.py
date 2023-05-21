@@ -79,17 +79,13 @@ class NNCategorical(nn.Module):
     self.b_v = self.param('b_v', bv_init, (self.num_visible, self.num_categories), jnp.float32)
     self.b_h = self.param(
         'b_h', initializers.zeros, (self.num_hidden,), jnp.float32
-    )                                     
-    #bw = initializers.normal/ jnp.sqrt(self.num_visible * self.num_categories + 2)
-    #bw_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
+    )
     self.w = self.param(
         'w',
-        initializers.normal(1.0),
+        initializers.normal(1.0/jnp.sqrt(self.num_visible*self.num_categories + 2)),
         (self.num_visible, self.num_hidden, self.num_categories),
         jnp.float32,
     )
-    # initializers.glorot_uniform(),
-    self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
 
   def __call__(self, v):
     sp = jnp.sum(
@@ -193,9 +189,7 @@ class CategoricalRBM(RBM):
     if data_mean is None:
       return functools.partial(jax.random.categorical, logits=jnp.ones(self.num_visible, self.num_categories))
     else:
-      logits = jax.nn.logsumexp(data_mean, axis=-1, keepdims=True) + jnp.log(
-          data_mean
-      )
+      logits = jnp.log(data_mean)
       return functools.partial(
           jax.random.categorical, logits=jnp.array(logits, dtype=jnp.float32)
       )
