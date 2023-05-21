@@ -187,7 +187,7 @@ class CategoricalRBM(RBM):
 
   def build_init_dist(self, data_mean):
     if data_mean is None:
-      return functools.partial(jax.random.categorical, logits=jnp.ones(self.num_visible, self.num_categories))
+      return functools.partial(jax.random.categorical, logits=jnp.log(jnp.ones(self.num_visible, self.num_categories)))
     else:
       logits = jnp.log(data_mean)
       return functools.partial(
