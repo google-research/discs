@@ -19,32 +19,19 @@ class TextInfilling(abstractmodel.AbstractModel):
   """Categorical Distribution."""
 
   def load_dataset(
-      self, config: ml_collections.ConfigDict, tokenizer, num_of_masks
+      self, config: ml_collections.ConfigDict
   ):
     if not os.path.exists(
         os.path.join(config.data_root, 'infilling_task.json')
     ):
-      print('Dataset not found! Generating dataset first')
-      utils.create_infill_dataset(
-          config.data_root,
-          tokenizer,
-          num_of_masks,
-          num_of_sentences=config.num_of_sentences,
-          min_length=config.min_sentence_len,
-          max_length=config.max_sentence_len,
-      )
-    with open(
-        os.path.join(config.data_root, 'infilling_task.json'),
-        'r',
-        encoding='utf-8',
-    ) as f:
+      raise ValueError('Dataset not found! Create the data set first using utils.create_infill_dataset!!')
+    with open(os.path.join(config.data_root, 'infilling_task.json'),'r',encoding='utf-8',) as f:
       infill_dataset = json.load(f)
     return iter(infill_dataset)
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.tokenizer = BertTokenizer.from_pretrained(config.bert_model)
-    num_of_mask = config.shape[0]
-    self.infill_dataset = self.load_dataset(config, self.tokenizer, num_of_mask)
+    self.infill_dataset = self.load_dataset(config)
     self.num_categories = config.num_categories  ### for bert: 30522
     self.model = FlaxBertForMaskedLM_Infilling.from_pretrained(
         config.bert_model

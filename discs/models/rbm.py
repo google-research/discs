@@ -76,22 +76,28 @@ class NNCategorical(nn.Module):
       data_mean = jnp.array(self.data_mean, dtype=jnp.float32)
       b_v = jnp.log(data_mean)
       bv_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
-    self.b_v = self.param(
-        'b_v', bv_init, (self.num_visible, self.num_categories), jnp.float32
-    )
+    self.b_v = self.param('b_v', bv_init, (self.num_visible, self.num_categories), jnp.float32)
     self.b_h = self.param(
         'b_h', initializers.zeros, (self.num_hidden,), jnp.float32
-    )
+    )                                     
+    bw = jax.random.normal(self.num_visible, self.num_hidden, self.num_categories)/ jnp.sqrt(self.num_visible * self.num_categories + 2)
+    bw_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
     self.w = self.param(
         'w',
-        initializers.glorot_uniform(),
+        bw_init,
         (self.num_visible, self.num_hidden, self.num_categories),
         jnp.float32,
     )
+    # initializers.glorot_uniform(),
     # self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
 
   def __call__(self, v):
-    sp = jnp.sum(jax.nn.softplus(v @ self.w + self.b_h), -1)
+    sp = jnp.sum(
+        jax.nn.softplus(
+            jnp.sum(jnp.expand_dims(v, -2) * self.w, axis=[-1, -3]) + self.b_h
+        ),
+        -1,
+    )
     vt = jnp.sum(v * self.b_v, axis=[-1, -2])
     return sp + vt
 
@@ -172,6 +178,11 @@ class BinaryRBM(RBM):
           jax.random.bernoulli, p=jnp.array(data_mean, dtype=jnp.float32)
       )
 
+        if data_mean is not None:
+            self.init_dist = dists.Multinomial(probs=data_mean)
+        else:
+            self.init_dist = dists.Multinomial(probs=torch.ones((n_visible, n)))
+        self.x0 = self.init_dist.sample().to(device)
 
 class CategoricalRBM(RBM):
   """RBM with categorical observations."""
@@ -184,10 +195,9 @@ class CategoricalRBM(RBM):
         num_categories=self.num_categories,
     )
 
-  # TODO: Kati check thiss.
   def build_init_dist(self, data_mean):
     if data_mean is None:
-      return functools.partial(jax.random.categorical)
+      return functools.partial(jax.random.categorical, logits=jnp.ones(self.num_visible, self.num_categories))
     else:
       logits = jax.nn.logsumexp(data_mean, axis=-1, keepdims=True) + jnp.log(
           data_mean
@@ -195,7 +205,6 @@ class CategoricalRBM(RBM):
       return functools.partial(
           jax.random.categorical, logits=jnp.array(logits, dtype=jnp.float32)
       )
-
 
 def build_model(config):
   config_model = config.model

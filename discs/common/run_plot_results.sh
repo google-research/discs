@@ -17,7 +17,7 @@
 # key=num_categories
 
 
-experiment_folder=discs-rbm-sampler_sweep_56930501
+experiment_folder=discs-rbm-categ_sweep_56976811
 evaluation_type=ess
 key=name
 
