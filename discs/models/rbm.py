@@ -80,16 +80,16 @@ class NNCategorical(nn.Module):
     self.b_h = self.param(
         'b_h', initializers.zeros, (self.num_hidden,), jnp.float32
     )                                     
-    bw = jax.random.normal(self.num_visible, self.num_hidden, self.num_categories)/ jnp.sqrt(self.num_visible * self.num_categories + 2)
-    bw_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
+    #bw = initializers.normal/ jnp.sqrt(self.num_visible * self.num_categories + 2)
+    #bw_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
     self.w = self.param(
         'w',
-        bw_init,
+        initializers.normal(1.0),
         (self.num_visible, self.num_hidden, self.num_categories),
         jnp.float32,
     )
     # initializers.glorot_uniform(),
-    # self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
+    self.w = self.w / jnp.sqrt(self.num_visible * self.num_categories + 2)
 
   def __call__(self, v):
     sp = jnp.sum(
@@ -177,12 +177,6 @@ class BinaryRBM(RBM):
       return functools.partial(
           jax.random.bernoulli, p=jnp.array(data_mean, dtype=jnp.float32)
       )
-
-        if data_mean is not None:
-            self.init_dist = dists.Multinomial(probs=data_mean)
-        else:
-            self.init_dist = dists.Multinomial(probs=torch.ones((n_visible, n)))
-        self.x0 = self.init_dist.sample().to(device)
 
 class CategoricalRBM(RBM):
   """RBM with categorical observations."""
