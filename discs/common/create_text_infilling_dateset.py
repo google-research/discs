@@ -6,10 +6,7 @@ from discs.models.configs import text_infilling_config as lm_config
 from transformers import BertTokenizer, pipeline
 
 
-def main(argv: Sequence[str]) -> None:
-  if len(argv) > 1:
-    raise app.UsageError('Too many command-line arguments.')
-
+def main(_):
   config = lm_config.get_config()
   tokenizer = BertTokenizer.from_pretrained(config.bert_model)
   num_of_masks = config.shape[0]

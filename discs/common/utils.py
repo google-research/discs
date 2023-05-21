@@ -3,7 +3,7 @@
 import functools
 import os
 from typing import Any
-
+import json
 from absl import logging
 from clu import metric_writers
 from clu.metric_writers.summary_writer import SummaryWriter
@@ -12,7 +12,7 @@ import flax
 import jax
 import jax.numpy as jnp
 import numpy as np
-
+import numpy.random as random
 
 @flax.struct.dataclass
 class SamplerState:
@@ -222,13 +222,12 @@ def create_infill_dataset(
   num_of_masks: the number of randomly selected masks to infill words
   """
   data = []
-
   tbc_ref_list = []
   with open(os.path.join(data_root, 'tbc.5k.txt')) as f:
     tbc_lines = f.readlines()
     print('TBC lines:', len(tbc_lines))
     print('Before Shuffle', tbc_lines[0])
-    random.shuffle(tbc_lines)
+    random.shuffle( tbc_lines)
     print('After Shuffle', tbc_lines[0])
     for tbc in tbc_lines:
       if len(data) < num_of_sentences:
@@ -239,7 +238,7 @@ def create_infill_dataset(
         if (len(tbc_new_list) <= max_length) and (
             len(tbc_new_list) >= min_length
         ):
-          infill_pos = random.sample(
+          infill_pos = random.choice(
               range(1, len(tbc_new_list) - 1), num_of_masks
           )
           print(tbc_new_list)
@@ -285,7 +284,7 @@ def create_infill_dataset(
         if (len(wiki_new_list) <= max_length) and (
             len(wiki_new_list) >= min_length
         ):
-          infill_pos = random.sample(
+          infill_pos = random.choice(
               range(1, len(wiki_new_list) - 1), num_of_masks
           )
 
