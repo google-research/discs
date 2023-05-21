@@ -76,13 +76,17 @@ class NNCategorical(nn.Module):
       data_mean = jnp.array(self.data_mean, dtype=jnp.float32)
       b_v = jnp.log(data_mean)
       bv_init = lambda _, shape, dtype: jnp.reshape(b_v, shape).astype(dtype)
-    self.b_v = self.param('b_v', bv_init, (self.num_visible, self.num_categories), jnp.float32)
+    self.b_v = self.param(
+        'b_v', bv_init, (self.num_visible, self.num_categories), jnp.float32
+    )
     self.b_h = self.param(
         'b_h', initializers.zeros, (self.num_hidden,), jnp.float32
     )
     self.w = self.param(
         'w',
-        initializers.normal(1.0/jnp.sqrt(self.num_visible*self.num_categories + 2)),
+        initializers.normal(
+            1.0 / jnp.sqrt(self.num_visible * self.num_categories + 2)
+        ),
         (self.num_visible, self.num_hidden, self.num_categories),
         jnp.float32,
     )
@@ -174,6 +178,7 @@ class BinaryRBM(RBM):
           jax.random.bernoulli, p=jnp.array(data_mean, dtype=jnp.float32)
       )
 
+
 class CategoricalRBM(RBM):
   """RBM with categorical observations."""
 
@@ -187,12 +192,16 @@ class CategoricalRBM(RBM):
 
   def build_init_dist(self, data_mean):
     if data_mean is None:
-      return functools.partial(jax.random.categorical, logits=jnp.log(jnp.ones(self.num_visible, self.num_categories)))
+      return functools.partial(
+          jax.random.categorical,
+          logits=jnp.log(jnp.ones(self.num_visible, self.num_categories)),
+      )
     else:
       logits = jnp.log(data_mean)
       return functools.partial(
           jax.random.categorical, logits=jnp.array(logits, dtype=jnp.float32)
       )
+
 
 def build_model(config):
   config_model = config.model

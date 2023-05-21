@@ -3,41 +3,40 @@
 import json
 import os
 import pdb
-import pdb
-from discs.common import utils
 from discs.common.customized_huggingface_flax_bert import FlaxBertForMaskedLM_Infilling
 from discs.models import abstractmodel
 import jax
-from jax import random
 import jax.numpy as jnp
 import ml_collections
-import numpy as np
-from transformers import BertTokenizer, pipeline
+from transformers import BertTokenizer
 
 
 class TextInfilling(abstractmodel.AbstractModel):
   """Categorical Distribution."""
 
-  def load_dataset(
-      self, config: ml_collections.ConfigDict
-  ):
-    if not os.path.exists(
-        os.path.join(config.data_root, 'infilling_task.json')
-    ):
-      raise ValueError('Dataset not found! Create the data set first using utils.create_infill_dataset!!')
-    with open(os.path.join(config.data_root, 'infilling_task.json'),'r',encoding='utf-8',) as f:
-      infill_dataset = json.load(f)
-    return iter(infill_dataset)
-
   def __init__(self, config: ml_collections.ConfigDict):
     self.tokenizer = BertTokenizer.from_pretrained(config.bert_model)
-    self.infill_dataset = self.load_dataset(config)
+    self.infill_dataset = self.load_dataset(config.data_root)
     self.num_categories = config.num_categories  ### for bert: 30522
     self.model = FlaxBertForMaskedLM_Infilling.from_pretrained(
         config.bert_model
     )
     self.mask_token = 103
     self.random_init_sample = config.random_init_sample
+    
+  def load_dataset(self, data_root):
+    if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
+      raise ValueError(
+          'Dataset not found! Create the data set first using'
+          'create_text_infilling_dataset!!'
+      )
+    with open(
+        os.path.join(data_root, 'infilling_task.json'),
+        'r',
+        encoding='utf-8',
+    ) as f:
+      infill_dataset = json.load(f)
+    return iter(infill_dataset)
 
   def decode(self, x, params):
     sampled_infill_tokens = jnp.array(x[0, 0])
@@ -51,9 +50,7 @@ class TextInfilling(abstractmodel.AbstractModel):
       data = next(self.infill_dataset)
     except:
       return None
-    self.sentence = data[
-        'sentence'
-    ]
+    self.sentence = data['sentence']
     print(self.sentence)
     self.infill_pos = data['infill_pos']  ### infill positions
     self.shape = (len(self.infill_pos),)
@@ -108,7 +105,7 @@ class TextInfilling(abstractmodel.AbstractModel):
 
     mask_dummy_array = jnp.zeros((1, self.num_categories))
     mask_dummy_array = mask_dummy_array.at[1, self.mask_token].set(1.0)
-    '''loglikelihood = 0.0
+    """loglikelihood = 0.0
 
     def func_body(i, val):
       pdb.set_trace()
@@ -130,7 +127,7 @@ class TextInfilling(abstractmodel.AbstractModel):
     init_val = (x, params, mask_dummy_array, loglikelihood)
     _, _, _, loglikelihood = jax.lax.fori_loop(
         0, len(self.infill_pos), func_body, init_val
-    )'''
+    )"""
 
     loglikelihood = 0.0
     for i in range(len(self.infill_pos)):
