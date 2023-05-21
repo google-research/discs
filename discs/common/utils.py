@@ -239,7 +239,7 @@ def create_infill_dataset(
             len(tbc_new_list) >= min_length
         ):
           infill_pos = random.choice(
-              range(1, len(tbc_new_list) - 1), num_of_masks
+              range(1, len(tbc_new_list) - 1), num_of_masks, replace=False
           )
           print(tbc_new_list)
 
@@ -285,7 +285,7 @@ def create_infill_dataset(
             len(wiki_new_list) >= min_length
         ):
           infill_pos = random.choice(
-              range(1, len(wiki_new_list) - 1), num_of_masks
+              range(1, len(wiki_new_list) - 1), num_of_masks, replace=False
           )
 
           for pos in infill_pos:
