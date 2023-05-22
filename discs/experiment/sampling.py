@@ -9,9 +9,10 @@ import flax
 import jax
 import jax.numpy as jnp
 from ml_collections import config_dict
+import numpy as np
 import optax
 import tqdm
-import numpy as np
+
 
 class Experiment:
   """Experiment class that generates chains of samples."""
@@ -103,11 +104,13 @@ class Experiment:
     sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
     obj_fn = self._vmap_evaluator(evaluator, model)
+    model_frwrd = jax.vmap(model.forward)
     return (
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
         obj_fn,
+        model_frwrd,
     )
 
   def _compile_fns(self, step_fn, obj_fn):
@@ -132,6 +135,7 @@ class Experiment:
         sampler_init_state_fn,
         step_fn,
         obj_fn,
+        model_frwrd,
     ) = self._get_vmapped_functions(sampler, model, evaluator)
     rnd = jax.random.PRNGKey(rnd_key)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
@@ -155,8 +159,9 @@ class Experiment:
         evaluator,
         fn_reshape,
         breshape,
+        model_frwrd,
         model,
-        ]
+    ]
 
   def _get_chains_and_evaluations(
       self, model, sampler, evaluator, saver, rnd_key=0
@@ -190,6 +195,7 @@ class Experiment:
       evaluator,
       fn_reshape,
       bshape,
+      model_frwrd=None,
       model=None,
   ):
     raise NotImplementedError
@@ -217,6 +223,7 @@ class Sampling_Experiment(Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model_frwrd,
       model,
   ):
     """Generates the chain of samples."""
@@ -349,11 +356,11 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     #   sent, rng = self._compute_chain(*preprocessed_info)
     #   preprocessed_info = preprocessed_info.at[3].set(rng)
     #   sentences.append(sent)
-    #   return (sentence, preprocessed_info) 
-    #init_val = ([], preprocessed_info)
-    #_ = jax.lax.fori_loop(
+    #   return (sentence, preprocessed_info)
+    # init_val = ([], preprocessed_info)
+    # _ = jax.lax.fori_loop(
     #    0, self.config.num_same_resample, body_fun, init_val
-    #)
+    # )
     sentences = []
     loglikes = []
     for _ in range(self.config.num_same_resample):
@@ -362,11 +369,14 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       sentences.append(sent)
       loglikes.append(loglike)
 
-    #pdb.set_trace()
+    # pdb.set_trace()
     if self.config.select_topk:
       sent_to_loglike = dict(zip(sentences, loglikes))
-      sorted_sent = {k: v for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])}
-      sentences = list(sorted_sent.keys())[0:self.config.topk_num]
+      sorted_sent = {
+          k: v
+          for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
+      }
+      sentences = list(sorted_sent.keys())[-self.config.topk_num :]
 
     return True, sentences
 
@@ -382,6 +392,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model_frwrd,
       model,
   ):
     """Generates the chain of samples."""
@@ -443,12 +454,10 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
       x = new_x
 
-    #pdb.set_trace()
-    model_forward_vmap = jax.vmap(model.forward)
     x = x.astype(jnp.float32)
-    loglike = model_forward_vmap(params, x)
+    loglike = model_frwrd(params, x)
     sampled_sentence = model.decode(x, params)
-    print('Sampled Sentence: ', sampled_sentence)
+    print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike[0])
     return sampled_sentence, rng, loglike[0]
 
 
@@ -509,6 +518,7 @@ class CO_Experiment(Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model_frwrd,
       model,
   ):
     """Generates the chain of samples."""
