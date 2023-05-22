@@ -36,6 +36,7 @@ class TextInfilling(abstractmodel.AbstractModel):
         encoding='utf-8',
     ) as f:
       infill_dataset = json.load(f)
+    print("Lenght of the DATASET is: ", len(infill_dataset))
     return iter(infill_dataset)
 
   def decode(self, x, params):
@@ -99,8 +100,13 @@ class TextInfilling(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
-    if len(x.shape) - 1 == len(self.shape):
+    if x.shape[-1] != self.num_categories:
+      print(x.shape)
       x = jax.nn.one_hot(x, self.num_categories)
+      print(x.shape)
+
+    #if len(x.shape) - 1 == len(self.shape):
+      ##x = jax.nn.one_hot(x, self.num_categories)
       ### x: 1, len(infill_pos), 30522
 
     mask_dummy_array = jnp.zeros((1, self.num_categories))

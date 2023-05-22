@@ -6,10 +6,10 @@ def get_config():
       shape=(4,),
       num_categories=30522,
       name='text_infilling',
-      bert_model='bert-base-uncased',
+      bert_model='./text_infilling_models/bert-base-uncased',
       data_root='./text_infilling_data/',
       random_init_sample=False,
-      num_of_sentences=20,
+      num_of_sentences=10,
       min_sentence_len=15,
       max_sentence_len=25,
   )

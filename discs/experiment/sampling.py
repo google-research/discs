@@ -355,10 +355,19 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     #    0, self.config.num_same_resample, body_fun, init_val
     #)
     sentences = []
+    loglikes = []
     for _ in range(self.config.num_same_resample):
-      sent, rng = self._compute_chain(*preprocessed_info)
+      sent, rng, loglike = self._compute_chain(*preprocessed_info)
       preprocessed_info[3] = rng
       sentences.append(sent)
+      loglikes.append(loglike)
+
+    #pdb.set_trace()
+    if self.config.select_topk:
+      sent_to_loglike = dict(zip(sentences, loglikes))
+      sorted_sent = {k: v for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])}
+      sentences = list(sorted_sent.keys())[0:self.config.topk_num]
+
     return True, sentences
 
   def _compute_chain(
@@ -433,9 +442,14 @@ class Text_Infilling_Experiment(Sampling_Experiment):
         hops.append(get_hop(x, new_x))
 
       x = new_x
+
+    #pdb.set_trace()
+    model_forward_vmap = jax.vmap(model.forward)
+    x = x.astype(jnp.float32)
+    loglike = model_forward_vmap(params, x)
     sampled_sentence = model.decode(x, params)
     print('Sampled Sentence: ', sampled_sentence)
-    return sampled_sentence, rng
+    return sampled_sentence, rng, loglike[0]
 
 
 class CO_Experiment(Experiment):

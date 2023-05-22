@@ -154,10 +154,9 @@ class Saver:
       csvfile.close()
       
   def dump_dict(self, results):
-    root_path = os.path.join(self.save_dir, self.config.sampler.name)
-    if not os.path.isdir(root_path):
-      os.makedirs(root_path)
-    path = os.path.join(root_path, 'results.pkl')
+    if not os.path.isdir(self.save_dir):
+      os.makedirs(self.save_dir)
+    path = os.path.join(self.save_dir, 'results.pkl')
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
 
