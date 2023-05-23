@@ -16,8 +16,8 @@ class FHMM(abstractmodel.AbstractModel):
     self.init_sigma = config.init_sigma
     self.num_categories = config.num_categories
 
-    self.L = config.L
-    self.K = config.K
+    self.l = config.L
+    self.k = config.K
     self.sigma = config.sigma
     self.p_x0 = functools.partial(jax.random.bernoulli, p=self.alpha)
     self.p_xc = functools.partial(jax.random.bernoulli, p=1 - self.beta)
@@ -25,7 +25,7 @@ class FHMM(abstractmodel.AbstractModel):
   def make_init_params(self, rnd):
     rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
     x = self.sample_X(rng1)
-    w = jax.random.normal(rng2, (self.K, 1))
+    w = jax.random.normal(rng2, (self.k, 1))
     b = jax.random.normal(rng3, (1, 1))
     params = {}
     params['params'] = {}
@@ -36,21 +36,21 @@ class FHMM(abstractmodel.AbstractModel):
     return params
 
   def sample_X(self, rng):
-    x = jnp.ones([self.L, self.K])
+    x = jnp.ones([self.l, self.k])
     x[0] = jax.random.bernoulli(rng, p=x[0] * self.alpha)
-    for l in range(1, self.L):
+    for l in range(1, self.l):
       rng, _ = jax.random.split(rng)
       p = self.beta * x[l - 1] + (1 - self.beta) * (1 - x[l - 1])
       x[l] = jax.random.bernoulli(rng, p)
     return x
 
   def sample_Y(self, rng, x, w, b):
-    return jax.random.normal(rng, (self.L, 1)) * self.sigma + x @ w + b
+    return jax.random.normal(rng, (self.l, 1)) * self.sigma + x @ w + b
 
   def get_init_samples(self, rng, num_samples: int):
     x0 = jax.random.bernoulli(
         rng,
-        shape=(num_samples,) + (self.L, self.K),
+        shape=(num_samples,) + (self.l, self.k),
     )
     return x0
 
