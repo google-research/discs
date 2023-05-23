@@ -10,7 +10,6 @@ import ml_collections
 
 
 class FHMM(abstractmodel.AbstractModel):
-  """FHMM Distribution."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.shape = config.shape
@@ -21,8 +20,12 @@ class FHMM(abstractmodel.AbstractModel):
     self.alpha = config.alpha
     self.beta = config.beta
 
+
+class BinaryFHMM(FHMM):
+  """FHMM Distribution."""
+
   def make_init_params(self, rnd):
-    rng1, rng2, rng3, rng4, rng5 = jax.random.split(rnd, 5)
+    rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, 1))
     b = jax.random.normal(rng3, (1, 1))
@@ -42,14 +45,11 @@ class FHMM(abstractmodel.AbstractModel):
 
   def sample_Y(self, rng, x, w, b):
     return (
-        jax.random.normal(rng, (self.l, 1)) * self.sigma +jnp.matmul(x, w) + b
+        jax.random.normal(rng, (self.l, 1)) * self.sigma + jnp.matmul(x, w) + b
     )
 
   def log_probab_of_px(self, x, p):
-    num_ones = jnp.sum(x)
-    dim = math.prod(x.shape)
-    #prob = (p ** (num_ones)) * ((1 - p) ** (dim - num_ones))
-    prob = p*x + (1-p)*(1-x) 
+    prob = p * x + (1 - p) * (1 - x)
     return jnp.log(prob)
 
   def get_init_samples(self, rng, num_samples: int):
@@ -61,12 +61,12 @@ class FHMM(abstractmodel.AbstractModel):
 
   def forward(self, params, x):
     params = params['params']
-    w = params[0:self.k, :]
-    y = params[self.k:self.k+self.l, :]
+    w = params[0 : self.k, :]
+    y = params[self.k : self.k + self.l, :]
     b = params[-1:, :]
-    logp_y = -jnp.sum(
-        jnp.square(y - jnp.matmul(x, w) - b), [-1, -2]
-    ) / (2 * self.sigma**2)
+    logp_y = -jnp.sum(jnp.square(y - jnp.matmul(x, w) - b), [-1, -2]) / (
+        2 * self.sigma**2
+    )
 
     x_0 = x[:, 0, :]
     x_cur = x[:, :-1, :]
@@ -75,10 +75,101 @@ class FHMM(abstractmodel.AbstractModel):
     logp_x = jnp.sum(self.log_probab_of_px(x_0, self.alpha), -1) + jnp.sum(
         jnp.log(self.log_probab_of_px(x_c, 1 - self.beta)), [-1, -2]
     )
-    #logp_y = -jnp.sum(
-    #    jnp.square(self.y - jnp.matmul(x, w) - self.b), [-1, -2]
-    #) / (2 * self.sigma**2)
-    # e_x, e_y, e = self.check(x)
+    loglikelihood = logp_x + logp_y
+    return loglikelihood
+
+  def get_value_and_grad(self, params, x):
+    x = x.astype(jnp.float32)  # int tensor is not differentiable
+
+    def fun(z):
+      loglikelihood = self.forward(params, z)
+      return jnp.sum(loglikelihood), loglikelihood
+
+    (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
+
+    return loglikelihood, grad
+
+
+class CategFHMM(FHMM):
+  """FHMM Distribution."""
+
+  def __init__(self, config: ml_collections.ConfigDict):
+    super().__init__()
+    beta = np.eye(self.num_categories) * (
+        self.beta - (1 - self.beta) / (self.num_categories - 1)
+    )
+    beta += (1 - beta) / (self.num_categories - 1)
+    self.log_beta = jnp.log(beta)
+
+  def make_init_params(self, rnd):
+    rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
+    alpha = jax.random.normal(rng1, self.num_categories)
+    alpha = alpha.at[0].set(1 - self.alpha)
+    alpha = alpha.at[1:].set(self.alpha * alpha[1:] / jnp.sum(alpha[1:]))
+    self.P_X0 = functools.partial(jax.random.categorical, logits=jnp.log(alpha))
+    x = self.sample_X(rng1)
+    w = jax.random.normal(rng2, (self.k, self.num_categories)) #[k, n]
+    b = jax.random.normal(rng3, (1, 1)) #[1, 1]
+    y = self.sample_Y(rng4, x, w, b) # [L, 1]
+    params = {}
+    pdb.set_trace()
+    params['params'] = jnp.concatenate((w, y, b), axis=0)
+    return params
+
+  def sample_X(self, rng):
+    x = jnp.ones([self.l, self.k, self.num_categories])
+    x = x.at[0].set(self.P_X0(rng, shape=(self.K,)))
+    for l in range(1, self.l):
+      rng, _ = jax.random.split(rng)
+      dist0 = functools.partial(
+          jax.random.categorical, logits=jnp.log(X[l - 1] @ self.log_beta.exp())
+      )
+      x = x.at[l].set(dist0(rng, shape=()))
+    return x
+
+  def sample_Y(self, rng, x, w, b):
+    return (
+        jax.random.normal(rng, (self.l,)) * self.sigma
+        + jnp.sum(x * w, [-1, -2])
+        + b
+    )
+
+  def log_probab_of_px_categ(self, x):
+    # TODO: update this
+    prob = p * x + (1 - p) * (1 - x)
+    return jnp.log(prob)
+
+  def get_init_samples(self, rng, num_samples: int):
+    pdb.set_trace()
+    x0 = jax.random.categorical(
+        rng,
+        shape=(num_samples,) + (self.l * self.k, self.num_categories),
+    )
+    return x0
+
+  def forward(self, params, x):
+    params = params['params']
+    w = params[0 : self.k, :]
+    y = params[self.k : self.k + self.l, :]
+    b = params[-1:, :]
+
+    x_0 = x[:, 0]
+    x_cur = x[:, :-1]
+    x_next = x[:, 1:]
+
+    logp_0 = jnp.sum(self.log_probab_of_px_categ(x_0), 1)
+    logp_x = jnp.sum(
+        (
+            jnp.expand_dims(x_cur, -1)
+            * jnp.expand_dims(x_next, -2)
+            * self.log_beta
+        ),
+        [1, 2, 3, 4],
+    )
+    logp_y = -jnp.sum(
+        jnp.square(self.Y - jnp.sum(x * self.W, [2, 3]) - self.b), 1
+    ) / (2 * self.sigma**2)
+
     loglikelihood = logp_x + logp_y
     return loglikelihood
 
@@ -95,4 +186,6 @@ class FHMM(abstractmodel.AbstractModel):
 
 
 def build_model(config):
-  return FHMM(config.model)
+  if config.num_categories == 2:
+    return BinayFHMM(config.model)
+  return CategFHMM(config.model)

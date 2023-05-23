@@ -150,6 +150,9 @@ def main(argv) -> None:
       for k, v in kwargs.items():
         if k.startswith('config.'):
           k = k[len('config.') :]
+        if v.startswith('/gcs'):
+          splits = v.split('/')
+          v = splits[-3]+'/'+splits[-2]+'/'+splits[-1]
         sweep_str_parts.append(f'{k}={v!r}')
       sweep_str = ','.join(sweep_str_parts)
       sweep_str = sweep_str.replace('/','-')

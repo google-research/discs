@@ -23,6 +23,8 @@ class TextInfilling(abstractmodel.AbstractModel):
     )
     self.mask_token = 103
     self.random_init_sample = config.random_init_sample
+    self.forward_vmap = jax.vmap(self.sing_forward)
+    self.get_value_and_grad_vmap = jax.vmap(self.get_value_and_grad)
     
   def load_dataset(self, data_root):
     if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
@@ -100,6 +102,12 @@ class TextInfilling(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
+    return self.forward_vmap(params, x)
+  
+  def get_value_and_grad(self, params, x):
+    return self.get_value_and_grad_vmap(params, x)
+  
+  def single_forward(self, params, x):
     if x.shape[-1] != self.num_categories:
       print(x.shape)
       x = jax.nn.one_hot(x, self.num_categories)
@@ -151,11 +159,11 @@ class TextInfilling(abstractmodel.AbstractModel):
       )
     return loglikelihood
 
-  def get_value_and_grad(self, params, x):
+  def single_get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
     def fun(z):
-      loglikelihood = self.forward(params, z)
+      loglikelihood = self.single_forward(params, z)
       return jnp.sum(loglikelihood), loglikelihood
 
     (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
