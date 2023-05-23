@@ -23,8 +23,8 @@ class TextInfilling(abstractmodel.AbstractModel):
     )
     self.mask_token = 103
     self.random_init_sample = config.random_init_sample
-    self.forward_vmap = jax.vmap(self.sing_forward)
-    self.get_value_and_grad_vmap = jax.vmap(self.get_value_and_grad)
+    self.forward_vmap = jax.vmap(self.single_forward, [None, (0)])
+    self.get_value_and_grad_vmap = jax.vmap(self.single_get_value_and_grad, [None, (0)])
     
   def load_dataset(self, data_root):
     if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
@@ -102,22 +102,23 @@ class TextInfilling(abstractmodel.AbstractModel):
     return x0
 
   def forward(self, params, x):
-    return self.forward_vmap(params, x)
+    bs = x.shape[0]
+    res = self.forward_vmap(params, x)
+    return res.reshape(bs)
   
   def get_value_and_grad(self, params, x):
-    return self.get_value_and_grad_vmap(params, x)
-  
+    bs = x.shape[0]
+    print(x.shape)
+    res = self.get_value_and_grad_vmap(params, x)
+    ll = res[0].reshape(bs)
+    return (ll, res[1])
+
   def single_forward(self, params, x):
     if x.shape[-1] != self.num_categories:
-      print(x.shape)
       x = jax.nn.one_hot(x, self.num_categories)
-      print(x.shape)
+    x = jnp.where(x.shape[0] == len(self.infill_pos), jnp.array([x]), x)
 
-    #if len(x.shape) - 1 == len(self.shape):
-      ##x = jax.nn.one_hot(x, self.num_categories)
-      ### x: 1, len(infill_pos), 30522
-
-    mask_dummy_array = jnp.zeros((1, self.num_categories))
+    mask_dummy_array = jnp.zeros([1,self.num_categories])
     mask_dummy_array = mask_dummy_array.at[1, self.mask_token].set(1.0)
     """loglikelihood = 0.0
 
@@ -144,7 +145,7 @@ class TextInfilling(abstractmodel.AbstractModel):
     )"""
 
     loglikelihood = 0.0
-    for i in range(len(self.infill_pos)):
+    for i in range(0, len(self.infill_pos)):
       x_new = x.at[:, i, :].set(mask_dummy_array)
       outputs = self.model(
           input_ids=params['input_ids'],
@@ -155,8 +156,9 @@ class TextInfilling(abstractmodel.AbstractModel):
       )
       logits = outputs.logits
       loglikelihood = loglikelihood + jnp.sum(
-          logits[:, self.infill_pos[i], :] * x[:, i, :], axis=-1
+              logits[:, self.infill_pos[i], :] * x[:, i, :], axis=-1
       )
+
     return loglikelihood
 
   def single_get_value_and_grad(self, params, x):
