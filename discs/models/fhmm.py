@@ -18,6 +18,8 @@ class FHMM(abstractmodel.AbstractModel):
     self.l = self.shape[0]
     self.k = self.shape[1]
     self.sigma = config.sigma
+    self.alpha = config.alpha
+    self.beta = config.beta
 
   def make_init_params(self, rnd):
     rng1, rng2, rng3, rng4, rng5 = jax.random.split(rnd, 5)
