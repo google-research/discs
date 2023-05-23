@@ -3,9 +3,9 @@ from ml_collections import config_dict
 
 def get_config():
   model_config = dict(
-      shape=(100,10),
-      num_categories=2,
-      sigma=0.5,
+      shape=(200,10),
+      num_categories=4,
+      sigma=2,
       alpha=0.1,
       beta=0.8,
       name='fhmm',

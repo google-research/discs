@@ -101,19 +101,31 @@ class CategFHMM(FHMM):
     beta += (1 - beta) / (self.num_categories - 1)
     self.log_beta = jnp.log(beta)
 
+  def get_init_samples(self, rng, num_samples: int):
+    x0 = jax.random.categorical(
+        rng,
+        logits=jnp.log(jnp.ones([self.num_categories])),
+        shape=(num_samples, self.l * self.k),
+    )
+    return x0
+
   def make_init_params(self, rnd):
     rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
-    alpha = jax.random.normal(rng1, self.num_categories)
+    alpha = jax.random.uniform(rng1, [self.num_categories])
     alpha = alpha.at[0].set(1 - self.alpha)
     alpha = alpha.at[1:].set(self.alpha * alpha[1:] / jnp.sum(alpha[1:]))
-    self.P_X0 = functools.partial(jax.random.categorical, logits=jnp.log(alpha))
+    alpha_logits = jnp.log(alpha)
+    self.alpha_probab = alpha
+    self.P_X0 = functools.partial(jax.random.categorical, logits=alpha_logits)
     x = self.sample_X(rng1)
-    w = jax.random.normal(rng2, (self.k, self.num_categories)) #[k, n]
-    b = jax.random.normal(rng3, (1, 1)) #[1, 1]
-    y = self.sample_Y(rng4, x, w, b) # [L, 1]
+    w = jax.random.normal(rng2, (self.k, self.num_categories))  # [k, n]
+    b = jax.random.normal(rng3, (1, 1))  # [1, 1]
+    y = self.sample_Y(rng4, x, w, b)  # [L, 1]
     params = {}
     pdb.set_trace()
-    params['params'] = jnp.concatenate((w, y, b), axis=0)
+    params['w'] = w
+    params['b'] = b
+    params['y'] = y
     return params
 
   def sample_X(self, rng):
@@ -121,38 +133,31 @@ class CategFHMM(FHMM):
     x = x.at[0].set(self.P_X0(rng, shape=(self.K,)))
     for l in range(1, self.l):
       rng, _ = jax.random.split(rng)
+      # TODO: doros kon ino
       dist0 = functools.partial(
-          jax.random.categorical, logits=jnp.log(X[l - 1] @ self.log_beta.exp())
+          jax.random.categorical, logits=jnp.log(x[l - 1] @ self.log_beta.exp())
       )
       x = x.at[l].set(dist0(rng, shape=()))
     return x
 
   def sample_Y(self, rng, x, w, b):
     return (
-        jax.random.normal(rng, (self.l,)) * self.sigma
+        jax.random.normal(rng, (self.l, 1)) * self.sigma
         + jnp.sum(x * w, [-1, -2])
         + b
     )
 
   def log_probab_of_px_categ(self, x):
-    # TODO: update this
-    prob = p * x + (1 - p) * (1 - x)
-    return jnp.log(prob)
-
-  def get_init_samples(self, rng, num_samples: int):
     pdb.set_trace()
-    x0 = jax.random.categorical(
-        rng,
-        shape=(num_samples,) + (self.l * self.k, self.num_categories),
-    )
-    return x0
+    return jnp.log(jnp.sum(x * self.alpha_probab, axis=-1))
 
   def forward(self, params, x):
-    params = params['params']
-    w = params[0 : self.k, :]
-    y = params[self.k : self.k + self.l, :]
-    b = params[-1:, :]
+    w = params['w']
+    b = params['b']
+    y = params['y']
 
+    x = jax.nn.one_hot(x, self.num_categories)
+    x = x.reshape(-1, self.l, self.k, self.num_categories)
     x_0 = x[:, 0]
     x_cur = x[:, :-1]
     x_next = x[:, 1:]
@@ -166,9 +171,9 @@ class CategFHMM(FHMM):
         ),
         [1, 2, 3, 4],
     )
-    logp_y = -jnp.sum(
-        jnp.square(self.Y - jnp.sum(x * self.W, [2, 3]) - self.b), 1
-    ) / (2 * self.sigma**2)
+    logp_y = -jnp.sum(jnp.square(y - jnp.sum(x * w, [2, 3]) - b), 1) / (
+        2 * self.sigma**2
+    )
 
     loglikelihood = logp_x + logp_y
     return loglikelihood
