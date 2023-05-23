@@ -369,8 +369,9 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     # )
     sentences = []
     loglikes = []
-    for _ in range(self.config.num_same_resample):
+    for i in range(self.config.num_same_resample):
       sent, rng, loglike = self._compute_chain(*preprocessed_info)
+      sent = str(i) + ' ' + sent
       preprocessed_info[3] = rng
       sentences.append(sent)
       loglikes.append(loglike)
@@ -381,6 +382,11 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     }
     topk_sentences = list(sorted_sent.keys())[-self.config.topk_num :]
 
+    for i, sent in enumerate(sentences):
+      sentences[i] = sent[2:]
+    for i, sent in enumerate(topk_sentences):
+      topk_sentences[i] = sent[2:]
+      
     return True, sentences, topk_sentences
 
   def _compute_chain(
