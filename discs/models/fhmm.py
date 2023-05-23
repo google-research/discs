@@ -45,8 +45,6 @@ class FHMM(abstractmodel.AbstractModel):
     dim = math.prod(x.shape)
     prob = (p**(num_ones))*( (1-p)**(dim-num_ones))
     return jnp.log(prob)
-    
-  def log_probab_of_p_xc(self, x):
 
   def get_init_samples(self, rng, num_samples: int):
     x0 = jax.random.bernoulli(
