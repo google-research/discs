@@ -328,18 +328,24 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
   def get_results(self, model, sampler, evaluator, saver):
     infill_sents = []
+    infill_sents_topk = []
     rnd_key = 0
     while True:
-      contin, res = self._get_chains_and_evaluations(
+      contin, res, res_topk = self._get_chains_and_evaluations(
           model, sampler, evaluator, saver, rnd_key=rnd_key
       )
       rnd_key += 1
       if res:
         infill_sents.extend(res)
+        infill_sents_topk.extend(infill_sents_topk)
       if not contin:
         break
     res = evaluator.evaluate(infill_sents, self.config_model.data_root)
-    saver.dump_dict(res)
+    res_topk = evaluator.evaluate(
+        infill_sents_topk, self.config_model.data_root
+    )
+
+    saver.dump_dict(res, res_topk)
 
   def _get_chains_and_evaluations(
       self, model, sampler, evaluator, saver, rnd_key=0
@@ -348,7 +354,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
         model, sampler, evaluator, saver, rnd_key=0
     )
     if preprocessed_info == False:
-      return False, None
+      return False, None, None
 
     # def body_fun(i, val):
     #   pdb.set_trace()
@@ -368,17 +374,14 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       preprocessed_info[3] = rng
       sentences.append(sent)
       loglikes.append(loglike)
+    sent_to_loglike = dict(zip(sentences, loglikes))
+    sorted_sent = {
+        k: v
+        for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
+    }
+    topk_sentences = list(sorted_sent.keys())[-self.config.topk_num :]
 
-    # pdb.set_trace()
-    if self.config.select_topk:
-      sent_to_loglike = dict(zip(sentences, loglikes))
-      sorted_sent = {
-          k: v
-          for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
-      }
-      sentences = list(sorted_sent.keys())[-self.config.topk_num :]
-
-    return True, sentences
+    return True, sentences, topk_sentences
 
   def _compute_chain(
       self,

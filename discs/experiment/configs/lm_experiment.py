@@ -11,6 +11,5 @@ def get_lm_default_config():
   exp_config.max_n = 4
   exp_config.num_same_resample = 25
   exp_config.topk_num = 5
-  exp_config.select_topk = True
   exp_config.run_parallel = False
   return exp_config

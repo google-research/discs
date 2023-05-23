@@ -1,14 +1,14 @@
 """Saver Class."""
 
-import ml_collections
+import csv
+import os
+import pdb
+import pickle
 import jax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import os
-import csv
-import pickle
-import pdb
+import matplotlib.pyplot as plt
+import ml_collections
 import numpy as np
 
 
@@ -55,7 +55,7 @@ class Saver:
     results['sampler'] = self.config.sampler.name
     if 'adaptive' in self.config.sampler.keys():
       results['sampler'] = f'a_{self.config.sampler.name}'
-      
+
     if 'solver' in self.config.sampler.keys():
       if self.config.sampler.solver == 'euler_forward':
         results['sampler'] = results['sampler'] + 'f'
@@ -117,7 +117,7 @@ class Saver:
   def dump_sample(self, sample, step, visualize=False):
     root_path = os.path.join(self.save_dir, self.config.sampler.name)
     if not os.path.isdir(root_path):
-        os.makedirs(root_path)
+      os.makedirs(root_path)
     path = os.path.join(root_path, 'samples.pkl')
     if os.path.exists(path):
       samples = pickle.load(open(path, 'rb'))
@@ -131,9 +131,8 @@ class Saver:
       sample = jnp.reshape(sample, (size, size))
       image_path = os.path.join(root_path, f'sample_{step}.jpeg')
       plt.imsave(image_path, np.array(sample), cmap=cm.gray)
-  
-  def dump_results(self, trajectory, best_ratio, running_time):
 
+  def dump_results(self, trajectory, best_ratio, running_time):
     if not os.path.isdir(self.save_dir):
       os.makedirs(self.save_dir)
     path = os.path.join(self.save_dir, 'results.pkl')
@@ -143,7 +142,7 @@ class Saver:
     results['running_time'] = running_time
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
-    
+
     results = {}
     results['best_ratio_mean'] = np.mean(np.array(best_ratio))
     results['running_time'] = running_time
@@ -152,13 +151,17 @@ class Saver:
       writer.writeheader()
       writer.writerow(results)
       csvfile.close()
-      
-  def dump_dict(self, results):
+
+  def dump_dict(self, results, results_topk):
     if not os.path.isdir(self.save_dir):
       os.makedirs(self.save_dir)
     path = os.path.join(self.save_dir, 'results.pkl')
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
+    path = os.path.join(self.save_dir, 'results_topk.pkl')
+    with open(path, 'wb') as file:
+      pickle.dump(results_topk, file, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 def build_saver(save_dir, config):
   return Saver(save_dir, config)
