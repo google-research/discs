@@ -127,8 +127,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         )
       else:
         threshold = 0.00025
-        # values = [float(values[0])-1.0]
-        values = [float(values[0]) - 1.0 - threshold]
+        if FLAGS.evaluation_type != 'lm':
+          values = [float(values[0]) - 1.0 - threshold]
         plt.bar(
             x_poses + local_pos[i] * bar_width,
             values,
@@ -375,34 +375,24 @@ def main(argv) -> None:
       res_dic = process_keys(res_dic)
       print(res_dic)
       print('******************')
-      filename = os.path.join(subfolderpath, 'results.csv')
-      filename = open(filename, 'r')
-      # creating dictreader object
-      file = csv.DictReader(filename)
-      results = {}
-      for col in file:
-        if FLAGS.evaluation_type == 'ess':
-          results['ess_ee'] = float(col['ESS_EE']) * 50000
-          results['ess_clock'] = float(col['ESS_T'])
-        elif FLAGS.evaluation_type == 'co':
-          results['best_ratio_mean'] = col['best_ratio_mean']
-          # results['best_ratio_mean'] = float(col['best_ratio_mean']) / float(col['running_time'])
-          # results['running_time'] = col['running_time']
-        else:
-          results['tbc_bleu'] = col['tbc_bleu']
-          results['wiki_bleu'] = col['wiki_bleu']
-          results['tbc_wiki_bleu'] = col['tbc_wiki_bleu']
-          results['self_bleu'] = col['self_bleu']
-          i = 0
-          while col['unique_wiki_%d_grams' % i] is not None:
-            results['unique_wiki_%d_grams' % i] = col[
-                'unique_wiki_%d_grams' % i
-            ]
-            results['unique_tbc_%d_grams' % i] = col['unique_tbc_%d_grams' % i]
-            results['unique_self_%d_grams' % i] = col[
-                'unique_self_%d_grams' % i
-            ]
-            i += 1
+      
+      if FLAGS.evaluation_type == 'lm':
+        filename = os.path.join(subfolderpath, 'results.pkl')
+        results = pickle.load(open(filename, 'rb'))
+        del results['infill_sents']
+      else:
+        filename = os.path.join(subfolderpath, 'results.csv')
+        filename = open(filename, 'r')
+        file = csv.DictReader(filename)
+        results = {}
+        for col in file:
+          if FLAGS.evaluation_type == 'ess':
+            results['ess_ee'] = float(col['ESS_EE']) * 50000
+            results['ess_clock'] = float(col['ESS_T'])
+          elif FLAGS.evaluation_type == 'co':
+            results['best_ratio_mean'] = col['best_ratio_mean']
+            # results['best_ratio_mean'] = float(col['best_ratio_mean']) / float(col['running_time'])
+            # results['running_time'] = col['running_time']
       res_dic['results'] = results
       experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
