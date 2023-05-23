@@ -85,7 +85,7 @@ class BinaryFHMM(FHMM):
     x_next = x[:, 1:, :]
     x_c = x_cur * (1 - x_next) + (1 - x_cur) * x_next
     logp_x = jnp.sum(self.log_probab_of_px(x_0, self.alpha), -1) + jnp.sum(
-        jnp.log(self.log_probab_of_px(x_c, 1 - self.beta)), [-1, -2]
+        self.log_probab_of_px(x_c, 1 - self.beta), [-1, -2]
     )
     loglikelihood = logp_x + logp_y
     return loglikelihood
@@ -107,7 +107,7 @@ class CategFHMM(FHMM):
     x0 = jax.random.categorical(
         rng,
         logits=jnp.log(jnp.ones([self.num_categories])),
-        shape=(num_samples, self.l * self.k),
+        shape=(num_samples, self.l, self.k),
     )
     print('init sample shapes: ', x0.shape)
     return x0
@@ -187,5 +187,5 @@ class CategFHMM(FHMM):
 
 def build_model(config):
   if config.model.num_categories == 2:
-    return BinayFHMM(config.model)
+    return BinaryFHMM(config.model)
   return CategFHMM(config.model)
