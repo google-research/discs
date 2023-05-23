@@ -94,11 +94,12 @@ class CategFHMM(FHMM):
   """FHMM Distribution."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    super().__init__()
-    beta = np.eye(self.num_categories) * (
+    super().__init__(config)
+    beta = jnp.eye(self.num_categories) * (
         self.beta - (1 - self.beta) / (self.num_categories - 1)
     )
     beta += (1 - beta) / (self.num_categories - 1)
+    self.beta = beta
     self.log_beta = jnp.log(beta)
 
   def get_init_samples(self, rng, num_samples: int):
@@ -107,6 +108,7 @@ class CategFHMM(FHMM):
         logits=jnp.log(jnp.ones([self.num_categories])),
         shape=(num_samples, self.l * self.k),
     )
+    print("init sample shapes: ", x0.shape)
     return x0
 
   def make_init_params(self, rnd):
@@ -115,54 +117,61 @@ class CategFHMM(FHMM):
     alpha = alpha.at[0].set(1 - self.alpha)
     alpha = alpha.at[1:].set(self.alpha * alpha[1:] / jnp.sum(alpha[1:]))
     alpha_logits = jnp.log(alpha)
-    self.alpha_probab = alpha
+    alpha_probab = alpha
     self.P_X0 = functools.partial(jax.random.categorical, logits=alpha_logits)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, self.num_categories))  # [k, n]
     b = jax.random.normal(rng3, (1, 1))  # [1, 1]
     y = self.sample_Y(rng4, x, w, b)  # [L, 1]
     params = {}
-    pdb.set_trace()
     params['w'] = w
     params['b'] = b
     params['y'] = y
+    params['alpha_probab']= alpha_probab
     return params
 
   def sample_X(self, rng):
     x = jnp.ones([self.l, self.k, self.num_categories])
-    x = x.at[0].set(self.P_X0(rng, shape=(self.K,)))
+    val = self.P_X0(rng, shape=(self.k,))
+    val = jax.nn.one_hot(val, self.num_categories)
+    x = x.at[0].set(val)
     for l in range(1, self.l):
       rng, _ = jax.random.split(rng)
-      # TODO: doros kon ino
       dist0 = functools.partial(
-          jax.random.categorical, logits=jnp.log(x[l - 1] @ self.log_beta.exp())
+          jax.random.categorical, logits=jnp.log(x[l - 1] @ self.beta)
       )
-      x = x.at[l].set(dist0(rng, shape=()))
+      val = dist0(rng, shape=(self.k,))
+      val = jax.nn.one_hot(val, self.num_categories)
+      x = x.at[l].set(val)
     return x
 
   def sample_Y(self, rng, x, w, b):
     return (
-        jax.random.normal(rng, (self.l, 1)) * self.sigma
+        jax.random.normal(rng, (self.l,)) * self.sigma
         + jnp.sum(x * w, [-1, -2])
         + b
     )
 
-  def log_probab_of_px_categ(self, x):
-    pdb.set_trace()
-    return jnp.log(jnp.sum(x * self.alpha_probab, axis=-1))
+  def log_probab_of_px_categ(self, x, alpha_probab):
+    return jnp.log(jnp.sum(x * alpha_probab, axis=-1))
 
   def forward(self, params, x):
     w = params['w']
     b = params['b']
     y = params['y']
+    alpha_probab = params['alpha_probab']
+    #print("W shape = ", w.shape)
+    #print("b shape = ", b.shape)
+    #print("y shape = ", y.shape)
 
-    x = jax.nn.one_hot(x, self.num_categories)
+    if x.shape[-1] != self.num_categories:
+      x = jax.nn.one_hot(x, self.num_categories)
     x = x.reshape(-1, self.l, self.k, self.num_categories)
     x_0 = x[:, 0]
     x_cur = x[:, :-1]
     x_next = x[:, 1:]
 
-    logp_0 = jnp.sum(self.log_probab_of_px_categ(x_0), 1)
+    logp_0 = jnp.sum(self.log_probab_of_px_categ(x_0, alpha_probab), 1)
     logp_x = jnp.sum(
         (
             jnp.expand_dims(x_cur, -1)
@@ -175,7 +184,7 @@ class CategFHMM(FHMM):
         2 * self.sigma**2
     )
 
-    loglikelihood = logp_x + logp_y
+    loglikelihood = logp_x + logp_y + logp_0
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
@@ -191,6 +200,6 @@ class CategFHMM(FHMM):
 
 
 def build_model(config):
-  if config.num_categories == 2:
+  if config.model.num_categories == 2:
     return BinayFHMM(config.model)
   return CategFHMM(config.model)
