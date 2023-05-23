@@ -24,11 +24,11 @@ class FHMM(abstractmodel.AbstractModel):
   def make_init_params(self, rnd):
     rng1, rng2, rng3, rng4, rng5 = jax.random.split(rnd, 5)
     x = self.sample_X(rng1)
-    self.w = jax.random.normal(rng2, (self.k, 1))
-    self.b = jax.random.normal(rng3, (1, 1))
-    self.y = self.sample_Y(rng4, x)
+    w = jax.random.normal(rng2, (self.k, 1))
+    b = jax.random.normal(rng3, (1, 1))
+    y = self.sample_Y(rng4, x, w, b)
     params = {}
-    params['params'] = rng5
+    params['params'] = jnp.concatenate((w, y, b), axis=0)
     return params
 
   def sample_X(self, rng):
@@ -40,15 +40,16 @@ class FHMM(abstractmodel.AbstractModel):
       x = x.at[l].set(jax.random.bernoulli(rng, p))
     return x
 
-  def sample_Y(self, rng, x):
+  def sample_Y(self, rng, x, w, b):
     return (
-        jax.random.normal(rng, (self.l, 1)) * self.sigma + x @ self.w + self.b
+        jax.random.normal(rng, (self.l, 1)) * self.sigma +jnp.matmul(x, w) + b
     )
 
   def log_probab_of_px(self, x, p):
     num_ones = jnp.sum(x)
     dim = math.prod(x.shape)
-    prob = (p ** (num_ones)) * ((1 - p) ** (dim - num_ones))
+    #prob = (p ** (num_ones)) * ((1 - p) ** (dim - num_ones))
+    prob = p*x + (1-p)*(1-x) 
     return jnp.log(prob)
 
   def get_init_samples(self, rng, num_samples: int):
@@ -60,8 +61,13 @@ class FHMM(abstractmodel.AbstractModel):
 
   def forward(self, params, x):
     params = params['params']
-    rng = params['rng']
-    rng1, rng2, rng3 = jax.random.split(rng, 3)
+    w = params[0:self.k, :]
+    y = params[self.k:self.k+self.l, :]
+    b = params[-1:, :]
+    logp_y = -jnp.sum(
+        jnp.square(y - jnp.matmul(x, w) - b), [-1, -2]
+    ) / (2 * self.sigma**2)
+
     x_0 = x[:, 0, :]
     x_cur = x[:, :-1, :]
     x_next = x[:, 1:, :]
@@ -69,12 +75,11 @@ class FHMM(abstractmodel.AbstractModel):
     logp_x = jnp.sum(self.log_probab_of_px(x_0, self.alpha), -1) + jnp.sum(
         jnp.log(self.log_probab_of_px(x_c, 1 - self.beta)), [-1, -2]
     )
-    logp_y = -jnp.sum(
-        jnp.square(params['Y'] - x @ params['W'] - params['b']), [-1, -2]
-    ) / (2 * self.sigma**2)
+    #logp_y = -jnp.sum(
+    #    jnp.square(self.y - jnp.matmul(x, w) - self.b), [-1, -2]
+    #) / (2 * self.sigma**2)
     # e_x, e_y, e = self.check(x)
     loglikelihood = logp_x + logp_y
-    params['rng'] = rng3
     return loglikelihood
 
   def get_value_and_grad(self, params, x):
