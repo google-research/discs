@@ -337,7 +337,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       rnd_key += 1
       if res:
         infill_sents.extend(res)
-        infill_sents_topk.extend(infill_sents_topk)
+        infill_sents_topk.extend(res_topk)
       if not contin:
         break
     res = evaluator.evaluate(infill_sents, self.config_model.data_root)
