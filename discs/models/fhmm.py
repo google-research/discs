@@ -20,6 +20,17 @@ class FHMM(abstractmodel.AbstractModel):
     self.alpha = config.alpha
     self.beta = config.beta
 
+  def get_value_and_grad(self, params, x):
+    x = x.astype(jnp.float32)  # int tensor is not differentiable
+
+    def fun(z):
+      loglikelihood = self.forward(params, z)
+      return jnp.sum(loglikelihood), loglikelihood
+
+    (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
+
+    return loglikelihood, grad
+
 
 class BinaryFHMM(FHMM):
   """FHMM Distribution."""
@@ -31,7 +42,9 @@ class BinaryFHMM(FHMM):
     b = jax.random.normal(rng3, (1, 1))
     y = self.sample_Y(rng4, x, w, b)
     params = {}
-    params['params'] = jnp.concatenate((w, y, b), axis=0)
+    params['w'] = w
+    params['b'] = b
+    params['y'] = y
     return params
 
   def sample_X(self, rng):
@@ -60,10 +73,9 @@ class BinaryFHMM(FHMM):
     return x0
 
   def forward(self, params, x):
-    params = params['params']
-    w = params[0 : self.k, :]
-    y = params[self.k : self.k + self.l, :]
-    b = params[-1:, :]
+    w = params['w']
+    b = params['b']
+    y = params['y']
     logp_y = -jnp.sum(jnp.square(y - jnp.matmul(x, w) - b), [-1, -2]) / (
         2 * self.sigma**2
     )
@@ -77,17 +89,6 @@ class BinaryFHMM(FHMM):
     )
     loglikelihood = logp_x + logp_y
     return loglikelihood
-
-  def get_value_and_grad(self, params, x):
-    x = x.astype(jnp.float32)  # int tensor is not differentiable
-
-    def fun(z):
-      loglikelihood = self.forward(params, z)
-      return jnp.sum(loglikelihood), loglikelihood
-
-    (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
-
-    return loglikelihood, grad
 
 
 class CategFHMM(FHMM):
@@ -108,7 +109,7 @@ class CategFHMM(FHMM):
         logits=jnp.log(jnp.ones([self.num_categories])),
         shape=(num_samples, self.l * self.k),
     )
-    print("init sample shapes: ", x0.shape)
+    print('init sample shapes: ', x0.shape)
     return x0
 
   def make_init_params(self, rnd):
@@ -117,8 +118,7 @@ class CategFHMM(FHMM):
     alpha = alpha.at[0].set(1 - self.alpha)
     alpha = alpha.at[1:].set(self.alpha * alpha[1:] / jnp.sum(alpha[1:]))
     alpha_logits = jnp.log(alpha)
-    alpha_probab = alpha
-    self.P_X0 = functools.partial(jax.random.categorical, logits=alpha_logits)
+    #self.p_x0= functools.partial(jax.random.categorical, logits=alpha_logits)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, self.num_categories))  # [k, n]
     b = jax.random.normal(rng3, (1, 1))  # [1, 1]
@@ -127,7 +127,7 @@ class CategFHMM(FHMM):
     params['w'] = w
     params['b'] = b
     params['y'] = y
-    params['alpha_probab']= alpha_probab
+    params['alpha_probab'] = alpha
     return params
 
   def sample_X(self, rng):
@@ -160,9 +160,6 @@ class CategFHMM(FHMM):
     b = params['b']
     y = params['y']
     alpha_probab = params['alpha_probab']
-    #print("W shape = ", w.shape)
-    #print("b shape = ", b.shape)
-    #print("y shape = ", y.shape)
 
     if x.shape[-1] != self.num_categories:
       x = jax.nn.one_hot(x, self.num_categories)
@@ -186,17 +183,6 @@ class CategFHMM(FHMM):
 
     loglikelihood = logp_x + logp_y + logp_0
     return loglikelihood
-
-  def get_value_and_grad(self, params, x):
-    x = x.astype(jnp.float32)  # int tensor is not differentiable
-
-    def fun(z):
-      loglikelihood = self.forward(params, z)
-      return jnp.sum(loglikelihood), loglikelihood
-
-    (_, loglikelihood), grad = jax.value_and_grad(fun, has_aux=True)(x)
-
-    return loglikelihood, grad
 
 
 def build_model(config):
