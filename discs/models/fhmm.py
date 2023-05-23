@@ -2,6 +2,7 @@
 
 import functools
 import pdb
+from discs.common import math_util as math
 from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
@@ -38,12 +39,14 @@ class FHMM(abstractmodel.AbstractModel):
     return x
 
   def sample_Y(self, rng, x):
-    return jax.random.normal(rng, (self.l, 1)) * self.sigma + x @ self.w + self.b
-  
+    return (
+        jax.random.normal(rng, (self.l, 1)) * self.sigma + x @ self.w + self.b
+    )
+
   def log_probab_of_px(self, x, p):
     num_ones = jnp.sum(x)
     dim = math.prod(x.shape)
-    prob = (p**(num_ones))*( (1-p)**(dim-num_ones))
+    prob = (p ** (num_ones)) * ((1 - p) ** (dim - num_ones))
     return jnp.log(prob)
 
   def get_init_samples(self, rng, num_samples: int):
