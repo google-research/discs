@@ -106,6 +106,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
 
+      # pdb.set_trace()
       assert len(x_poses) == len(xticks)
       if FLAGS.evaluation_type == 'ess':
         plt.yscale('log')
@@ -328,14 +329,19 @@ def sort_based_on_samplers(all_mapped_names):
       'r',
       'gwg(s',
       'gwg(r',
+      'gwg',
       'dmala(s',
       'dmala(r',
+      'dmala',
       'pafs(s',
       'pafs(r',
+      'pafs',
       'dlmcf(s',
       'dlmcf(r',
+      'dlmcf',
       'dlmc(s',
       'dlmc(r',
+      'dlmc',
   ]
   for i, cluster_dict in enumerate(all_mapped_names):
     sampler_to_index = {}
@@ -406,14 +412,14 @@ def main(argv) -> None:
       res_dic['results'] = results
       experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
-  # print(FLAGS.key, results_index_cluster)
+  print(FLAGS.key, results_index_cluster)
   all_mapped_names = organize_experiments(
       results_index_cluster, experiments_results, key_diff
   )
   for key in all_mapped_names[0].keys():
     print(key, ' ', all_mapped_names[0][key])
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
-  if FLAGS.key == 'name':
+  if FLAGS.key == 'name' and key_diff != 'balancing_fn_type':
     x_ticks = ['samplers']
   print('xtickssssss: ', x_ticks)
 
