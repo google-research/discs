@@ -62,7 +62,10 @@ class BinaryFHMM(FHMM):
     )
 
   def log_probab_of_px(self, x, p):
-    prob = p * x + (1 - p) * (1 - x)
+    # prob = p * x + (1 - p) * (1 - x)
+    ones = jnp.sum(x)
+    zeros = math.prod(x.shape) - ones
+    prob = (p**ones)*((1-p)**zeros)
     return jnp.log(prob)
 
   def get_init_samples(self, rng, num_samples: int):
@@ -73,6 +76,8 @@ class BinaryFHMM(FHMM):
     return x0
 
   def forward(self, params, x):
+    
+    x = x.reshape(-1, self.l, self.k)
     w = params['w']
     b = params['b']
     y = params['y']
@@ -90,6 +95,11 @@ class BinaryFHMM(FHMM):
     loglikelihood = logp_x + logp_y
     return loglikelihood
 
+     
+        logp_x = self.P_X0.log_prob(x_0) + self.P_XC.log_prob(x_c)
+ 
+        # e_x, e_y, e = self.check(x)
+        return (logp_x + logp_y).view(*batch)
 
 class CategFHMM(FHMM):
   """FHMM Distribution."""
