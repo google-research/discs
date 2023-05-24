@@ -102,8 +102,8 @@ def evaluate(groups,
 
 if __name__ == '__main__':
   ng = 3
-  graph_file = sys.argv[1]
-  result_pkl = sys.argv[2]
+  graph_file = './sco/nets/INCEPTION.pkl'
+  result_pkl = './discs/results/normcut/results.pkl'
   gfile_list = []
   if os.path.isdir(graph_file):
     fnames = os.listdir(graph_file)
