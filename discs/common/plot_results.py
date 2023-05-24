@@ -126,17 +126,27 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             color=c,
         )
       else:
-        threshold = 0.00025
         if FLAGS.evaluation_type != 'lm':
+          threshold = 0.00025
           values = [float(values[0]) - 1.0 - threshold]
-        plt.bar(
-            x_poses + local_pos[i] * bar_width,
-            values,
-            bar_width,
-            label=sampler,
-            bottom=1,
-            color=c,
-        )
+          plt.bar(
+              x_poses + local_pos[i] * bar_width,
+              values,
+              bar_width,
+              label=sampler,
+              bottom=1,
+              color=c,
+          )
+        else:
+          values = [float(values[0])*100]
+          plt.bar(
+              x_poses + local_pos[i] * bar_width,
+              values,
+              bar_width,
+              label=sampler,
+              color=c,
+          )
+          
 
     if key_diff == 'name':
       key_diff = 'sampler'

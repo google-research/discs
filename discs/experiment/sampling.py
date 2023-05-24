@@ -331,21 +331,21 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     infill_sents_topk = []
     rnd_key = 0
     while True:
-      contin, res, res_topk = self._get_chains_and_evaluations(
+      contin, res, _ = self._get_chains_and_evaluations(
           model, sampler, evaluator, saver, rnd_key=rnd_key
       )
       rnd_key += 1
       if res:
         infill_sents.extend(res)
-        infill_sents_topk.extend(res_topk)
+        # infill_sents_topk.extend(res_topk)
       if not contin:
         break
     res = evaluator.evaluate(infill_sents, self.config_model.data_root)
-    res_topk = evaluator.evaluate(
-        infill_sents_topk, self.config_model.data_root
-    )
+    # res_topk = evaluator.evaluate(
+    #     infill_sents_topk, self.config_model.data_root
+    # )
 
-    saver.dump_dict(res, res_topk)
+    saver.dump_dict(res, res)
 
   def _get_chains_and_evaluations(
       self, model, sampler, evaluator, saver, rnd_key=0
@@ -375,19 +375,19 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       preprocessed_info[3] = rng
       sentences.append(sent)
       loglikes.append(loglike)
-    sent_to_loglike = dict(zip(sentences, loglikes))
-    sorted_sent = {
-        k: v
-        for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
-    }
-    topk_sentences = list(sorted_sent.keys())[-self.config.topk_num :]
+    # sent_to_loglike = dict(zip(sentences, loglikes))
+    # sorted_sent = {
+    #     k: v
+    #     for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
+    # }
+    # topk_sentences = list(sorted_sent.keys())[-self.config.topk_num :]
 
-    for i, sent in enumerate(sentences):
-      sentences[i] = sent[2:]
-    for i, sent in enumerate(topk_sentences):
-      topk_sentences[i] = sent[2:]
-      
-    return True, sentences, topk_sentences
+    # for i, sent in enumerate(sentences):
+    #   sentences[i] = sent[2:]
+    # for i, sent in enumerate(topk_sentences):
+    #   topk_sentences[i] = sent[2:]
+
+    return True, sentences, []
 
   def _compute_chain(
       self,
@@ -541,6 +541,7 @@ class CO_Experiment(Experiment):
         init_temperature,
         t_schedule,
         sample_mask,
+        best_samples,
     ) = self._initialize_chain_vars(bshape)
 
     stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
@@ -567,6 +568,15 @@ class CO_Experiment(Experiment):
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
         chain.append(np.array(best_ratio[sample_mask]))
+        
+        is_better = ratio > best_ratio
+        step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+        chosen_samples = jnp.take_along_axis(
+            new_x, jnp.expand_dims(step_chosen, -1)
+        )
+        best_samples = jnp.where(
+            jnp.expand_dims(is_better, -1), chosen_samples, best_samples
+        )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -597,6 +607,15 @@ class CO_Experiment(Experiment):
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
         chain.append(np.array(best_ratio[sample_mask]))
+        
+        is_better = ratio > best_ratio
+        step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+        chosen_samples = jnp.take_along_axis(
+            new_x, jnp.expand_dims(step_chosen, -1)
+        )
+        best_samples = jnp.where(
+            jnp.expand_dims(is_better, -1), chosen_samples, best_samples
+        )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -606,20 +625,20 @@ class CO_Experiment(Experiment):
         hops.append(get_hop(x, new_x))
       x = new_x
 
-    saver.dump_results(chain, best_ratio[sample_mask], running_time)
+    saver.dump_results(chain, best_ratio[sample_mask], running_time, best_samples)
     saver.save_results(acc_ratios, hops, None, running_time)
 
   def _initialize_chain_vars(self, bshape):
     t_schedule = self._build_temperature_schedule(self.config)
     sample_mask = self.sample_idx >= 0
-
     chain = []
     acc_ratios = []
     hops = []
     running_time = 0
     best_ratio = jnp.ones(self.config.num_models, dtype=jnp.float32) * -1e9
     init_temperature = jnp.ones(bshape, dtype=jnp.float32)
-
+    dim = math.prod(self.config_model.shape)
+    best_samples = jnp.zeros([self.config.num_models, dim])
     return (
         chain,
         acc_ratios,
@@ -629,4 +648,5 @@ class CO_Experiment(Experiment):
         init_temperature,
         t_schedule,
         sample_mask,
+        best_samples,
     )

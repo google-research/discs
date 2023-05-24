@@ -132,7 +132,7 @@ class Saver:
       image_path = os.path.join(root_path, f'sample_{step}.jpeg')
       plt.imsave(image_path, np.array(sample), cmap=cm.gray)
 
-  def dump_results(self, trajectory, best_ratio, running_time):
+  def dump_results(self, trajectory, best_ratio, running_time, best_samples):
     if not os.path.isdir(self.save_dir):
       os.makedirs(self.save_dir)
     path = os.path.join(self.save_dir, 'results.pkl')
@@ -140,6 +140,7 @@ class Saver:
     results['trajectory'] = np.array(trajectory)
     results['best_ratio'] = np.array(best_ratio)
     results['running_time'] = running_time
+    results['best_samples'] = best_samples
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
 
