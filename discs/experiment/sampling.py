@@ -171,7 +171,7 @@ class Experiment:
     preprocessed_info = self.preprocess(
         model, sampler, evaluator, saver, rnd_key=0
     )
-    if len(preprocessed_info) == 1:
+    if not preprocessed_info:
       return False
     self._compute_chain(*preprocessed_info)
     return True
@@ -353,7 +353,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     preprocessed_info = self.preprocess(
         model, sampler, evaluator, saver, rnd_key=0
     )
-    if preprocessed_info == False:
+    if not preprocessed_info:
       return False, None, None
 
     # def body_fun(i, val):
