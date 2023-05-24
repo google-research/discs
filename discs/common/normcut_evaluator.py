@@ -5,11 +5,14 @@ import sys
 import networkx as nx
 import numpy as np
 import pickle5 as pickle
-import flags
+from absl import flags
+import pdb
+from absl import app
 
 
-flags.DEFINE_string('evaluation_type', 'co', 'where results are being saved')
-flags.DEFINE_string('key', 'name', 'what key to plot against')
+flags.DEFINE_string('graph_file', './sco/nets/INCEPTION.pkl', 'dir to graph')
+flags.DEFINE_string('result_pkl', './discs/results/normcut/results.pkl', 'dir to result on the graph')
+FLAGS = flags.FLAGS
 
 def bincount(groups):
   y = np.bincount(groups)
@@ -100,10 +103,13 @@ def evaluate(groups,
   return cut_ratio, balanceness, result
 
 
-if __name__ == '__main__':
+def main(argv) -> None:
+  if len(argv) > 1:
+    raise app.UsageError('Too many command-line arguments.')
+
   ng = 3
-  graph_file = './sco/nets/INCEPTION.pkl'
-  result_pkl = './discs/results/normcut/results.pkl'
+  graph_file = FLAGS.graph_file
+  result_pkl = FLAGS.result_pkl
   gfile_list = []
   if os.path.isdir(graph_file):
     fnames = os.listdir(graph_file)
@@ -111,7 +117,9 @@ if __name__ == '__main__':
       if fname.endswith('pkl'):
         gfile_list.append(os.path.join(graph_file, fname))
   else:
+    print(graph_file, " doesn't exist")
     gfile_list.append(graph_file)
+  print(gfile_list)
   glist = []
   for graph_file in gfile_list:
     with open(graph_file, 'rb') as f:
@@ -121,6 +129,7 @@ if __name__ == '__main__':
     results = pickle.load(f)
   for idx, g in enumerate(glist):
     x = results['best_samples'][idx]
+    x = np.array(x).astype(int)
     adj_mat = nx.to_numpy_array(g)
     cr, bl, message = evaluate(
         x, len(g), len(g.edges()) * 2, adj_mat, ng
@@ -128,3 +137,6 @@ if __name__ == '__main__':
     print(message)
     print('cut ratio', cr)
     print('balanceness', bl)
+
+if __name__ == '__main__':
+  app.run(main)
