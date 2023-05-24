@@ -568,12 +568,13 @@ class CO_Experiment(Experiment):
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
         chain.append(np.array(best_ratio[sample_mask]))
-        
+
         is_better = ratio > best_ratio
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
         chosen_samples = jnp.take_along_axis(
-            new_x, jnp.expand_dims(step_chosen, -1)
+            new_x, jnp.expand_dims(step_chosen, -1), axis=-2
         )
+        chosen_samples = jnp.squeeze(chosen_samples, -2)
         best_samples = jnp.where(
             jnp.expand_dims(is_better, -1), chosen_samples, best_samples
         )
@@ -607,12 +608,13 @@ class CO_Experiment(Experiment):
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
         chain.append(np.array(best_ratio[sample_mask]))
-        
+
         is_better = ratio > best_ratio
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
         chosen_samples = jnp.take_along_axis(
-            new_x, jnp.expand_dims(step_chosen, -1)
+            new_x, jnp.expand_dims(step_chosen, -1), axis=-2
         )
+        chosen_samples = jnp.squeeze(chosen_samples, -2)
         best_samples = jnp.where(
             jnp.expand_dims(is_better, -1), chosen_samples, best_samples
         )
@@ -625,7 +627,9 @@ class CO_Experiment(Experiment):
         hops.append(get_hop(x, new_x))
       x = new_x
 
-    saver.dump_results(chain, best_ratio[sample_mask], running_time, best_samples)
+    saver.dump_results(
+        chain, best_ratio[sample_mask], running_time, best_samples
+    )
     saver.save_results(acc_ratios, hops, None, running_time)
 
   def _initialize_chain_vars(self, bshape):
