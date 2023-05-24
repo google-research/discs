@@ -565,11 +565,11 @@ class CO_Experiment(Experiment):
         eval_val = obj_fn(samples=new_x, params=params)
         eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
+        is_better = ratio > best_ratio
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
         chain.append(np.array(best_ratio[sample_mask]))
 
-        is_better = ratio > best_ratio
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
         chosen_samples = jnp.take_along_axis(
             new_x, jnp.expand_dims(step_chosen, -1), axis=-2
@@ -605,11 +605,11 @@ class CO_Experiment(Experiment):
         eval_val = obj_fn(samples=new_x, params=params)
         eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
+        is_better = ratio > best_ratio
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
         chain.append(np.array(best_ratio[sample_mask]))
 
-        is_better = ratio > best_ratio
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
         chosen_samples = jnp.take_along_axis(
             new_x, jnp.expand_dims(step_chosen, -1), axis=-2
