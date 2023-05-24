@@ -286,7 +286,9 @@ class Sampling_Experiment(Experiment):
         acc_ratios.append(acc)
         # hop avg over batch size and num models
         hops.append(get_hop(x, new_x))
-      chain.append(get_mapped_samples(new_x, x0_ess))
+      mapped_sample = get_mapped_samples(new_x, x0_ess)
+      mapped_sample = jax.device_put(mapped_sample, jax.devices("cpu")[0])
+      chain.append(mapped_sample)
       x = new_x
 
     chain = jnp.array(chain)
@@ -568,7 +570,10 @@ class CO_Experiment(Experiment):
         is_better = ratio > best_ratio
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
-        chain.append(np.array(best_ratio[sample_mask]))
+        
+        br = np.array(best_ratio[sample_mask])
+        br = jax.device_put(br, jax.devices('cpu')[0])
+        chain.append(br)
 
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
         chosen_samples = jnp.take_along_axis(
@@ -608,7 +613,10 @@ class CO_Experiment(Experiment):
         is_better = ratio > best_ratio
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
-        chain.append(np.array(best_ratio[sample_mask]))
+
+        br = np.array(best_ratio[sample_mask])
+        br = jax.device_put(br, jax.devices('cpu')[0])
+        chain.append(br)
 
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
         chosen_samples = jnp.take_along_axis(
