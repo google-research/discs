@@ -16,7 +16,7 @@ def get_config():
                       'blockgibbs',
                       'hammingball',
                   ],
-                  'model_config.num_categories': [4, 8, 18, 32, 64],
+                  'model_config.num_categories': [4, 16, 64, 256],
               },
               {
                   'config.experiment.chain_length': [100000],
@@ -25,7 +25,7 @@ def get_config():
                       'path_auxiliary',
                       'gwg',
                   ],
-                  'model_config.num_categories': [4, 8, 18, 32, 64],
+                  'model_config.num_categories': [4, 16, 64, 256],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
@@ -36,7 +36,7 @@ def get_config():
                       'dlmc',
                   ],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
-                  'model_config.num_categories': [4, 8, 18, 32, 64],
+                  'model_config.num_categories': [4, 16, 64, 256],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],

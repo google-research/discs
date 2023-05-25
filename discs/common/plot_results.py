@@ -168,7 +168,10 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
     elif GRAPHTYPE.value == 'maxclique':
       plt.ylabel('Ratio \u03B1', fontsize=16)
       # plt.ylim(0.5, 1.1)
-    plt.grid()
+      
+    plt.grid(which='major', linestyle='-', linewidth='0.5', color='gray')
+    plt.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
+    plt.minorticks_on()
     plt.show()
 
     plot_dir = f'./plots/{FLAGS.gcs_results_path}/'
@@ -371,6 +374,26 @@ def sort_based_on_samplers(all_mapped_names):
 
   return all_mapped_names
 
+def save_as_csv(all_mapped_names):
+  
+  csv_dir = f'./lm_csv/{FLAGS.gcs_results_path}/'
+  if not os.path.exists(csv_dir):
+    os.makedirs(csv_dir)
+  
+  for res in all_mapped_names:
+    csv_file = res['save_title']
+    csv_dir = f'{csv_dir}/{csv_file}.csv'
+    del res['save_title']
+    key0 = list(res.keys())[0]
+    csv_columns = list(res[key0].keys())
+    csv_columns.insert(0, 'sampler')
+    with open(csv_dir, 'w') as csvfile:
+      writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+      writer.writeheader()
+      for sampler in res.keys():
+        data = res[sampler]
+        data['sampler'] = sampler
+        writer.writerow(data)
 
 def main(argv) -> None:
   if len(argv) > 1:
@@ -422,8 +445,9 @@ def main(argv) -> None:
   if FLAGS.key == 'name' and key_diff != 'balancing_fn_type':
     x_ticks = ['samplers']
   print('xtickssssss: ', x_ticks)
-
   plot_results(all_mapped_names, key_diff, x_ticks)
+  if FLAGS.evaluation_type == 'lm':
+    save_as_csv(all_mapped_names)
 
 
 if __name__ == '__main__':
