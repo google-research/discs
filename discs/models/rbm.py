@@ -87,21 +87,21 @@ class NNCategorical(nn.Module):
         initializers.normal(
             1.0 / jnp.sqrt(self.num_visible * self.num_categories + 2)
         ),
-        (self.num_visible, self.num_hidden, self.num_categories),
+        (self.num_hidden, self.num_visible, self.num_categories),
         jnp.float32,
     )
 
   def __call__(self, v):
     sp = jnp.sum(
         jax.nn.softplus(
-            jnp.sum(jnp.expand_dims(v, -2) * self.w, axis=[-1, -3]) + self.b_h
+            jnp.sum(jnp.expand_dims(v, -3) * self.w, axis=[-1, -2]) + self.b_h
         ),
         -1,
     )
     vt = jnp.sum(v * self.b_v, axis=[-1, -2])
     return sp + vt
-
-
+      
+      
 class RBM(deepenergmodel.DeepEBM):
   """RBM."""
 

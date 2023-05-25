@@ -144,15 +144,15 @@ class CategoricalDLMC(DLMCSampler):
       log_posterior_x = log_tau + log_weight_x
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
-    # log_posterior_x = (
-    #     log_posterior_x * (1 - x) + x * jnp.log1p(
-    #         -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
-    #                           axis=-1, keepdims=True), a_max=1-1e-12))
-    #     )
-    log_posterior_x = (1 - x) * log_posterior_x + x * jnp.clip(
-        log_posterior_x,
-        min=-jnp.log(jnp.sum(jnp.exp(log_nu_x, -1, keepdim=True))),
-    )
+    log_posterior_x = (
+        log_posterior_x * (1 - x) + x * jnp.log1p(
+            -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
+                              axis=-1, keepdims=True), a_max=1-1e-12))
+        )
+    # log_posterior_x = (1 - x) * log_posterior_x + x * jnp.clip(
+    #     log_posterior_x,
+    #     min=-jnp.log(jnp.sum(jnp.exp(log_nu_x, -1, keepdim=True))),
+    # )
 
     return log_posterior_x
 
