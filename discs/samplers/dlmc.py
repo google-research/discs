@@ -145,20 +145,17 @@ class CategoricalDLMC(DLMCSampler):
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
     
-    max_val = jnp.log(jnp.sum(jnp.exp(log_nu_x), -1, keepdims=True))
-
-    log_posterior_x = (
-        log_posterior_x * (1 - x) + x * jnp.clip(
-            jnp.log1p(
-            -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
-                              axis=-1, keepdims=True), a_max=1-1e-12) ) , a_max=max_val)
+    log_posterior_x = log_posterior_x * (1 - x) + x * jnp.clip(
+        jnp.log1p(
+            -jnp.clip(
+                jnp.sum(
+                    jnp.exp(log_posterior_x) * (1 - x), axis=-1, keepdims=True
+                ),
+                a_max=1 - 1e-12,
             )
-
-    # log_posterior_x = (1 - x) * log_posterior_x + x * jnp.clip(
-    #     log_posterior_x,
-    #     min=-jnp.log(jnp.sum(jnp.exp(log_nu_x, -1, keepdim=True))),
-    # )
-
+        ),
+        a_min=log_nu_x,
+    )
     return log_posterior_x
 
   def sample_from_proposal(self, rng, x, dist_x):
