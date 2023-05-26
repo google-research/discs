@@ -36,11 +36,11 @@ class BinaryFHMM(FHMM):
   """FHMM Distribution."""
 
   def make_init_params(self, rnd):
-    rng1, rng2, rng3 = jax.random.split(rnd, 3)
+    rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, 1))
     b = jax.random.normal(rng3, (1, 1))
-    y = self.sample_Y(rng1, x, w, b)
+    y = self.sample_Y(rng4, x, w, b)
     params = {}
     params['w'] = w
     params['b'] = b
@@ -117,7 +117,7 @@ class CategFHMM(FHMM):
     alpha = alpha.at[0].set(1 - self.alpha)
     alpha = alpha.at[1:].set(self.alpha * alpha[1:] / jnp.sum(alpha[1:]))
     alpha_logits = jnp.log(alpha)
-    #self.p_x0= functools.partial(jax.random.categorical, logits=alpha_logits)
+    self.p_x0= functools.partial(jax.random.categorical, logits=alpha_logits)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, self.num_categories))  # [k, n]
     b = jax.random.normal(rng3, (1, 1))  # [1, 1]
@@ -126,12 +126,12 @@ class CategFHMM(FHMM):
     params['w'] = w
     params['b'] = b
     params['y'] = y
-    params['alpha_probab'] = alpha
+    params['alpha'] = alpha_logits
     return params
 
   def sample_X(self, rng):
     x = jnp.ones([self.l, self.k, self.num_categories])
-    val = self.P_X0(rng, shape=(self.k,))
+    val = self.p_x0(rng, shape=(self.k,))
     val = jax.nn.one_hot(val, self.num_categories)
     x = x.at[0].set(val)
     for l in range(1, self.l):
@@ -151,14 +151,17 @@ class CategFHMM(FHMM):
         + b
     )
 
-  def log_probab_of_px_categ(self, x, alpha_probab):
-    return jnp.log(jnp.sum(x * alpha_probab, axis=-1))
+  def log_probab_of_px_categ(self, x, alpha):
+    log_powers = jnp.sum(x * alpha, axis=-1)
+    log_factorial_n = jax.lax.lgamma(jax.sum(x, -1) + 1)
+    log_factorial_xs = jnp.sum(jax.lax.lgamma(x + 1), -1)
+    return log_factorial_n - log_factorial_xs + log_powers
 
   def forward(self, params, x):
     w = params['w']
     b = params['b']
     y = params['y']
-    alpha_probab = params['alpha_probab']
+    alpha = params['alpha']
 
     if x.shape[-1] != self.num_categories:
       x = jax.nn.one_hot(x, self.num_categories)
@@ -167,7 +170,7 @@ class CategFHMM(FHMM):
     x_cur = x[:, :-1]
     x_next = x[:, 1:]
 
-    logp_0 = jnp.sum(self.log_probab_of_px_categ(x_0, alpha_probab), 1)
+    logp_0 = jnp.sum(self.log_probab_of_px_categ(x_0, alpha), 1)
     logp_x = jnp.sum(
         (
             jnp.expand_dims(x_cur, -1)
