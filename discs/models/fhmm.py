@@ -68,7 +68,7 @@ class BinaryFHMM(FHMM):
     x0 = jax.random.bernoulli(
         rng,
         shape=(num_samples,) + (self.l, self.k),
-    )
+    ).astype(jnp.int32)
     return x0
 
   def forward(self, params, x):
@@ -107,7 +107,7 @@ class CategFHMM(FHMM):
         rng,
         logits=jnp.log(jnp.ones([self.num_categories])),
         shape=(num_samples, self.l, self.k),
-    )
+    ).astype(jnp.int32)
     print('init sample shapes: ', x0.shape)
     return x0
 

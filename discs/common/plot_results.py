@@ -168,10 +168,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
     elif GRAPHTYPE.value == 'maxclique':
       plt.ylabel('Ratio \u03B1', fontsize=16)
       # plt.ylim(0.5, 1.1)
-      
-    plt.grid(which='major', linestyle='-', linewidth='0.5', color='gray')
-    plt.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
-    plt.minorticks_on()
+
+    plt.grid()
     plt.show()
 
     plot_dir = f'./plots/{FLAGS.gcs_results_path}/'
