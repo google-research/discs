@@ -36,11 +36,11 @@ class BinaryFHMM(FHMM):
   """FHMM Distribution."""
 
   def make_init_params(self, rnd):
-    rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
+    rng1, rng2, rng3 = jax.random.split(rnd, 3)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, 1))
     b = jax.random.normal(rng3, (1, 1))
-    y = self.sample_Y(rng4, x, w, b)
+    y = self.sample_Y(rng1, x, w, b)
     params = {}
     params['w'] = w
     params['b'] = b
@@ -62,8 +62,7 @@ class BinaryFHMM(FHMM):
     )
 
   def log_probab_of_px(self, x, p):
-    prob = p * x + (1 - p) * (1 - x)
-    return jnp.log(prob)
+    return jnp.log(p) * x + jnp.log(1 - p) * (1-x)
 
   def get_init_samples(self, rng, num_samples: int):
     x0 = jax.random.bernoulli(
@@ -81,7 +80,6 @@ class BinaryFHMM(FHMM):
     logp_y = -jnp.sum(jnp.square(y - (x@w) - b), [-1, -2]) / (
         2 * self.sigma**2
     )
-
     x_0 = x[:, 0, :]
     x_cur = x[:, :-1, :]
     x_next = x[:, 1:, :]

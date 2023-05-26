@@ -65,10 +65,10 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     else:
       ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
 
-    ### since they are all one-hot vector, the norms are 2 except for the current sample;
-    step_size = 0.2
-    distance_term = jnp.ones_like(x) * (1.-x) / step_size
-    ll_delta -= 2. * distance_term
+    # ### since they are all one-hot vector, the norms are 2 except for the current sample;
+    # step_size = 0.2
+    # distance_term = jnp.ones_like(x) * (1.-x) / step_size
+    # ll_delta -= 2. * distance_term
 
 
     log_weight_x = self.apply_weight_function_logscale(ll_delta)
@@ -120,13 +120,13 @@ class BinaryDMALA(DMALASampler):
   """DMALA sampler in biary case."""
 
   def get_dist_at(self, x, log_tau, log_rate_x):
-    _ = x
+    # _ = x
     log_weight_x = log_rate_x['weights']
     threshold_x = log_tau + log_weight_x
     threshold_x -= jnp.logaddexp(threshold_x, jnp.zeros_like(threshold_x))
     return jnp.exp(
         jnp.clip(threshold_x, a_max=0.0)
-    )  # Kati check the values of this
+    )
 
   def sample_from_proposal(self, rng, x, dist_x):
     flip = jax.random.bernoulli(rng, p=dist_x)
@@ -150,13 +150,8 @@ class CategoricalDMALA(DMALASampler):
     log_posterior_x -= jnp.log(
         jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
     )
-    '''log_posterior_x = (
-        log_posterior_x * (1 - x) + x * jnp.log1p(
-            -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
-                              axis=-1, keepdims=True), a_max=1-1e-12))
-    )'''
     return log_posterior_x
-
+            
   def sample_from_proposal(self, rng, x, dist_x):
     y = jax.random.categorical(rng, logits=dist_x)
     y = jax.nn.one_hot(y, self.num_categories, dtype=jnp.float32)
