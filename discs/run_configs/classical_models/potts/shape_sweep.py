@@ -14,49 +14,46 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'config.experiment.chain_length': [100000],
+                  'config.experiment.chain_length': [1000000],
                   'sampler_config.name': [
                       'randomwalk',
                       'blockgibbs',
                       'hammingball',
                   ],
-                  'model_config.num_categories': [4],
                   'model_config.shape': [
                       '(10, 10)',
                       '(30, 30)',
                       '(100, 100)',
-                      '(500, 500)',
+                      '(300, 300)',
                   ],
               },
               {
-                  'config.experiment.chain_length': [100000],
+                  'config.experiment.chain_length': [1000000],
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
                       'gwg',
                   ],
-                  'model_config.num_categories': [4],
                   'sampler_config.balancing_fn_type': ['SQRT'],
                   'model_config.shape': [
                       '(10, 10)',
                       '(30, 30)',
                       '(100, 100)',
-                      '(500, 500)',
+                      '(300, 300)',
                   ],
               },
               {
-                  'config.experiment.chain_length': [100000],
+                  'config.experiment.chain_length': [1000000],
                   'sampler_config.name': [
                       'dlmc',
                   ],
-                  'model_config.num_categories': [4],
                   'sampler_config.balancing_fn_type': ['SQRT'],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
                   'model_config.shape': [
                       '(10, 10)',
                       '(30, 30)',
                       '(100, 100)',
-                      '(500, 500)',
+                      '(300, 300)',
                   ],
               },
           ],

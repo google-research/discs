@@ -12,12 +12,12 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
                       'gwg',
                   ],
-                  'model_config.num_categories': [4],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                       'RATIO',
@@ -26,10 +26,10 @@ def get_config():
                   ],
               },
               {
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dlmc',
                   ],
-                  'model_config.num_categories': [4],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                       'RATIO',
