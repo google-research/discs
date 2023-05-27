@@ -11,6 +11,8 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
+                  'model_config.num_categories': [2],
+                  'model_config.shape': ['(200, 50)', '(1000, 10)'],
                   'sampler_config.name': [
                       'randomwalk',
                       'blockgibbs',
@@ -18,6 +20,8 @@ def get_config():
                   ],
               },
               {
+                  'model_config.num_categories': [2],
+                  'model_config.shape': ['(200, 50)', '(1000, 10)'],
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
@@ -26,6 +30,8 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
+                  'model_config.num_categories': [2],
+                  'model_config.shape': ['(200, 50)', '(1000, 10)'],
                   'sampler_config.name': [
                       'dlmc',
                   ],
