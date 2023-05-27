@@ -153,7 +153,7 @@ class CategFHMM(FHMM):
 
   def log_probab_of_px_categ(self, x, alpha):
     log_powers = jnp.sum(x * alpha, axis=-1)
-    log_factorial_n = jax.lax.lgamma(jax.sum(x, -1) + 1)
+    log_factorial_n = jax.lax.lgamma(jnp.sum(x, -1) + 1)
     log_factorial_xs = jnp.sum(jax.lax.lgamma(x + 1), -1)
     return log_factorial_n - log_factorial_xs + log_powers
 
