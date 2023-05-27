@@ -12,18 +12,29 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'sampler_config.name': ['randomwalk', 'blockgibbs', 'hammingball'],
+                  'config.experiment.chain_length': [100000],
+                  'sampler_config.name': [
+                      'randomwalk',
+                      'blockgibbs',
+                      'hammingball',
+                  ],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [0.5],
                   'model_config.init_sigma': [1.5],
               },
               {
-                  'sampler_config.name': ['randomwalk', 'blockgibbs', 'hammingball'],
+                  'config.experiment.chain_length': [100000],
+                  'sampler_config.name': [
+                      'randomwalk',
+                      'blockgibbs',
+                      'hammingball',
+                  ],
                   'model_config.mu': [1],
                   'model_config.lambdaa': [1],
                   'model_config.init_sigma': [3],
               },
               {
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
@@ -35,6 +46,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
@@ -46,6 +58,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dlmc',
                   ],
@@ -56,6 +69,7 @@ def get_config():
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
               {
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dlmc',
                   ],

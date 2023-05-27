@@ -13,20 +13,22 @@ def get_config():
           sweep=[
               {
                   'config.experiment.chain_length': [
-                      100,
                       1000,
                       10000,
                       100000,
                       1000000,
                   ],
-                  'sampler_config.name': ['randomwalk', 'blockgibbs', 'hammingball'],
+                  'sampler_config.name': [
+                      'randomwalk',
+                      'blockgibbs',
+                      'hammingball',
+                  ],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [0.5],
                   'model_config.init_sigma': [1.5],
               },
               {
                   'config.experiment.chain_length': [
-                      100,
                       1000,
                       10000,
                       100000,
@@ -44,7 +46,6 @@ def get_config():
               },
               {
                   'config.experiment.chain_length': [
-                      100,
                       1000,
                       10000,
                       100000,

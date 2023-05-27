@@ -2,7 +2,8 @@
 
 from ml_collections import config_dict
 
-shape=(50, 50),
+shape = ((50, 50),)
+
 
 def get_config():
   """Get config."""
@@ -13,25 +14,29 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
+                  'config.experiment.chain_length': [1000000],
                   'model_config.shape': [
-                      '(10, 10)',
+                      '(25, 25)',
                       '(50, 50)',
                       '(100, 100)',
-                      '(500, 500)',
-                      '(1000, 1000)',
+                      '(250, 250)',
                   ],
-                  'sampler_config.name': ['randomwalk', 'blockgibbs', 'hammingball'],
+                  'sampler_config.name': [
+                      'randomwalk',
+                      'blockgibbs',
+                      'hammingball',
+                  ],
                   'model_config.mu': [0.5],
                   'model_config.lambdaa': [0.5],
                   'model_config.init_sigma': [1.5],
               },
               {
+                  'config.experiment.chain_length': [1000000],
                   'model_config.shape': [
-                      '(10, 10)',
+                      '(25, 25)',
                       '(50, 50)',
                       '(100, 100)',
-                      '(500, 500)',
-                      '(1000, 1000)',
+                      '(250, 250)',
                   ],
                   'sampler_config.name': [
                       'dmala',
@@ -44,12 +49,12 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT'],
               },
               {
+                  'config.experiment.chain_length': [1000000],
                   'model_config.shape': [
-                      '(10, 10)',
+                      '(25, 25)',
                       '(50, 50)',
                       '(100, 100)',
-                      '(500, 500)',
-                      '(1000, 1000)',
+                      '(250, 250)',
                   ],
                   'sampler_config.name': [
                       'dlmc',
