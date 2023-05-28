@@ -287,7 +287,7 @@ class Sampling_Experiment(Experiment):
         # hop avg over batch size and num models
         hops.append(get_hop(x, new_x))
       mapped_sample = get_mapped_samples(new_x, x0_ess)
-      mapped_sample = jax.device_put(mapped_sample, jax.devices("cpu")[0])
+      mapped_sample = jax.device_put(mapped_sample, jax.devices('cpu')[0])
       chain.append(mapped_sample)
       x = new_x
 
@@ -333,21 +333,23 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     infill_sents_topk = []
     rnd_key = 0
     while True:
-      contin, res, _ = self._get_chains_and_evaluations(
+      contin, sents, sents_topk = self._get_chains_and_evaluations(
           model, sampler, evaluator, saver, rnd_key=rnd_key
       )
       rnd_key += 1
-      if res:
-        infill_sents.extend(res)
-        # infill_sents_topk.extend(res_topk)
       if not contin:
         break
+      infill_sents.extend(sents)
+      if self.config.use_topk:
+        infill_sents_topk.extend(sents_topk)
     res = evaluator.evaluate(infill_sents, self.config_model.data_root)
-    # res_topk = evaluator.evaluate(
-    #     infill_sents_topk, self.config_model.data_root
-    # )
-
-    saver.dump_dict(res, res)
+    if self.config.use_topk:
+      res_topk = evaluator.evaluate(
+          infill_sents_topk, self.config_model.data_root
+      )
+    else:
+      res_topk = res
+    saver.dump_dict(res, res_topk)
 
   def _get_chains_and_evaluations(
       self, model, sampler, evaluator, saver, rnd_key=0
@@ -371,25 +373,29 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     # )
     sentences = []
     loglikes = []
+    topk_sentences = []
     for i in range(self.config.num_same_resample):
       sent, rng, loglike = self._compute_chain(*preprocessed_info)
-      sent = str(i) + ' ' + sent
+      if self.config.use_topk:
+        sent = str(i) + ' ' + sent
       preprocessed_info[3] = rng
       sentences.append(sent)
-      loglikes.append(loglike)
-    # sent_to_loglike = dict(zip(sentences, loglikes))
-    # sorted_sent = {
-    #     k: v
-    #     for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
-    # }
-    # topk_sentences = list(sorted_sent.keys())[-self.config.topk_num :]
+      if self.config.use_topk:
+        loglikes.append(loglike)
 
-    # for i, sent in enumerate(sentences):
-    #   sentences[i] = sent[2:]
-    # for i, sent in enumerate(topk_sentences):
-    #   topk_sentences[i] = sent[2:]
+    if self.config.use_topk:
+      sent_to_loglike = dict(zip(sentences, loglikes))
+      sorted_sent = {
+          k: v
+          for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
+      }
+      topk_sentences = list(sorted_sent.keys())[-self.config.topk_num :]
+      for i, sent in enumerate(topk_sentences):
+        topk_sentences[i] = sent[2:]
+      for i, sent in enumerate(sentences):
+        sentences[i] = sent[2:]
 
-    return True, sentences, []
+    return True, sentences, topk_sentences
 
   def _compute_chain(
       self,
@@ -465,11 +471,14 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
       x = new_x
 
-    x = x.astype(jnp.float32)
-    loglike = model_frwrd(params, x)
+    loglike = 0
+    if self.config.use_topk:
+      x = x.astype(jnp.float32)
+      loglike = model_frwrd(params, x)
+      loglike = loglike[0]
     sampled_sentence = model.decode(x, params)
-    print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike[0])
-    return sampled_sentence, rng, loglike[0]
+    print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike)
+    return sampled_sentence, rng, loglike
 
 
 class CO_Experiment(Experiment):
@@ -570,7 +579,7 @@ class CO_Experiment(Experiment):
         is_better = ratio > best_ratio
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
-        
+
         br = np.array(best_ratio[sample_mask])
         br = jax.device_put(br, jax.devices('cpu')[0])
         chain.append(br)
