@@ -348,7 +348,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
           infill_sents_topk, self.config_model.data_root
       )
     else:
-      res_topk = res
+      res_topk = []
     saver.dump_dict(res, res_topk)
 
   def _get_chains_and_evaluations(
@@ -376,12 +376,13 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     topk_sentences = []
     for i in range(self.config.num_same_resample):
       sent, rng, loglike = self._compute_chain(*preprocessed_info)
+      sent = jax.device_put(sent, jax.devices('cpu')[0])
+      loglike = jax.device_put(loglike, jax.devices('cpu')[0])
       if self.config.use_topk:
         sent = str(i) + ' ' + sent
-      preprocessed_info[3] = rng
-      sentences.append(sent)
-      if self.config.use_topk:
         loglikes.append(loglike)
+      sentences.append(sent)
+      preprocessed_info[3] = rng
 
     if self.config.use_topk:
       sent_to_loglike = dict(zip(sentences, loglikes))
@@ -433,11 +434,6 @@ class Text_Infilling_Experiment(Sampling_Experiment):
           model_param=params,
           state=state,
       )
-      if step % self.config.save_every_steps == 0:
-        saved_sample = new_x[0]
-        saver.dump_sample(
-            saved_sample, step, self.config_model.get('visualize', False)
-        )
       if self.config.get_additional_metrics:
         # avg over all models
         acc = jnp.mean(acc)
@@ -457,25 +453,19 @@ class Text_Infilling_Experiment(Sampling_Experiment):
           state=state,
       )
       running_time += time.time() - start
-      if step % self.config.save_every_steps == 0:
-        saved_sample = new_x[0]
-        saver.dump_sample(
-            saved_sample, step, self.config_model.get('visualize', False)
-        )
       if self.config.get_additional_metrics:
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
         # hop avg over batch size and num models
         hops.append(get_hop(x, new_x))
-
       x = new_x
 
     loglike = 0
     if self.config.use_topk:
       x = x.astype(jnp.float32)
-      loglike = model_frwrd(params, x)
-      loglike = loglike[0]
+      loglike = model_frwrd(params, x)[0]
+
     sampled_sentence = model.decode(x, params)
     print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike)
     return sampled_sentence, rng, loglike

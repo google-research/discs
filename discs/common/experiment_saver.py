@@ -159,9 +159,10 @@ class Saver:
     path = os.path.join(self.save_dir, 'results.pkl')
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
-    path = os.path.join(self.save_dir, 'results_topk.pkl')
-    with open(path, 'wb') as file:
-      pickle.dump(results_topk, file, protocol=pickle.HIGHEST_PROTOCOL)
+    if results_topk:
+      path = os.path.join(self.save_dir, 'results_topk.pkl')
+      with open(path, 'wb') as file:
+        pickle.dump(results_topk, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def build_saver(save_dir, config):
