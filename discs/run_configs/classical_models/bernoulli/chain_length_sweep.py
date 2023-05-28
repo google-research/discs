@@ -15,7 +15,6 @@ def get_config():
                       1000,
                       10000,
                       100000,
-                      1000000,
                   ],
                   'sampler_config.name': [
                       'randomwalk',
@@ -29,7 +28,6 @@ def get_config():
                       1000,
                       10000,
                       100000,
-                      1000000,
                   ],
                   'sampler_config.name': [
                       'dmala',
@@ -46,7 +44,6 @@ def get_config():
                       1000,
                       10000,
                       100000,
-                      1000000,
                   ],
                   'sampler_config.name': [
                       'dlmc',

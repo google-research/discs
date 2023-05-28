@@ -10,7 +10,7 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'config.experiment.chain_length': [10000, 100000],
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
@@ -24,7 +24,7 @@ def get_config():
                   ],
               },
               {
-                  'config.experiment.chain_length': [10000, 100000],
+                  'config.experiment.chain_length': [100000],
                   'sampler_config.name': [
                       'dlmc',
                   ],
