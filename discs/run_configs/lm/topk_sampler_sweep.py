@@ -12,9 +12,9 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'exp_config.chain_length': [1000],
-                  'exp_config.use_topk': [False],
-                  'exp_config.num_same_resample': [5],
+                  'exp_config.chain_length': [50],
+                  'exp_config.use_topk': [True],
+                  'exp_config.num_same_resample': [25],
                   'model_config.data_root': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
                   ],
@@ -28,9 +28,9 @@ def get_config():
                   ],
               },
               {
-                  'exp_config.chain_length': [1000],
-                  'exp_config.use_topk': [False],
-                  'exp_config.num_same_resample': [5],
+                  'exp_config.chain_length': [50],
+                  'exp_config.use_topk': [True],
+                  'exp_config.num_same_resample': [25],
                   'model_config.data_root': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
                   ],
@@ -41,9 +41,9 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT'],
               },
               {
-                  'exp_config.chain_length': [1000],
-                  'exp_config.use_topk': [False],
-                  'exp_config.num_same_resample': [5],
+                  'exp_config.chain_length': [50],
+                  'exp_config.use_topk': [True],
+                  'exp_config.num_same_resample': [25],
                   'model_config.data_root': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
                   ],
