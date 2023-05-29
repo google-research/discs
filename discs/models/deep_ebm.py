@@ -12,7 +12,8 @@ class DeepEBM(abstractmodel.AbstractModel):
   """Deep EBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
-    self.load_params_configs(config)
+    if config.get('data_path', None):
+      self.load_params_configs(config)
 
   def make_init_params(self, rng):
     raise NotImplementedError
