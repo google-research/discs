@@ -28,6 +28,7 @@ def get_config():
           save_root='./discs/results',
           fig_folder='',
           save_every_steps=10000,
+          save_samples=False,
           use_tqdm=False,
       ),
   )

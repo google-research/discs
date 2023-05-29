@@ -88,7 +88,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
   for res_key in result_keys:
     f = plt.figure()
     f.set_figwidth(12)
-    f.set_figheight(4)
+    f.set_figheight(8)
     bar_width = 0.1
     for i, sampler in enumerate(res_cluster.keys()):
       if sampler == 'save_title':
@@ -102,10 +102,21 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             * np.arange(len(res_cluster[sampler][res_key]))
         )
         local_pos = np.arange(num_samplers) - (num_samplers / 2)
+        
+      if xticks[0] == 'samplers':
+        local_pos = local_pos + 0.1
+       
 
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
 
+
+      if sampler.endswith('(s)'):
+        label_sampler = sampler + '$\\sqrt{t}$'
+      elif sampler.endswith('(r)'):
+        label_sampler = sampler + '$\\frac{t}{t+1}$'
+      else:
+        label_sampler = sampler 
       # pdb.set_trace()
       assert len(x_poses) == len(xticks)
       if FLAGS.evaluation_type == 'ess':
@@ -123,7 +134,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             x_poses + local_pos[i] * bar_width,
             values,
             bar_width,
-            label=sampler,
+            label=label_sampler,
             color=c,
         )
       else:
@@ -134,7 +145,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               x_poses + local_pos[i] * bar_width,
               values,
               bar_width,
-              label=sampler,
+              label=label_sampler,
               bottom=1,
               color=c,
           )
@@ -144,7 +155,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               x_poses + local_pos[i] * bar_width,
               values,
               bar_width,
-              label=sampler,
+              label=label_sampler,
               color=c,
           )
           
@@ -154,7 +165,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
     plt.title(f'The effect of {key_diff}', fontsize=16)
     plt.xticks(x_poses, xticks)
     plt.legend(
-        loc='upper right',
+        loc='upper left',
         fontsize=10,
         fancybox=True,
         framealpha=0.4,
@@ -177,6 +188,10 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       os.makedirs(plot_dir)
     plt.savefig(
         f'{plot_dir}/{res_key}_{key_diff}_based_{save_title}.png',
+        bbox_inches='tight',
+    )
+    plt.savefig(
+        f'{plot_dir}/{res_key}_{key_diff}_based_{save_title}.pdf',
         bbox_inches='tight',
     )
 

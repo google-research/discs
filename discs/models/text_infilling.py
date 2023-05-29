@@ -19,7 +19,7 @@ class TextInfilling(abstractmodel.AbstractModel):
     self.infill_dataset = self.load_dataset(config.data_root)
     self.num_categories = config.num_categories  ### for bert: 30522
     self.model = FlaxBertForMaskedLM_Infilling.from_pretrained(
-        config.bert_model, from_pt=True
+        config.bert_model
     )
     self.mask_token = 103
     self.random_init_sample = config.random_init_sample

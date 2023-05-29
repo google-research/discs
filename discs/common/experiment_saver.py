@@ -114,23 +114,26 @@ class Saver:
     if self.config.experiment.evaluator == 'ess_eval':
       self._save_results(metrcis, running_time)
 
-  def dump_sample(self, sample, step, visualize=False):
+  def dump_samples(self, samples, visualize=False):
     root_path = os.path.join(self.save_dir, self.config.sampler.name)
     if not os.path.isdir(root_path):
       os.makedirs(root_path)
     path = os.path.join(root_path, 'samples.pkl')
-    if os.path.exists(path):
-      samples = pickle.load(open(path, 'rb'))
-    else:
-      samples = {}
-    samples[step] = sample
+    samples = {}
+    trajectory = jnp.array(samples)
+    samples['trajectory'] = trajectory
     with open(path, 'wb') as file:
       pickle.dump(samples, file, protocol=pickle.HIGHEST_PROTOCOL)
     if visualize:
-      size = int(jnp.sqrt(sample.shape[0]))
-      sample = jnp.reshape(sample, (size, size))
-      image_path = os.path.join(root_path, f'sample_{step}.jpeg')
-      plt.imsave(image_path, np.array(sample), cmap=cm.gray)
+      for step, samples in enumerate(trajectory):
+        size = int(jnp.sqrt(samples[0].shape[0]))
+        samples = jnp.reshape(samples, (-1, size, size))
+        for chain in range(len(samples.shape[0])):
+          img = samples[chain]
+          image_path = os.path.join(
+              root_path, f'sample_{step}_of_chain_{chain}.jpeg'
+          )
+          plt.imsave(image_path, np.array(img), cmap=cm.gray)
 
   def dump_results(self, trajectory, best_ratio, running_time, best_samples):
     if not os.path.isdir(self.save_dir):

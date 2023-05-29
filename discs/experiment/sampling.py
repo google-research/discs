@@ -22,6 +22,7 @@ class Experiment:
     self.config_model = config.model
     self.parallel = False
     self.sample_idx = None
+    self.num_saved_samples = config.get('nun_saved_samples', 2)
     if jax.local_device_count() != 1 and self.config.run_parallel:
       self.parallel = True
 
@@ -228,15 +229,19 @@ class Sampling_Experiment(Experiment):
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
-    (
-        chain,
-        acc_ratios,
-        hops,
-        running_time,
-    ) = self._initialize_chain_vars()
+    (chain, acc_ratios, hops, running_time, samples) = (
+        self._initialize_chain_vars()
+    )
 
     stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
     get_mapped_samples, eval_metric = self._compile_additional_fns(evaluator)
+    rng = jax.random.PRNGKey(10)
+    selected_chains = jax.random.choice(
+        rng,
+        jnp.arange(self.config.batch_size),
+        shape=(self.num_saved_samples,),
+        replace=False,
+    )
 
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
@@ -250,12 +255,11 @@ class Sampling_Experiment(Experiment):
           state=state,
       )
 
+      if self.config.save_samples and step % self.config.save_every_steps == 0:
+        chains = new_x.reshape(self.config.batch_size, -1)
+        samples.append(chains[selected_chains])
+
       if self.config.get_additional_metrics:
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[0]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -275,12 +279,11 @@ class Sampling_Experiment(Experiment):
       )
       running_time += time.time() - start
 
+      if self.config.save_samples and step % self.config.save_every_steps == 0:
+        chains = new_x.reshape(self.config.batch_size, -1)
+        samples.append(chains[selected_chains])
+
       if self.config.get_additional_metrics:
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[0]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -299,11 +302,14 @@ class Sampling_Experiment(Experiment):
     num_ll_calls = int(state['num_ll_calls'][0])
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
+    if self.config.save_samples:
+      saver.dump_samples(samples, visualize=True)
 
   def _initialize_chain_vars(self):
     chain = []
     acc_ratios = []
     hops = []
+    samples = []
     running_time = 0
 
     return (
@@ -311,6 +317,7 @@ class Sampling_Experiment(Experiment):
         acc_ratios,
         hops,
         running_time,
+        samples,
     )
 
   def _compile_additional_fns(self, evaluator):
