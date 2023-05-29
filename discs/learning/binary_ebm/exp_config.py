@@ -12,8 +12,12 @@ def get_config(img_config):
   config = configs.get_config()
   config.experiment.update(train_configs.get_common_train_config())
   config.experiment.img_config = img_config
+  config.experiment.total_train_steps = 2
   config.experiment.dataset = dataset
   config.experiment.batch_size = 100
+  config.experiment.buffer_size = 10000
+  config.experiment.reinit_freq = 0.0
+  config.experiment.buffer_init = 'mean'
   config.experiment.optimizer = 'adam'
   config.experiment.p_control = 0.0
   config.experiment.energy_l2 = 0.0
