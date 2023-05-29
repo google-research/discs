@@ -154,6 +154,10 @@ def main(argv) -> None:
       for k, v in kwargs.items():
         if k.startswith('config.'):
           k = k[len('config.') :]
+        elif k.startswith('model_config.'):
+          k = k[len('model_config.') :]
+        elif k.startswith('sampler_config.'):
+          k = k[len('sampler_config.') :]
         if isinstance(v, str) and v.startswith('/gcs'):
           splits = v.split('/')
           v = splits[-3] + '/' + splits[-2] + '/' + splits[-1]

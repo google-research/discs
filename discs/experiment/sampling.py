@@ -425,6 +425,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
         acc_ratios,
         hops,
         running_time,
+        _
     ) = self._initialize_chain_vars()
 
     stp_burnin, stp_mixing, get_hop, _ = compiled_fns
