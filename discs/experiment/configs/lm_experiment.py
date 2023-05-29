@@ -14,6 +14,7 @@ def get_config():
           topk_num=5,
           use_topk=False,
           run_parallel=False,
+          save_root='',
       )
   )
   return config_dict.ConfigDict(exp_config)

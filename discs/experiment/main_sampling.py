@@ -44,7 +44,9 @@ def get_main_config():
         % (config.model['name'], config.model['graph_type'])
     )
     config.model.update(graph_config.get_model_config(config.model['cfg_str']))
-    co_exp_default_config = importlib.import_module('discs.experiment.configs.co_experiment')
+    co_exp_default_config = importlib.import_module(
+        'discs.experiment.configs.co_experiment'
+    )
     config.experiment.update(co_exp_default_config.get_co_default_config())
     config.update(_EXPERIMENT_CONFIG.value)
 
