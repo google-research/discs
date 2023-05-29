@@ -69,6 +69,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [4],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-4-50/',

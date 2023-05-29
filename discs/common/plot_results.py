@@ -425,6 +425,8 @@ def main(argv) -> None:
       subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
       res_dic = get_experiment_config(folder)
       res_dic = process_keys(res_dic)
+      if 'save_samples' in res_dic:
+        del res_dic['save_samples']
       print(res_dic)
       print('******************')
       
