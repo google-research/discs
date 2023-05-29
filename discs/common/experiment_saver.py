@@ -119,16 +119,16 @@ class Saver:
     if not os.path.isdir(root_path):
       os.makedirs(root_path)
     path = os.path.join(root_path, 'samples.pkl')
-    samples = {}
+    res = {}
     trajectory = jnp.array(samples)
-    samples['trajectory'] = trajectory
+    res['trajectory'] = trajectory
     with open(path, 'wb') as file:
-      pickle.dump(samples, file, protocol=pickle.HIGHEST_PROTOCOL)
+      pickle.dump(res, file, protocol=pickle.HIGHEST_PROTOCOL)
     if visualize:
       for step, samples in enumerate(trajectory):
         size = int(jnp.sqrt(samples[0].shape[0]))
         samples = jnp.reshape(samples, (-1, size, size))
-        for chain in range(len(samples.shape[0])):
+        for chain in range(samples.shape[0]):
           img = samples[chain]
           image_path = os.path.join(
               root_path, f'sample_{step}_of_chain_{chain}.jpeg'

@@ -12,6 +12,7 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [2],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
@@ -24,6 +25,7 @@ def get_config():
                   ],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [2],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
@@ -33,6 +35,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [2],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/mnist-2-200/',
@@ -45,6 +48,7 @@ def get_config():
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [4],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-4-50/',
@@ -56,6 +60,7 @@ def get_config():
                   ],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [4],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-4-50/',
@@ -75,6 +80,7 @@ def get_config():
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [8],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-8-50/',
@@ -86,6 +92,7 @@ def get_config():
                   ],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [8],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-8-50/',
@@ -94,6 +101,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT', 'RATIO'],
               },
               {
+                  'config.experiment.save_samples': [True],
                   'model_config.num_categories': [8],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/RBM_DATA/fashion_mnist-8-50/',
