@@ -22,7 +22,7 @@ class Experiment:
     self.config_model = config.model
     self.parallel = False
     self.sample_idx = None
-    self.num_saved_samples = config.get('nun_saved_samples', 2)
+    self.num_saved_samples = config.get('nun_saved_samples', 4)
     if jax.local_device_count() != 1 and self.config.run_parallel:
       self.parallel = True
 
