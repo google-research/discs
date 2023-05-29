@@ -115,7 +115,7 @@ class Saver:
       self._save_results(metrcis, running_time)
 
   def dump_samples(self, samples, visualize=False):
-    root_path = os.path.join(self.save_dir, self.config.sampler.name)
+    root_path = self.save_dir
     if not os.path.isdir(root_path):
       os.makedirs(root_path)
     path = os.path.join(root_path, 'samples.pkl')
