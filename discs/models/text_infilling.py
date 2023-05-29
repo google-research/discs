@@ -19,7 +19,8 @@ class TextInfilling(abstractmodel.AbstractModel):
     self.infill_dataset = self.load_dataset(config.data_root)
     self.num_categories = config.num_categories  ### for bert: 30522
     self.model = FlaxBertForMaskedLM_Infilling.from_pretrained(
-        config.bert_model
+        config.bert_model,
+        from_pt=True
     )
     self.mask_token = 103
     self.random_init_sample = config.random_init_sample
@@ -29,7 +30,7 @@ class TextInfilling(abstractmodel.AbstractModel):
   def load_dataset(self, data_root):
     if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
       raise ValueError(
-          'Dataset not found! Create the data set first using'
+          'Dataset not found! Create the data set first using '
           'create_text_infilling_dataset!!'
       )
     with open(
@@ -38,7 +39,7 @@ class TextInfilling(abstractmodel.AbstractModel):
         encoding='utf-8',
     ) as f:
       infill_dataset = json.load(f)
-    print("Lenght of the DATASET is: ", len(infill_dataset))
+    print("Length of the DATASET is: ", len(infill_dataset))
     return iter(infill_dataset)
 
   def decode(self, x, params):
@@ -56,6 +57,7 @@ class TextInfilling(abstractmodel.AbstractModel):
     self.sentence = data['sentence']
     print(self.sentence)
     self.infill_pos = data['infill_pos']  ### infill positions
+    print(self.infill_pos)
     self.shape = (len(self.infill_pos),)
     inputs = self.tokenizer(self.sentence, return_tensors='jax')
     params = {}
@@ -83,7 +85,7 @@ class TextInfilling(abstractmodel.AbstractModel):
           dtype=jnp.int32,
       )
     else:
-      ### NOTE: max init
+      ### NOTE: categorical init
       mask_dummy_array = jnp.zeros(
           (1, len(self.infill_pos), self.num_categories)
       )
@@ -97,7 +99,7 @@ class TextInfilling(abstractmodel.AbstractModel):
       )
       logits = outputs.logits
       infill_logits = logits[:, self.infill_pos, :]
-      x0 = jnp.argmax(infill_logits, axis=-1)
+      x0 = jax.random.categorical(rnd, infill_logits, axis=-1)
 
     return x0
 
@@ -156,7 +158,7 @@ class TextInfilling(abstractmodel.AbstractModel):
       )
       logits = outputs.logits
       loglikelihood = loglikelihood + jnp.sum(
-              logits[:, self.infill_pos[i], :] * x[:, i, :], axis=-1
+              jax.nn.log_softmax(logits[:, self.infill_pos[i], :], axis=-1) * x[:, i, :], axis=-1
       )
 
     return loglikelihood
