@@ -31,8 +31,8 @@ def get_save_dir(config):
 
 def get_main_config():
   config = common_configs.get_config()
-  if 'graph_type' not in _MODEL_CONFIG.value or 'bert_model' not in _MODEL_CONFIG.value:
-    config.update(_EXPERIMENT_CONFIG.value)
+  if 'graph_type' not in _MODEL_CONFIG.value:
+    config.experiment.update(_EXPERIMENT_CONFIG.value)
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
   if config.model.get('graph_type', None):
@@ -47,12 +47,12 @@ def get_main_config():
     )
     config.experiment.update(co_exp_default_config.get_co_default_config())
     
-  if config.model.get('bert_model', None):
+  '''if config.model.get('bert_model', None):
     lm_exp_default_config = importlib.import_module(
         'discs.experiment.configs.lm_experiment'
     )
     config.experiment.update(lm_exp_default_config.get_lm_default_config())
-    config.update(_EXPERIMENT_CONFIG.value)
+    config.update(_EXPERIMENT_CONFIG.value)'''
     
   return config
 

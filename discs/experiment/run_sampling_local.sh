@@ -15,9 +15,9 @@ else
    exp_config="discs/experiment/configs/${model?}/${graph_type:-$default}.py" 
 fi
 
-if [ "$model" == "$text_infilling" ]
+if [ "$model" == "text_infilling" ]
 then
-   exp_config="discs/discs/experiment/configs/lm_experiment.py"
+   exp_config="discs/experiment/configs/lm_experiment.py"
 fi
 
 echo $exp_config

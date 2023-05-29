@@ -1,7 +1,7 @@
 from ml_collections import config_dict
 
 
-def get_lm_default_config():
+def get_config():
   """Get combinatorial default configs."""
   exp_config = config_dict.ConfigDict()
   exp_config.evaluator = 'lm_eval'
