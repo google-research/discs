@@ -49,9 +49,7 @@ def get_main_config():
     config.update(_EXPERIMENT_CONFIG.value)
 
   if config.model.get('bert_model', None):
-    lm_exp_default_config = importlib.import_module('discs.experiment.configs.lm_experiment')
-    config.experiment.update(lm_exp_default_config.get_config())
-    config.experiment.update(_EXPERIMENT_CONFIG.value)
+    config.update(_EXPERIMENT_CONFIG.value)
 
   return config
 
