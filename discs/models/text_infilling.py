@@ -19,14 +19,15 @@ class TextInfilling(abstractmodel.AbstractModel):
     self.infill_dataset = self.load_dataset(config.data_root)
     self.num_categories = config.num_categories  ### for bert: 30522
     self.model = FlaxBertForMaskedLM_Infilling.from_pretrained(
-        config.bert_model,
-        from_pt=True
+        config.bert_model, from_pt=True
     )
     self.mask_token = 103
     self.random_init_sample = config.random_init_sample
     self.forward_vmap = jax.vmap(self.single_forward, [None, (0)])
-    self.get_value_and_grad_vmap = jax.vmap(self.single_get_value_and_grad, [None, (0)])
-    
+    self.get_value_and_grad_vmap = jax.vmap(
+        self.single_get_value_and_grad, [None, (0)]
+    )
+
   def load_dataset(self, data_root):
     if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
       raise ValueError(
@@ -39,7 +40,7 @@ class TextInfilling(abstractmodel.AbstractModel):
         encoding='utf-8',
     ) as f:
       infill_dataset = json.load(f)
-    print("Length of the DATASET is: ", len(infill_dataset))
+    print('Length of the DATASET is: ', len(infill_dataset))
     return iter(infill_dataset)
 
   def decode(self, x, params):
@@ -107,7 +108,7 @@ class TextInfilling(abstractmodel.AbstractModel):
     bs = x.shape[0]
     res = self.forward_vmap(params, x)
     return res.reshape(bs)
-  
+
   def get_value_and_grad(self, params, x):
     bs = x.shape[0]
     print(x.shape)
@@ -120,7 +121,7 @@ class TextInfilling(abstractmodel.AbstractModel):
       x = jax.nn.one_hot(x, self.num_categories)
     x = jnp.where(x.shape[0] == len(self.infill_pos), jnp.array([x]), x)
 
-    mask_dummy_array = jnp.zeros([1,self.num_categories])
+    mask_dummy_array = jnp.zeros([1, self.num_categories])
     mask_dummy_array = mask_dummy_array.at[1, self.mask_token].set(1.0)
     """loglikelihood = 0.0
 
@@ -158,7 +159,9 @@ class TextInfilling(abstractmodel.AbstractModel):
       )
       logits = outputs.logits
       loglikelihood = loglikelihood + jnp.sum(
-              jax.nn.log_softmax(logits[:, self.infill_pos[i], :], axis=-1) * x[:, i, :], axis=-1
+          jax.nn.log_softmax(logits[:, self.infill_pos[i], :], axis=-1)
+          * x[:, i, :],
+          axis=-1,
       )
 
     return loglikelihood

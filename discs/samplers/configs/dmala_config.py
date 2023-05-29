@@ -11,5 +11,6 @@ def get_config():
       balancing_fn_type='SQRT',
       schedule_step=100,
       reset_z_est=20,
+      step_size=0.3
   )
   return config_dict.ConfigDict(model_config)

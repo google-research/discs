@@ -65,11 +65,9 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     else:
       ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
 
-    # ### since they are all one-hot vector, the norms are 2 except for the current sample;
-    # step_size = 0.2
-    # distance_term = jnp.ones_like(x) * (1.-x) / step_size
-    # ll_delta -= 2. * distance_term
-
+    ### since they are all one-hot vector, the norms are 2 except for the current sample;
+    distance_term = jnp.ones_like(x) * (1.-x) / self.step_size
+    ll_delta -= 2. * distance_term
 
     log_weight_x = self.apply_weight_function_logscale(ll_delta)
     return ll_x, {'weights': log_weight_x, 'delta': ll_delta}
@@ -77,6 +75,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.adaptive = config.sampler.adaptive
+    self.step_size = config.step_size
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.get('schedule_step', 100)
@@ -100,12 +99,14 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
         state['steps'] == 0, local_stats['log_tau'], state['log_tau']
     )
 
-    dist_x = self.get_dist_at(x, log_tau, log_rate_x)
+    # dist_x = self.get_dist_at(x, log_tau, log_rate_x)
+    dist_x = jnp.log(jax.nn.softmax(log_rate_x['weights']))
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
-    dist_y = self.get_dist_at(y, log_tau, log_rate_y)
+    # dist_y = self.get_dist_at(y, log_tau, log_rate_y)
+    dist_y = jnp.log(jax.nn.softmax(log_rate_y['weights']))
     aux = jnp.where(self.num_categories > 2, x, aux)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
