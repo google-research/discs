@@ -12,9 +12,9 @@ def get_config():
           sampler='path_auxiliary',
           sweep=[
               {
-                  'exp_config.chain_length': [50],
-                  'exp_config.use_topk': [True],
-                  'exp_config.num_same_resample': [25],
+                  'config.experiment.chain_length': [50],
+                  'config.experiment.use_topk': [True],
+                  'config.experiment.num_same_resample': [25],
                   'model_config.data_root': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
                   ],
@@ -23,14 +23,28 @@ def get_config():
                   ],
                   'sampler_config.name': [
                       'randomwalk',
-                      'blockgibbs',
                       'hammingball',
                   ],
               },
               {
-                  'exp_config.chain_length': [50],
-                  'exp_config.use_topk': [True],
-                  'exp_config.num_same_resample': [25],
+                  'sampler_config.block_size': [1],
+                  'config.experiment.chain_length': [50],
+                  'config.experiment.use_topk': [True],
+                  'config.experiment.num_same_resample': [25],
+                  'model_config.data_root': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
+                  ],
+                  'model_config.bert_model': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
+                  ],
+                  'sampler_config.name': [
+                      'blockgibbs',
+                  ],
+              },
+              {
+                  'config.experiment.chain_length': [50],
+                  'config.experiment.use_topk': [True],
+                  'config.experiment.num_same_resample': [25],
                   'model_config.data_root': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
                   ],
@@ -41,9 +55,9 @@ def get_config():
                   'sampler_config.balancing_fn_type': ['SQRT'],
               },
               {
-                  'exp_config.chain_length': [50],
-                  'exp_config.use_topk': [True],
-                  'exp_config.num_same_resample': [25],
+                  'config.experiment.chain_length': [50],
+                  'config.experiment.use_topk': [True],
+                  'config.experiment.num_same_resample': [25],
                   'model_config.data_root': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
                   ],

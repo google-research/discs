@@ -376,8 +376,6 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     topk_sentences = []
     for i in range(self.config.num_same_resample):
       sent, rng, loglike = self._compute_chain(*preprocessed_info)
-      sent = jax.device_put(sent, jax.devices('cpu')[0])
-      loglike = jax.device_put(loglike, jax.devices('cpu')[0])
       if self.config.use_topk:
         sent = str(i) + ' ' + sent
         loglikes.append(loglike)
