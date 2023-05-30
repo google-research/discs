@@ -65,7 +65,6 @@ class Bernoulli(abstractmodel.AbstractModel):
     return jnp.exp(params) / (jnp.exp(params) + jnp.ones(params.shape))
 
   def get_var(self, params):
-    params = params['params']
     p = self.get_expected_val(params)
     return p * (1 - p)
 

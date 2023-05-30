@@ -50,6 +50,32 @@ def get_experiment_config(exp_config):
   # values.append(method)
   return dict(zip(keys, values))
 
+def process_keys(dict_o_keys):
+  if dict_o_keys['name'] == 'hammingball':
+    dict_o_keys['name'] = 'hb-10-1'
+  elif dict_o_keys['name'] == 'blockgibbs':
+    dict_o_keys['name'] = 'bg-2'
+  elif dict_o_keys['name'] == 'randomwalk':
+    dict_o_keys['name'] = 'rmw'
+  elif dict_o_keys['name'] == 'path_auxiliary':
+    dict_o_keys['name'] = 'pafs'
+
+  if 'solver' in dict_o_keys:
+    if dict_o_keys['solver'] == 'euler_forward':
+      dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
+    del dict_o_keys['solver']
+  if 'balancing_fn_type' in dict_o_keys:
+    if 'name' in dict_o_keys:
+      if dict_o_keys['balancing_fn_type'] == 'SQRT':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '$\\sqrt{t}$'
+      elif dict_o_keys['balancing_fn_type'] == 'RATIO':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '$\\frac{t}{t+1}$'
+      elif dict_o_keys['balancing_fn_type'] == 'MIN':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
+      elif dict_o_keys['balancing_fn_type'] == 'MAX':
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(max)'
+      del dict_o_keys['balancing_fn_type']
+  return dict_o_keys
 
 def main(argv) -> None:
   if len(argv) > 1:
@@ -71,11 +97,12 @@ def main(argv) -> None:
   all_params = []
   for folder in folders:
     res_dic = get_experiment_config(folder)
+    res_dic = process_keys(res_dic)
     label = res_dic['name']
     subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
     path_samples = os.path.join(subfolderpath, 'samples.pkl')
     path_params = os.path.join(subfolderpath, 'params.pkl')
-    samples = pickle.load(open(path_samples, 'rb'))
+    samples = pickle.load(open(path_samples, 'rb'))['trajectory']
     params = pickle.load(open(path_params, 'rb'))
     all_samples.append(samples)
     all_labels.append(label)

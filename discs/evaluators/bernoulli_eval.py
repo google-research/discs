@@ -78,6 +78,9 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
       self, save_dir, model, all_params, all_samples, all_labels
   ):
     """Plots the error over window of samples of chains over time."""
+    f = plt.figure()
+    f.set_figwidth(12)
+    f.set_figheight(8)
     for i, chain in enumerate(all_samples):
       label = all_labels[i]
       params = all_params[i]
@@ -92,10 +95,10 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
         )
         mean_errors.append(avg_mean_error)
         max_mean_errors.append(max_mean_error)
+      mean_errors = jnp.array(mean_errors)
       plt.plot(
-          jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--bo', label=label
+          jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--', label=label
       )
-    pdb.set_trace()
     plt.xlabel('Iteration Step Over Chain')
     plt.ylabel('Avg Mean Error')
     plt.title('Avg Mean Error Over Chains!')
