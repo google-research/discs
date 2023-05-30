@@ -15,7 +15,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
   def update_sampler_state(self, state, acc, local_stats):
     cur_step = state['steps']
     state['num_ll_calls'] += 4
-    if not self.adaptive:
+    if not self.adaptive or self.co_opt_prob:
       return
     if self.reset_z_est > 0:
       log_z = jnp.where(cur_step % self.reset_z_est == 0,
@@ -73,6 +73,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.adaptive = config.sampler.adaptive
+    self.co_opt_prob = config.experiment.co_opt_prob
     self.step_size = config.sampler.get('step_size', 0.1)
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
@@ -97,8 +98,12 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
       log_tau = jnp.where(
           state['steps'] == 0, local_stats['log_tau'], state['log_tau']
       )
+      log_tau = jnp.where(
+        self.co_opt_prob, local_stats['log_tau'], log_tau
+      )
     else:
-      log_tau = 1/(2*self.step_size)
+      local_stats = None
+      log_tau = jnp.log(2*self.step_size)
       
 
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
@@ -106,6 +111,9 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
+    if self.adaptive and self.co_opt_prob:
+      local_stats = self.reset_stats(log_rate_y['weights'])
+      log_tau = local_stats['log_tau']
     dist_y = self.get_dist_at(y, log_tau, log_rate_y)
     aux = jnp.where(self.num_categories > 2, x, aux)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
@@ -148,10 +156,6 @@ class CategoricalDMALA(DMALASampler):
     log_weight_x = log_rate_x['weights']
     log_posterior_x = log_tau + log_weight_x
     log_posterior_x = log_posterior_x * (1 - x)
-    # log_posterior_x -= jnp.log(
-    #     jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
-    # )
-    pdb.set_trace()
     a_max = jnp.max(log_posterior_x, axis=-1, keepdims=True)
     log_posterior_x -= jnp.log(
         jnp.sum(jnp.exp(log_posterior_x - a_max), axis=-1, keepdims=True)
