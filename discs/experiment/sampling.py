@@ -303,7 +303,12 @@ class Sampling_Experiment(Experiment):
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
     if self.config.save_samples:
-      saver.dump_samples(samples, visualize=True)
+      if self.config_model.name == 'rbm':
+        saver.dump_samples(samples, visualize=True)
+      elif self.config_model.name == 'bernoulli':
+        saver.dump_samples(samples, visualize=False)
+        saver.plot_estimation_error(model, params[0], samples)
+
 
   def _initialize_chain_vars(self):
     chain = []

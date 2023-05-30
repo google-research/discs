@@ -30,6 +30,7 @@ def get_config():
           save_every_steps=10000,
           save_samples=False,
           use_tqdm=False,
+          co_opt_prob=False,
       ),
   )
   return config_dict.ConfigDict(general_config)

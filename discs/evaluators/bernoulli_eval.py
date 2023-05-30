@@ -73,7 +73,7 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
   def evaluate(self, samples, model, params):
     return self._compute_error_across_chain_and_batch(samples, model, params)
 
-  def plot_mixing_time_graph_over_chain(self, model, params, chain):
+  def plot_mixing_time_graph_over_chain(self, save_dir, model, params, chain):
     """Plots the error over window of samples of chains over time."""
     mean_errors = []
     max_mean_errors = []
@@ -96,7 +96,7 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
     plt.xlabel('Iteration Step Over Chain')
     plt.ylabel('Max Mean Error')
     plt.title('Max Mean Error Over Chains for {}!'.format(self.config.sampler))
-    plt.savefig('MixingTimeMaxMean_{}'.format(self.config.sampler))
+    plt.savefig(f'{save_dir}/MixingTimeMaxMean_{self.config.sampler}')
 
 
 def build_evaluator(config):

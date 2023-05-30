@@ -4,6 +4,7 @@ import csv
 import os
 import pdb
 import pickle
+from discs.evaluators import bernoulli_eval as b_eval
 import jax
 import jax.numpy as jnp
 import matplotlib.cm as cm
@@ -166,6 +167,12 @@ class Saver:
       path = os.path.join(self.save_dir, 'results_topk.pkl')
       with open(path, 'wb') as file:
         pickle.dump(results_topk, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+  def plot_estimation_error(self, model, params, samples):
+    b_eval = ber_eval.build_evaluator(self.config)
+    b_eval.plot_mixing_time_graph_over_chain(
+        self.save_dir, model, params, samples
+    )
 
 
 def build_saver(save_dir, config):
