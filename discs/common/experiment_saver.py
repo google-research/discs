@@ -157,6 +157,14 @@ class Saver:
       writer.writerow(results)
       csvfile.close()
 
+  def dump_params(self, params):
+    path = os.path.join(self.save_dir, 'params.pkl')
+    params_dict = {}
+    params_dict['params'] = params
+    with open(path, 'wb') as file:
+      pickle.dump(params_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+
   def dump_dict(self, results, results_topk):
     if not os.path.isdir(self.save_dir):
       os.makedirs(self.save_dir)

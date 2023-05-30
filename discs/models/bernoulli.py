@@ -61,9 +61,11 @@ class Bernoulli(abstractmodel.AbstractModel):
     return diff, 1, self.get_neighbor_fn
 
   def get_expected_val(self, params):
+    params = params['params']
     return jnp.exp(params) / (jnp.exp(params) + jnp.ones(params.shape))
 
   def get_var(self, params):
+    params = params['params']
     p = self.get_expected_val(params)
     return p * (1 - p)
 
