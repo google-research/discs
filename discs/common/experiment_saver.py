@@ -144,7 +144,8 @@ class Saver:
     results['trajectory'] = np.array(trajectory)
     results['best_ratio'] = np.array(best_ratio)
     results['running_time'] = running_time
-    results['best_samples'] = best_samples
+    if best_samples:
+      results['best_samples'] = best_samples
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
 

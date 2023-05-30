@@ -588,15 +588,16 @@ class CO_Experiment(Experiment):
         br = jax.device_put(br, jax.devices('cpu')[0])
         chain.append(br)
 
-        step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
-        rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
-        chosen_samples = jnp.take_along_axis(
+        if self.config_model.name == 'normcut':
+          step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+          rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
+          chosen_samples = jnp.take_along_axis(
             rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
-        )
-        chosen_samples = jnp.squeeze(chosen_samples, -2)
-        best_samples = jnp.where(
+          )
+          chosen_samples = jnp.squeeze(chosen_samples, -2)
+          best_samples = jnp.where(
             jnp.expand_dims(is_better, -1), chosen_samples, best_samples
-        )
+          )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -632,15 +633,16 @@ class CO_Experiment(Experiment):
         br = jax.device_put(br, jax.devices('cpu')[0])
         chain.append(br)
 
-        step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
-        rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
-        chosen_samples = jnp.take_along_axis(
+        if self.config_model.name == 'normcut':
+          step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+          rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
+          chosen_samples = jnp.take_along_axis(
             rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
-        )
-        chosen_samples = jnp.squeeze(chosen_samples, -2)
-        best_samples = jnp.where(
+          )
+          chosen_samples = jnp.squeeze(chosen_samples, -2)
+          best_samples = jnp.where(
             jnp.expand_dims(is_better, -1), chosen_samples, best_samples
-        )
+          )
 
       if self.config.get_additional_metrics:
         # avg over all models
