@@ -61,10 +61,11 @@ def main(argv) -> None:
   # model
   model_mod = importlib.import_module('discs.models.bernoulli')
   model = model_mod.build_model(config)
-  save_dir = f'./plots/{FLAGS.gcs_results_path}/'
+  save_dir = f'./ee_plots/{FLAGS.gcs_results_path}/'
   folders = os.listdir(FLAGS.gcs_results_path)
   all_samples = []
   all_labels = []
+  all_params = []
   for folder in folders:
     res_dic = get_experiment_config(folder)
     label = res_dic['name']
@@ -73,7 +74,8 @@ def main(argv) -> None:
     params = os.path.join(subfolderpath, 'params.pkl')
     all_samples.append(samples)
     all_labels.append(label)
-    ber_eval.plot_mixing_time_graph_over_chain(save_dir, model, params, all_samples, all_labels)
+    all_params.append(params)
+  ber_eval.plot_mixing_time_graph_over_chain(save_dir, model, all_params, all_samples, all_labels)
     
 if __name__ == '__main__':
   app.run(main)
