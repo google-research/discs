@@ -57,6 +57,8 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     log_z = jnp.log(self.set_z(log_rates))
     log_tau = math.log(3.0) - log_z
     return {'log_tau': log_tau, 'log_z': log_z}
+  
+  # log_tau: 1/2*alpha
 
   def get_value_and_rates(self, model, model_param, x):
     ll_x, grad_x = model.get_value_and_grad(model_param, x)
@@ -71,6 +73,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.adaptive = config.sampler.adaptive
+    self.step_size = config.sampler.get('step_size', 0.1)
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.get('schedule_step', 100)
@@ -89,10 +92,14 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
     ll_x, log_rate_x = self.get_value_and_rates(model, model_param, x)
-    local_stats = self.reset_stats(log_rate_x['weights'])
-    log_tau = jnp.where(
-        state['steps'] == 0, local_stats['log_tau'], state['log_tau']
-    )
+    if self.adaptive:
+      local_stats = self.reset_stats(log_rate_x['weights'])
+      log_tau = jnp.where(
+          state['steps'] == 0, local_stats['log_tau'], state['log_tau']
+      )
+    else:
+      log_tau = 1/(2*self.step_size)
+      
 
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
@@ -141,9 +148,14 @@ class CategoricalDMALA(DMALASampler):
     log_weight_x = log_rate_x['weights']
     log_posterior_x = log_tau + log_weight_x
     log_posterior_x = log_posterior_x * (1 - x)
+    # log_posterior_x -= jnp.log(
+    #     jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
+    # )
+    pdb.set_trace()
+    a_max = jnp.max(log_posterior_x, axis=-1, keepdims=True)
     log_posterior_x -= jnp.log(
-        jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
-    )
+        jnp.sum(jnp.exp(log_posterior_x - a_max), axis=-1, keepdims=True)
+    ) + a_max
     return log_posterior_x
             
   def sample_from_proposal(self, rng, x, dist_x):
