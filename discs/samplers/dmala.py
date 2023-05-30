@@ -148,7 +148,7 @@ class CategoricalDMALA(DMALASampler):
     log_weight_x = log_rate_x['weights']
     log_posterior_x = log_tau + log_weight_x
     log_posterior_x = log_posterior_x * (1 - x)
-    log_posterior_x = jnp.logsoftmax(log_posterior_x, dim=-1)
+    log_posterior_x = jax.nn.log_softmax(log_posterior_x, axis=-1)
     return log_posterior_x
 
   def sample_from_proposal(self, rng, x, dist_x):
