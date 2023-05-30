@@ -307,7 +307,9 @@ class Sampling_Experiment(Experiment):
         saver.dump_samples(samples, visualize=True)
       elif self.config_model.name == 'bernoulli':
         saver.dump_samples(samples, visualize=False)
-        saver.plot_estimation_error(model, params[0], samples)
+        samples= np.array(samples)
+        params = params['params'][0].reshape(self.config_model.shape)
+        saver.plot_estimation_error(model, params, samples)
 
 
   def _initialize_chain_vars(self):

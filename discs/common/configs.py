@@ -23,14 +23,17 @@ def get_config():
           run_parallel=True,
           get_additional_metrics=False,
           shuffle_buffer_size=0,
-          log_every_steps=100,
+          log_every_steps=1000,
           plot_every_steps=10,
           save_root='./discs/results',
           fig_folder='',
-          save_every_steps=10000,
+          save_every_steps=100,
           save_samples=False,
+          get_estimation_error=True.
           use_tqdm=False,
           co_opt_prob=False,
+          window_size=10,
+          window_stride=10,
       ),
   )
   return config_dict.ConfigDict(general_config)

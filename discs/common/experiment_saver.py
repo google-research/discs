@@ -169,8 +169,8 @@ class Saver:
         pickle.dump(results_topk, file, protocol=pickle.HIGHEST_PROTOCOL)
 
   def plot_estimation_error(self, model, params, samples):
-    b_eval = ber_eval.build_evaluator(self.config)
-    b_eval.plot_mixing_time_graph_over_chain(
+    ber_eval = b_eval.build_evaluator(self.config)
+    ber_eval.plot_mixing_time_graph_over_chain(
         self.save_dir, model, params, samples
     )
 
