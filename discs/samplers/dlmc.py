@@ -68,7 +68,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.adaptive = config.sampler.adaptive
-    self.co_opt_prob = config.sampler.co_opt_prob
+    self.co_opt_prob = config.experiment.co_opt_prob
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.schedule_step

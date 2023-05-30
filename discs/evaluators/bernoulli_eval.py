@@ -73,30 +73,34 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
   def evaluate(self, samples, model, params):
     return self._compute_error_across_chain_and_batch(samples, model, params)
 
-  def plot_mixing_time_graph_over_chain(self, save_dir, model, params, chain):
+  def plot_mixing_time_graph_over_chain(self, save_dir, model, params, all_samples, all_labels):
     """Plots the error over window of samples of chains over time."""
-    mean_errors = []
-    max_mean_errors = []
-    for start in range(0, len(chain), self.config.experiment.window_stride):
-      if (len(chain) - start) < self.config.experiment.window_size:
-        break
-      samples = chain[start : start + self.config.experiment.window_size]
-      avg_mean_error, max_mean_error, _, _ = self._compute_error(
-          model, params, samples
-      )
-      mean_errors.append(avg_mean_error)
-      max_mean_errors.append(max_mean_error)
-    plt.plot(jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--bo')
+    for i, chain enumerate(all_samples):
+      label = all_labels[i]
+      mean_errors = []
+      max_mean_errors = []
+      for start in range(0, len(chain), self.config.experiment.window_stride):
+        if (len(chain) - start) < self.config.experiment.window_size:
+          break
+        samples = chain[start : start + self.config.experiment.window_size]
+        avg_mean_error, max_mean_error, _, _ = self._compute_error(
+            model, params, samples
+        )
+        mean_errors.append(avg_mean_error)
+        max_mean_errors.append(max_mean_error)
+      plt.plot(jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--bo', label=label)
     plt.xlabel('Iteration Step Over Chain')
     plt.ylabel('Avg Mean Error')
-    plt.title('Avg Mean Error Over Chains for {}!'.format(self.config.sampler.name))
-    plt.savefig('MixingTimeAvgMean_{}'.format(self.config.sampler.name))
+    plt.title('Avg Mean Error Over Chains!')
+    plt.legend()
+    plt.savefig(f'{save_dir}/MixingTimeAvgMean')
     plt.clf()
-    plt.plot(jnp.arange(1, 1 + len(max_mean_errors)), max_mean_errors, '--bo')
+    plt.plot(jnp.arange(1, 1 + len(max_mean_errors)), max_mean_errors, '--bo', label=label)
     plt.xlabel('Iteration Step Over Chain')
     plt.ylabel('Max Mean Error')
-    plt.title('Max Mean Error Over Chains for {}!'.format(self.config.sampler.name))
-    plt.savefig(f'{save_dir}/MixingTimeMaxMean_{self.config.sampler.name}')
+    plt.title('Max Mean Error Over Chains!')
+    plt.legend()
+    plt.savefig(f'{save_dir}/MixingTimeMaxMean')
 
 
 def build_evaluator(config):
