@@ -98,7 +98,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
       log_tau = jnp.where(self.co_opt_prob, local_stats['log_tau'], log_tau)
     else:
       local_stats = None
-      log_tau = jnp.log(2 * self.step_size)
+      log_tau = -1 /(2 * self.step_size)
 
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
