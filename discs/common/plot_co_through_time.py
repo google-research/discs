@@ -238,6 +238,7 @@ def process_keys(dict_o_keys):
 
 
 def get_experiment_config(exp_config):
+  exp_config = exp_config[1 + exp_config.find('_') :]
   keys = []
   values = []
   splits = str.split(exp_config, ',')
@@ -282,6 +283,7 @@ def main(argv) -> None:
       print('######')
       experiment_result['results'] = {}
       if os.path.exists(results_path):
+        pdb.set_trace()
         results = pickle.load(open(results_path, 'rb'))
         experiment_result['results']['traj_mean'] = np.mean(
             results['trajectory'], axis=-1
