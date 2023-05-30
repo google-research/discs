@@ -15,6 +15,8 @@ from discs.common import configs as common_configs
 import discs.common.experiment_saver as saver_mod
 import discs.common.utils as utils
 from ml_collections import config_flags
+import pdb
+import pickle
 
 
 flags.DEFINE_string(
@@ -53,7 +55,6 @@ def main(argv) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
-
   config = common_configs.get_config()
   config.model.update(bernoulli_config.get_config())
 
@@ -62,6 +63,8 @@ def main(argv) -> None:
   model_mod = importlib.import_module('discs.models.bernoulli')
   model = model_mod.build_model(config)
   save_dir = f'./ee_plots/{FLAGS.gcs_results_path}/'
+  if not os.path.isdir(save_dir):
+    os.makedirs(save_dir)
   folders = os.listdir(FLAGS.gcs_results_path)
   all_samples = []
   all_labels = []
@@ -70,8 +73,10 @@ def main(argv) -> None:
     res_dic = get_experiment_config(folder)
     label = res_dic['name']
     subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
-    samples = os.path.join(subfolderpath, 'samples.pkl')['trajectory']
-    params = os.path.join(subfolderpath, 'params.pkl')
+    path_samples = os.path.join(subfolderpath, 'samples.pkl')
+    path_params = os.path.join(subfolderpath, 'params.pkl')
+    samples = pickle.load(open(path_samples, 'rb'))
+    params = pickle.load(open(path_params, 'rb'))
     all_samples.append(samples)
     all_labels.append(label)
     all_params.append(params)

@@ -95,12 +95,13 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
       plt.plot(
           jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--bo', label=label
       )
+    pdb.set_trace()
     plt.xlabel('Iteration Step Over Chain')
     plt.ylabel('Avg Mean Error')
     plt.title('Avg Mean Error Over Chains!')
     plt.legend()
-    plt.savefig(f'{save_dir}/MixingTimeAvgMean')
-    plt.clf()
+    plt.savefig(f'{save_dir}/MixingTimeAvgMean.png')
+    '''plt.clf()
     plt.plot(
         jnp.arange(1, 1 + len(max_mean_errors)),
         max_mean_errors,
@@ -111,7 +112,7 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
     plt.ylabel('Max Mean Error')
     plt.title('Max Mean Error Over Chains!')
     plt.legend()
-    plt.savefig(f'{save_dir}/MixingTimeMaxMean')
+    plt.savefig(f'{save_dir}/MixingTimeMaxMean.png')'''
 
 
 def build_evaluator(config):
