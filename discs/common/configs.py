@@ -29,7 +29,7 @@ def get_config():
           fig_folder='',
           save_every_steps=100,
           save_samples=False,
-          get_estimation_error=True.
+          get_estimation_error=True,
           use_tqdm=False,
           co_opt_prob=False,
           window_size=10,

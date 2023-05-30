@@ -255,7 +255,7 @@ class Sampling_Experiment(Experiment):
           state=state,
       )
 
-      if self.config.save_samples and step % self.config.save_every_steps == 0:
+      if (self.config.save_samples or self.config.get_estimation_error) and step % self.config.save_every_steps == 0:
         chains = new_x.reshape(self.config.batch_size, -1)
         samples.append(chains[selected_chains])
 
@@ -279,7 +279,7 @@ class Sampling_Experiment(Experiment):
       )
       running_time += time.time() - start
 
-      if self.config.save_samples and step % self.config.save_every_steps == 0:
+      if (self.config.save_samples or self.config.get_estimation_error) and step % self.config.save_every_steps == 0:
         chains = new_x.reshape(self.config.batch_size, -1)
         samples.append(chains[selected_chains])
 
@@ -302,10 +302,10 @@ class Sampling_Experiment(Experiment):
     num_ll_calls = int(state['num_ll_calls'][0])
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
-    if self.config.save_samples:
-      if self.config_model.name == 'rbm':
+    if self.config.save_samples or self.config.get_estimation_error:
+      if self.config.save_samples and self.config_model.name == 'rbm':
         saver.dump_samples(samples, visualize=True)
-      elif self.config_model.name == 'bernoulli':
+      elif self.config.get_estimation_error and self.config_model.name == 'bernoulli':
         saver.dump_samples(samples, visualize=False)
         samples= np.array(samples)
         params = params['params'][0].reshape(self.config_model.shape)
