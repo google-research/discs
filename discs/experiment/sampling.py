@@ -588,7 +588,7 @@ class CO_Experiment(Experiment):
         br = jax.device_put(br, jax.devices('cpu')[0])
         chain.append(br)
 
-        if self.config_model.name == 'normcut':
+        if self.config.save_samples or self.config_model.name == 'normcut':
           step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
           rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
           chosen_samples = jnp.take_along_axis(
@@ -633,7 +633,7 @@ class CO_Experiment(Experiment):
         br = jax.device_put(br, jax.devices('cpu')[0])
         chain.append(br)
 
-        if self.config_model.name == 'normcut':
+        if self.config.save_samples or self.config_model.name == 'normcut':
           step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
           rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
           chosen_samples = jnp.take_along_axis(
