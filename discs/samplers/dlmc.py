@@ -15,28 +15,22 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     # pdb.set_trace()
     cur_step = state['steps']
     state['num_ll_calls'] += 4
-    if not self.adaptive:
+    if not self.adaptive or self.co_opt_prob:
       return
-    if not self.co_opt_prob:
-      if self.reset_z_est > 0:
-        log_z = jnp.where(
-            cur_step % self.reset_z_est == 0, local_stats['log_z'], state['log_z']
-        )
-      else:
-        log_z = jnp.where(cur_step == 1, local_stats['log_z'], state['log_z'])
-      # TODO: add scheduling of logz_ema
-      logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
-      log_z = (logs_ema * log_z) + ((1 - logs_ema) * local_stats['log_z'])
-
-      n = jnp.exp(state['log_tau'] + log_z)
-      n = n + 3 * (acc - self.target_acceptance_rate)
-      state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
-      state['log_z'] = log_z
+    if self.reset_z_est > 0:
+      log_z = jnp.where(
+          cur_step % self.reset_z_est == 0, local_stats['log_z'], state['log_z']
+      )
     else:
-      log_z = local_stats['log_z']
-      n = jnp.exp(state['log_tau'] + log_z)
-      state['log_z'] = log_z
-      state['log_tau'] = jnp.log(n) - log_z
+      log_z = jnp.where(cur_step == 1, local_stats['log_z'], state['log_z'])
+    # TODO: add scheduling of logz_ema
+    logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
+    log_z = (logs_ema * log_z) + ((1 - logs_ema) * local_stats['log_z'])
+
+    n = jnp.exp(state['log_tau'] + log_z)
+    n = n + 3 * (acc - self.target_acceptance_rate)
+    state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
+    state['log_z'] = log_z
 
 
   def select_sample(
@@ -53,7 +47,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     bsize = log_rates.shape[0]
     log_rates = jnp.reshape(log_rates, [-1])
     log_z = special.logsumexp(log_rates, axis=0) - math.log(bsize)
-    log_tau = math.log(3.0) - log_z
+    log_tau = math.log(self.n) - log_z
     return {'log_tau': log_tau, 'log_z': log_z}
 
   def get_value_and_rates(self, model, model_param, x):
@@ -69,6 +63,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     super().__init__(config)
     self.adaptive = config.sampler.adaptive
     self.co_opt_prob = config.experiment.co_opt_prob
+    self.n = config.sampler.get('n', 3)
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.schedule_step
@@ -96,15 +91,18 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     if not self.co_opt_prob:
       dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     else:
-      dist_x = self.get_dist_at(x, log_tau_x, log_rate_x)
+      dist_x = self.get_dist_at(x, local_stats['log_tau'], log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
+
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
+    if self.co_opt_prob:
+      local_stats = self.reset_stats(log_rate_y['weights'])
     if not self.co_opt_prob:
       dist_y = self.get_dist_at(y, log_tau, log_rate_y)
     else:
-      dist_y = self.get_dist_at(y, log_tau_y, log_rate_y)
+      dist_y = self.get_dist_at(y, local_stats['log_tau'], log_rate_y)
     aux = jnp.where(self.num_categories > 2, x, aux)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
