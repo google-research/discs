@@ -589,8 +589,9 @@ class CO_Experiment(Experiment):
         chain.append(br)
 
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+        rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
         chosen_samples = jnp.take_along_axis(
-            new_x, jnp.expand_dims(step_chosen, -1), axis=-2
+            rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
         )
         chosen_samples = jnp.squeeze(chosen_samples, -2)
         best_samples = jnp.where(
@@ -632,8 +633,9 @@ class CO_Experiment(Experiment):
         chain.append(br)
 
         step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+        rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
         chosen_samples = jnp.take_along_axis(
-            new_x, jnp.expand_dims(step_chosen, -1), axis=-2
+            rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
         )
         chosen_samples = jnp.squeeze(chosen_samples, -2)
         best_samples = jnp.where(
