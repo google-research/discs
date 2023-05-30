@@ -87,22 +87,18 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     log_tau = jnp.where(
         state['steps'] == 0, local_stats['log_tau'], state['log_tau']
     )
-
-    if not self.co_opt_prob:
-      dist_x = self.get_dist_at(x, log_tau, log_rate_x)
-    else:
-      dist_x = self.get_dist_at(x, local_stats['log_tau'], log_rate_x)
+    log_tau = jnp.where(
+        self.co_opt_prob, local_stats['log_tau'], log_tau
+    )
+    dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
-
 
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
     if self.co_opt_prob:
       local_stats = self.reset_stats(log_rate_y['weights'])
-    if not self.co_opt_prob:
-      dist_y = self.get_dist_at(y, log_tau, log_rate_y)
-    else:
-      dist_y = self.get_dist_at(y, local_stats['log_tau'], log_rate_y)
+      log_tau = local_stats['log_tau']
+    dist_y = self.get_dist_at(y, log_tau, log_rate_y)
     aux = jnp.where(self.num_categories > 2, x, aux)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
