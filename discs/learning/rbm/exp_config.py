@@ -1,6 +1,7 @@
 """Config file for rbms."""
 
 from discs.common import configs
+from discs.common import train_configs
 from ml_collections import config_dict
 
 
@@ -10,7 +11,7 @@ def get_config(rbm_config):
   vocab_size = int(vocab_size)
   num_hidden = int(num_hidden)
   config = configs.get_config()
-  config.experiment.update(configs.get_common_train_config())
+  config.experiment.update(train_configs.get_common_train_config())
   config.experiment.learning_rate = 1e-3
   config.experiment.optimizer = 'adam'
   config.experiment.grad_norm = 0.0
@@ -37,8 +38,8 @@ def get_config(rbm_config):
   config.experiment.rbm_config = rbm_config
   config.model.shape = (config.model.num_visible,)
   if config.model.num_hidden == 200:
-      config.model.save_dir_name = 'rbm_lowtemp'
+    config.model.save_dir_name = 'rbm_lowtemp'
   elif config.model.num_hidden == 25:
-      config.model.save_dir_name  = 'rbm_hightemp'
+    config.model.save_dir_name = 'rbm_hightemp'
 
   return config

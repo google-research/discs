@@ -25,8 +25,8 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
           cur_step == 1, local_stats['log_z'], state['log_z'])
     #TODO: add scheduling of logz_ema
     logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
-    log_z = (logs_ema * log_z) + ( (1 - logs_ema)*local_stats['log_z'])
-    
+    log_z = (logs_ema * log_z) + ((1 - logs_ema) * local_stats['log_z'])
+
     n = jnp.exp(state['log_tau'] + log_z)
     n = n + 3 * (acc - self.target_acceptance_rate)
     state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
