@@ -40,14 +40,8 @@ class Experiment:
     )
     return params, x0, state, x0_ess
 
-  def _prepare_dict(self, state, n_devices):
-    for key in state:
-      if state[key] is None:
-        continue
-      state[key] = jnp.squeeze(jnp.stack([state[key]] * n_devices), axis=1)
-    return state
-
   def _prepare_data(self, params, x, state):
+    distributing_batch = False
     if self.parallel:
       if self.config.num_models >= jax.local_device_count():
         assert self.config.num_models % jax.local_device_count() == 0
@@ -58,11 +52,12 @@ class Experiment:
         x_shape = bshape + (self.config.batch_size,) + self.config_model.shape
       else:
         assert self.config.batch_size % jax.local_device_count() == 0
+        distributing_batch = True
         batch_size_per_device = (
             self.config.batch_size // jax.local_device_count()
         )
-        params = self._prepare_dict(params, jax.local_device_count())
-        state = self._prepare_dict(state, jax.local_device_count())
+        params = jax.device_put_replicated(params, jax.local_devices())
+        state = jax.device_put_replicated(state, jax.local_devices())
         bshape = (jax.local_device_count(), self.config.num_models)
         x_shape = bshape + (batch_size_per_device,) + self.config_model.shape
         if self.sample_idx:
@@ -74,14 +69,15 @@ class Experiment:
       bshape = (self.config.num_models,)
       x_shape = bshape + (self.config.batch_size,) + self.config_model.shape
     fn_breshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
-    state = jax.tree_map(fn_breshape, state)
-    params = jax.tree_map(fn_breshape, params)
+    if not distributing_batch:
+      state = jax.tree_map(fn_breshape, state)
+      params = jax.tree_map(fn_breshape, params)
     x = jnp.reshape(x, x_shape)
 
     print('x shape: ', x.shape)
     print('state shape: ', state['steps'].shape)
-    key = list(params.keys())[0]
-    print('params shape: ', params[key].shape)
+    #key = list(params.keys())[0]
+    #print('params shape: ', params[key].shape)
     return params, x, state, fn_breshape, bshape
 
   def _compile_sampler_step(self, step_fn):
