@@ -1,16 +1,19 @@
 """Training tools."""
 
 import abc
+import argparse
 import os
 from typing import Any
 from absl import logging
 from clu import metric_writers
 from discs.common import utils
+import discs.learning.raw_torch_dataset as torch_data
 import flax
 from flax import jax_utils
 from flax.training import checkpoints
 import jax
 import jax.numpy as jnp
+import numpy as np
 import optax
 
 
@@ -30,6 +33,27 @@ def init_host_train_state(params, optimizer):
       ema_params=utils.copy_pytree(params),
   )
   return jax.device_get(state)
+
+
+def load_numpyds(data_name, data_dir):
+  args = argparse.Namespace()
+  args.dataset_name = data_name
+  args.data_dir = data_dir
+  train_data, _, _ = torch_data.load_raw_dataset(args)
+  return train_data
+
+
+def get_data_mean(dataset):
+  data_mean = 0
+  num_samples = 0
+  for x in dataset:
+    img = x['image']._numpy().astype(np.float32)  # pylint: disable=protected-access
+    data_mean = data_mean + img
+    num_samples += 1
+  data_mean = np.array(
+      np.reshape(data_mean, [-1]), dtype=np.float32) / num_samples / 255.0
+  data_mean = np.clip(data_mean, a_min=0.01, a_max=0.99)
+  return data_mean.tolist()
 
 
 def build_lr_schedule(config):
@@ -79,6 +103,16 @@ class Trainer(abc.ABC):
   def __init__(self, config):
     self.config = config
     self.optimizer = build_optimizer(self.config.experiment)
+
+  def init_states(self, rng):
+    model_key, sampler_key = jax.random.split(rng)
+    params = self.model.make_init_params(model_key)
+    global_state = init_host_train_state(params, self.optimizer)
+    num_samples = utils.get_per_process_batch_size(
+        self.config.experiment.batch_size)
+    local_state = utils.create_sharded_sampler_state(
+        sampler_key, self.model, self.sampler, num_samples)
+    return global_state, local_state
 
   @abc.abstractmethod
   def build_loss_func(self, rng, batch):

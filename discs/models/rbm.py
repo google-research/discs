@@ -5,7 +5,7 @@ import os
 import pdb
 import pickle
 from typing import Any
-from discs.models import deepenergmodel
+from discs.models import deep_ebm
 import flax
 from flax import linen as nn
 from flax.linen import initializers
@@ -100,9 +100,9 @@ class NNCategorical(nn.Module):
     )
     vt = jnp.sum(v * self.b_v, axis=[-1, -2])
     return sp + vt
-      
-      
-class RBM(deepenergmodel.DeepEBM):
+
+
+class RBM(deep_ebm.DeepEBM):
   """RBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
