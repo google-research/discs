@@ -13,7 +13,8 @@ import ml_collections
 def conv3x3(out_planes, stride=1):
   if stride < 0:
     mod = nn.ConvTranspose(features=out_planes, kernel_size=(3, 3),
-                           strides=stride, padding=(1, 1), use_bias=True)
+                           strides=stride, padding=(1, 1), use_bias=True,
+                           name='ConvTranspose')
   else:
     mod = nn.Conv(features=out_planes,
                   kernel_size=(3, 3),
@@ -42,11 +43,11 @@ class BasicBlock(nn.Module):
       if self.stride < 0:
         shortcut_conv = nn.ConvTranspose(
             features=self.expansion * self.planes, kernel_size=(1, 1),
-            strides=-self.stride, use_bias=True)
+            strides=-self.stride, use_bias=True, name='shortcut_conv_trans')
       else:
         shortcut_conv = nn.Conv(features=self.expansion * self.planes,
                                 kernel_size=(1, 1), strides=self.stride,
-                                use_bias=True)
+                                use_bias=True, name='shortcut_conv')
       out_sc = shortcut_conv(x)
       out = out + out_sc
     else:
@@ -71,7 +72,7 @@ class ResnetBinary(nn.Module):
       x = BasicBlock(planes=self.n_channels, stride=2)(x)
     for _ in range(6):
       x = BasicBlock(planes=self.n_channels, stride=1)(x)
-    x = jnp.mean(jnp.reshape(x, (x.shape[0], x.shape[1], -1)), axis=-1)
+    x = jnp.mean(x, axis=(1, 2))
     energy = nn.Dense(1)(x)
     return jnp.squeeze(energy, axis=-1)
 
@@ -90,6 +91,8 @@ class ImageEBM(deep_ebm.DeepEBM):
       data_mean = self.params['data_mean']
     self.init_dist = self.build_init_dist(data_mean)
     self.data_mean = data_mean
+    if self.data_mean is not None:
+      self.data_mean = jnp.array(self.data_mean, dtype=jnp.float32)
     self.shape = config.shape
 
   def get_init_samples(self, rng, num_samples: int):
@@ -107,7 +110,12 @@ class ImageEBM(deep_ebm.DeepEBM):
   def forward(self, params, x):
     if self.num_categories != 2 and len(x.shape) - 1 == len(self.shape):
       x = jax.nn.one_hot(x, self.num_categories)
-    return self.net.apply({'params': params}, x=x)
+    energy = self.net.apply({'params': params}, x=x)
+    if self.data_mean is not None:
+      base_prob = x * self.data_mean + (1 - x) * (1 - self.data_mean)
+      base_energy = jnp.sum(jnp.log(base_prob + 1e-20), axis=-1)
+      energy = energy + base_energy
+    return energy
 
   def get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable
