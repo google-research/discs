@@ -24,6 +24,15 @@ def get_config():
                       'dmala',
                       'path_auxiliary',
                       'gwg',
+                  ],
+                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'config.experiment.log_every_steps': [100],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                  ],
+              },
+              {
+                  'sampler_config.name': [
                       'dlmc',
                   ],
                   'model_config.cfg_str': ['r-10k', 'r-800'],
@@ -31,6 +40,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
           ],
       )

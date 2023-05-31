@@ -27,6 +27,18 @@ def get_config():
                       'dmala',
                       'path_auxiliary',
                       'gwg',
+                  ],
+                  'config.experiment.log_every_steps': [100],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.final_temperature': [0.00001],
+                  'config.experiment.init_temperature': [1],
+                  'config.experiment.chain_length': [1000000],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                  ],
+              },
+              {
+                  'sampler_config.name': [
                       'dlmc',
                   ],
                   'config.experiment.log_every_steps': [100],
@@ -37,6 +49,7 @@ def get_config():
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
           ],
       )

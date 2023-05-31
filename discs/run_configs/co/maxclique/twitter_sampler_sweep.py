@@ -30,6 +30,16 @@ def get_config():
                       'SQRT',
                   ],
               },
+              {
+                  'sampler_config.name': [
+                      'dlmc',
+                  ],
+                  'config.experiment.log_every_steps': [100],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                  ],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
+              },
           ],
       )
   )
