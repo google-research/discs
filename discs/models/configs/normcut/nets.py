@@ -14,7 +14,7 @@ def get_model_config(cfg_str):
       num_categories=3,
       shape=(0,),
       rand_type=extra_cfg['r'],
-      penalty=1.0,
+      penalty=0.0005,
       tolerance=0.03,
   )
   return config_dict.ConfigDict(model_config)
