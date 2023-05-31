@@ -83,25 +83,25 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     def get_ll_at_block(indices_to_flip, x, model_param):
       def fn_ll(_, i):
         y_flatten = x.reshape(x.shape[0], -1)
-        y_flatten = y_flatten.at[:, indices_to_flip].set(
-            self.categories_iter[i]
-        )
+        index = i / self.block_size
+        categ = i % self.num_categories
+        y_flatten = y_flatten.at[:, indices_to_flip[index]].set(categ)
         y = y_flatten.reshape((-1,) + self.sample_shape)
         ll = model.forward(model_param, y)
         return None, ll
 
-      _, ll_all = jax.lax.scan(
-          fn_ll, None, jnp.arange(0, len(self.categories_iter))
-      )
+      num_neighs = self.num_categories * self.block_size
+      _, ll_all = jax.lax.scan(fn_ll, None, jnp.arange(num_neighs))
       return ll_all
 
     def select_new_samples(rnd_categorical, loglikelihood, x, indices_to_flip):
       selected_index = random.categorical(
           rnd_categorical, loglikelihood, axis=0
       )
-      vals = jnp.take(self.categories_iter, selected_index, axis=0)
+      index = selected_index / self.block_size
+      val = selected_index % self.num_categories
       x_flatten = x.reshape(x.shape[0], -1)
-      x = x_flatten.at[:, indices_to_flip].set(vals)
+      x = x_flatten.at[:, indices_to_flip[index]].set(val)
       x = x.reshape((-1,) + self.sample_shape)
       return x
 
