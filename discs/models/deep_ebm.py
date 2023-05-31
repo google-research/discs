@@ -33,7 +33,8 @@ class DeepEBM(abstractmodel.AbstractModel):
       except:
         import pickle5
         model = pickle5.load(open(os.path.join(path, 'params.pkl'), 'rb'))
-      config.params = flax.core.frozen_dict.freeze(model['params'])
+      with config.unlocked():
+        config.params = flax.core.frozen_dict.freeze(model['params'])
       model_config = yaml.unsafe_load(
           open(os.path.join(path, 'config.yaml'), 'r')
       )
