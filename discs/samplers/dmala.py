@@ -71,7 +71,7 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     super().__init__(config)
     self.adaptive = config.sampler.adaptive
     self.co_opt_prob = config.experiment.co_opt_prob
-    self.step_size = config.sampler.get('step_size', 0.1)
+    self.step_size = config.sampler.get('step_size', 0.3)
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.get('schedule_step', 100)
