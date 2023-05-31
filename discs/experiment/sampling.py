@@ -78,8 +78,8 @@ class Experiment:
 
     print('x shape: ', x.shape)
     print('state shape: ', state['steps'].shape)
-    #key = list(params.keys())[0]
-    #print('params shape: ', params[key].shape)
+    # key = list(params.keys())[0]
+    # print('params shape: ', params[key].shape)
     return params, x, state, fn_breshape, bshape
 
   def _compile_sampler_step(self, step_fn):
@@ -251,7 +251,9 @@ class Sampling_Experiment(Experiment):
           state=state,
       )
 
-      if (self.config.save_samples or self.config.get_estimation_error) and step % self.config.save_every_steps == 0:
+      if (
+          self.config.save_samples or self.config.get_estimation_error
+      ) and step % self.config.save_every_steps == 0:
         chains = new_x.reshape(self.config.batch_size, -1)
         samples.append(chains[selected_chains])
 
@@ -275,7 +277,9 @@ class Sampling_Experiment(Experiment):
       )
       running_time += time.time() - start
 
-      if (self.config.save_samples or self.config.get_estimation_error) and step % self.config.save_every_steps == 0:
+      if (
+          self.config.save_samples or self.config.get_estimation_error
+      ) and step % self.config.save_every_steps == 0:
         chains = new_x.reshape(self.config.batch_size, -1)
         samples.append(chains[selected_chains])
 
@@ -299,15 +303,20 @@ class Sampling_Experiment(Experiment):
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
     if self.config.save_samples or self.config.get_estimation_error:
-      if self.config.save_samples and self.config_model.name == 'rbm':
+      if self.config.save_samples and self.config_model.name in [
+          'rbm',
+          'resnet',
+      ]:
         saver.dump_samples(samples, visualize=True)
-      elif self.config.get_estimation_error and self.config_model.name == 'bernoulli':
+      elif (
+          self.config.get_estimation_error
+          and self.config_model.name == 'bernoulli'
+      ):
         saver.dump_samples(samples, visualize=False)
-        #samples= np.array(samples)
+        # samples= np.array(samples)
         params = params['params'][0].reshape(self.config_model.shape)
         saver.dump_params(params)
-        #saver.plot_estimation_error(model, params, samples)
-
+        # saver.plot_estimation_error(model, params, samples)
 
   def _initialize_chain_vars(self):
     chain = []
@@ -424,13 +433,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
-    (
-        _,
-        acc_ratios,
-        hops,
-        running_time,
-        _
-    ) = self._initialize_chain_vars()
+    (_, acc_ratios, hops, running_time, _) = self._initialize_chain_vars()
 
     stp_burnin, stp_mixing, get_hop, _ = compiled_fns
     # burn in
@@ -586,13 +589,17 @@ class CO_Experiment(Experiment):
 
         if self.config.save_samples or self.config_model.name == 'normcut':
           step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
-          rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
+          rnew_x = jnp.reshape(
+              new_x,
+              (self.config.num_models, self.config.batch_size)
+              + self.config_model.shape,
+          )
           chosen_samples = jnp.take_along_axis(
-            rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
+              rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
           )
           chosen_samples = jnp.squeeze(chosen_samples, -2)
           best_samples = jnp.where(
-            jnp.expand_dims(is_better, -1), chosen_samples, best_samples
+              jnp.expand_dims(is_better, -1), chosen_samples, best_samples
           )
 
       if self.config.get_additional_metrics:
@@ -631,13 +638,17 @@ class CO_Experiment(Experiment):
 
         if self.config.save_samples or self.config_model.name == 'normcut':
           step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
-          rnew_x = jnp.reshape(new_x, (self.config.num_models, self.config.batch_size)+self.config_model.shape)
+          rnew_x = jnp.reshape(
+              new_x,
+              (self.config.num_models, self.config.batch_size)
+              + self.config_model.shape,
+          )
           chosen_samples = jnp.take_along_axis(
-            rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
+              rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
           )
           chosen_samples = jnp.squeeze(chosen_samples, -2)
           best_samples = jnp.where(
-            jnp.expand_dims(is_better, -1), chosen_samples, best_samples
+              jnp.expand_dims(is_better, -1), chosen_samples, best_samples
           )
 
       if self.config.get_additional_metrics:
