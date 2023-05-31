@@ -52,13 +52,13 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
 
     def get_ll_at_block(indices_to_flip, x, model_param):
       def fn_ll(_, i):
-        y_flatten = x.reshape(1, -1)
+        y_flatten = x.reshape(x.shape[0], -1)
         y_flatten = y_flatten.at[:, indices_to_flip].set(
             self.categories_iter[i]
         )
-        y = y_flatten.reshape(-1, self.sample_shape)
+        y = y_flatten.reshape((-1,)+self.sample_shape)
         ll = model.forward(model_param, y)
-        return ll
+        return None, ll
 
       _, ll_all = jax.lax.scan(
           fn_ll, None, jnp.arange(0, len(self.categories_iter))
@@ -66,11 +66,11 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
       return ll_all
 
     def select_new_samples(rnd_categorical, loglikelihood, x, indices_to_flip):
-      selected_index = random.categorical(rnd_categorical, loglikelihood)
+      selected_index = random.categorical(rnd_categorical, loglikelihood, axis=0)
       vals = jnp.take(self.categories_iter, selected_index, axis=0)
-      x_flatten = x.reshape(1, -1)
-      x = x_flatten[:, indices_to_flip].set(vals)
-      x = x.reshape(self.sample_shape)
+      x_flatten = x.reshape(x.shape[0], -1)
+      x = x_flatten.at[:, indices_to_flip].set(vals)
+      x = x.reshape((-1,)+self.sample_shape)
       return x
 
     start_index = state['index']
