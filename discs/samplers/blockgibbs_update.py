@@ -17,9 +17,12 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
     self.block_size = config.sampler.block_size
-    self.categories_iter = jnp.array(
-        list(product(range(self.num_categories), repeat=self.block_size))
-    )
+    if self.block_size != 1:
+      self.categories_iter = jnp.array(
+          list(product(range(self.num_categories), repeat=self.block_size))
+      )
+    else:
+      self.categories_iter = jnp.arange(self.num_categories)
 
   def make_init_state(self, rng):
     """Init sampler state."""
