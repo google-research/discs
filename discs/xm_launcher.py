@@ -155,8 +155,8 @@ def main(argv) -> None:
 
       sweep_str_parts = []
       for k, v in kwargs.items():
-        if k.startswith('config.'):
-          k = k[len('config.') :]
+        if k.startswith('config.experiment.'):
+          k = k[len('config.experiment.') :]
         elif k.startswith('model_config.'):
           k = k[len('model_config.') :]
         elif k.startswith('sampler_config.'):
