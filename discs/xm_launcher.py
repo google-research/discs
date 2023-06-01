@@ -89,6 +89,9 @@ def main(argv) -> None:
   else:
     executable_args['config'] = '/workdir/discs/common/configs.py'
     num_gpus = 4
+    
+  if job_config.get('model') == 'maxcut' and job_config.get('graph_type') == 'optsicom':
+    num_gpus = 2
   executable_args.update(
       {
           name: value
