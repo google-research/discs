@@ -110,13 +110,6 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
 
-
-      if sampler.endswith('(s)'):
-        label_sampler = sampler + '$\\sqrt{t}$'
-      elif sampler.endswith('(r)'):
-        label_sampler = sampler + '$\\frac{t}{t+1}$'
-      else:
-        label_sampler = sampler 
       # pdb.set_trace()
       assert len(x_poses) == len(xticks)
       if FLAGS.evaluation_type == 'ess':
@@ -134,7 +127,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             x_poses + local_pos[i] * bar_width,
             values,
             bar_width,
-            label=label_sampler,
+            label=sampler,
             color=c,
         )
       else:
@@ -145,7 +138,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               x_poses + local_pos[i] * bar_width,
               values,
               bar_width,
-              label=label_sampler,
+              label=sampler,
               bottom=1,
               color=c,
           )
@@ -155,7 +148,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               x_poses + local_pos[i] * bar_width,
               values,
               bar_width,
-              label=label_sampler,
+              label=sampler,
               color=c,
           )
           
@@ -266,12 +259,20 @@ def process_keys(dict_o_keys):
     if dict_o_keys['solver'] == 'euler_forward':
       dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
     del dict_o_keys['solver']
+    
+  if 'adaptive' in dict_o_keys:
+    if dict_o_keys['adaptive'] == 'False':
+      dict_o_keys['name'] = str(dict_o_keys['name']) + dict_o_keys['step_size']
+    del dict_o_keys['adaptive']
+    del dict_o_keys['step_size']
+    
+    
   if 'balancing_fn_type' in dict_o_keys:
     if 'name' in dict_o_keys:
       if dict_o_keys['balancing_fn_type'] == 'SQRT':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)'
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '$\\sqrt{t}$'
       elif dict_o_keys['balancing_fn_type'] == 'RATIO':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '$\\frac{t}{t+1}$'
       elif dict_o_keys['balancing_fn_type'] == 'MIN':
         dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
       elif dict_o_keys['balancing_fn_type'] == 'MAX':
@@ -431,7 +432,7 @@ def main(argv) -> None:
       print('******************')
       
       if FLAGS.evaluation_type == 'lm':
-        filename = os.path.join(subfolderpath, 'results.pkl')
+        filename = os.path.join(subfolderpath, 'results_topk.pkl')
         results = pickle.load(open(filename, 'rb'))
         del results['infill_sents']
       else:
