@@ -17,6 +17,12 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
     self.block_size = config.sampler.block_size
+    if self.block_size != 1:
+      self.categories_iter = jnp.array(
+          list(product(range(self.num_categories), repeat=self.block_size))
+      )
+    else:
+      self.categories_iter = jnp.arange(self.num_categories).reshape([-1,1])
 
   def make_init_state(self, rng):
     """Init sampler state."""
@@ -28,7 +34,7 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     sampler_state = super().update_sampler_state(sampler_state)
     dim = math.prod(self.sample_shape)
     sampler_state['index'] = (sampler_state['index'] + self.block_size) % dim
-    sampler_state['num_ll_calls'] += (self.num_categories**self.block_size)
+    sampler_state['num_ll_calls'] += self.num_categories**self.block_size
     return sampler_state
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
@@ -47,40 +53,34 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     """
     _ = x_mask
 
-    def generate_new_samples(indices_to_flip, x):
-      x_flatten = x.reshape(1, -1)
-      y_flatten = jnp.repeat(
-          x_flatten, self.num_categories**self.block_size, axis=0
-      )
-      categories_iter = jnp.array(
-          list(product(range(self.num_categories), repeat=self.block_size))
-      )
-      y_flatten = y_flatten.at[:, indices_to_flip].set(categories_iter)
-      y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
-      return y
+    def get_ll_at_block(indices_to_flip, x, model_param):
+      def fn_ll(_, i):
+        y_flatten = x.reshape(x.shape[0], -1)
+        y_flatten = y_flatten.at[:, indices_to_flip].set(
+            self.categories_iter[i]
+        )
+        y = y_flatten.reshape((-1,)+self.sample_shape)
+        ll = model.forward(model_param, y)
+        return None, ll
 
-    def select_new_samples(model_param, x, y, rnd_categorical):
-      loglikelihood = model.forward(model_param, y)
-      selected_index = random.categorical(rnd_categorical, loglikelihood)
-      x = jnp.take(y, selected_index, axis=0)
-      x = x.reshape(self.sample_shape)
+      _, ll_all = jax.lax.scan(
+          fn_ll, None, jnp.arange(0, len(self.categories_iter))
+      )
+      return ll_all
+
+    def select_new_samples(rnd_categorical, loglikelihood, x, indices_to_flip):
+      selected_index = random.categorical(rnd_categorical, loglikelihood, axis=0)
+      vals = jnp.take(self.categories_iter, selected_index, axis=0)
+      x_flatten = x.reshape(x.shape[0], -1)
+      x = x_flatten.at[:, indices_to_flip].set(vals)
+      x = x.reshape((-1,)+self.sample_shape)
       return x
-
-    def loop_body(i, val):
-      rng_key, x, indices_to_flip, model_param = val
-      curr_sample = x[i]
-      y = generate_new_samples(indices_to_flip, curr_sample)
-      rnd_categorical, next_key = jax.random.split(rng_key)
-      selected_sample = select_new_samples(
-          model_param, curr_sample, y, rnd_categorical
-      )
-      x = x.at[i].set(selected_sample)
-      return (next_key, x, indices_to_flip, model_param)
 
     start_index = state['index']
     indices_to_flip = jnp.arange(self.block_size) + start_index
-    init_val = (rng, x, indices_to_flip, model_param)
-    _, new_x, _, _ = jax.lax.fori_loop(0, x.shape[0], loop_body, init_val)
+    loglikelihood = get_ll_at_block(indices_to_flip, x, model_param)
+    new_x = select_new_samples(rng, loglikelihood, x, indices_to_flip)
+
     new_state = self.update_sampler_state(state)
     return new_x, new_state, 1
 

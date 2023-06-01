@@ -11,11 +11,17 @@ echo "$graph_type"
 if [ "$graph_type" == "$default" ]
 then
    exp_config="discs/common/configs.py"
-   echo $exp_config
 else
    exp_config="discs/experiment/configs/${model?}/${graph_type:-$default}.py" 
-   echo $exp_config
 fi
+
+if [ "$model" == "text_infilling" ]
+then
+   exp_config="discs/experiment/configs/lm_experiment.py"
+fi
+
+echo $exp_config
+
 
 python -m discs.experiment.main_sampling \
   --model_config="discs/models/configs/${model?}_config.py" \

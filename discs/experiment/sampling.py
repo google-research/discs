@@ -9,9 +9,10 @@ import flax
 import jax
 import jax.numpy as jnp
 from ml_collections import config_dict
+import numpy as np
 import optax
 import tqdm
-import numpy as np
+
 
 class Experiment:
   """Experiment class that generates chains of samples."""
@@ -21,6 +22,7 @@ class Experiment:
     self.config_model = config.model
     self.parallel = False
     self.sample_idx = None
+    self.num_saved_samples = config.get('nun_saved_samples', 4)
     if jax.local_device_count() != 1 and self.config.run_parallel:
       self.parallel = True
 
@@ -76,8 +78,8 @@ class Experiment:
 
     print('x shape: ', x.shape)
     print('state shape: ', state['steps'].shape)
-    #key = list(params.keys())[0]
-    #print('params shape: ', params[key].shape)
+    # key = list(params.keys())[0]
+    # print('params shape: ', params[key].shape)
     return params, x, state, fn_breshape, bshape
 
   def _compile_sampler_step(self, step_fn):
@@ -99,11 +101,13 @@ class Experiment:
     sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     step_fn = jax.vmap(functools.partial(sampler.step, model=model))
     obj_fn = self._vmap_evaluator(evaluator, model)
+    model_frwrd = jax.vmap(model.forward)
     return (
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
         obj_fn,
+        model_frwrd,
     )
 
   def _compile_fns(self, step_fn, obj_fn):
@@ -122,15 +126,15 @@ class Experiment:
   def get_results(self, model, sampler, evaluator, saver):
     self._get_chains_and_evaluations(model, sampler, evaluator, saver)
 
-  def _get_chains_and_evaluations(self, model, sampler, evaluator, saver):
-    """Sets up the model and the samlping alg and gets the chain of samples."""
+  def preprocess(self, model, sampler, evaluator, saver, rnd_key=0):
     (
         model_init_params_fn,
         sampler_init_state_fn,
         step_fn,
         obj_fn,
+        model_frwrd,
     ) = self._get_vmapped_functions(sampler, model, evaluator)
-    rnd = jax.random.PRNGKey(0)
+    rnd = jax.random.PRNGKey(rnd_key)
     params, x, state, x0_ess = self._initialize_model_and_sampler(
         rnd, model, sampler_init_state_fn, model_init_params_fn
     )
@@ -141,7 +145,7 @@ class Experiment:
         params, x, state
     )
     compiled_fns = self._compile_fns(step_fn, obj_fn)
-    self._compute_chain(
+    return [
         compiled_fns,
         state,
         params,
@@ -152,7 +156,21 @@ class Experiment:
         evaluator,
         fn_reshape,
         breshape,
+        model_frwrd,
+        model,
+    ]
+
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, saver, rnd_key=0
+  ):
+    """Sets up the model and the samlping alg and gets the chain of samples."""
+
+    preprocessed_info = self.preprocess(
+        model, sampler, evaluator, saver, rnd_key=0
     )
+    if not preprocessed_info:
+      return False
+    self._compute_chain(*preprocessed_info)
     return True
 
   def _get_hop(self, x, new_x):
@@ -174,6 +192,8 @@ class Experiment:
       evaluator,
       fn_reshape,
       bshape,
+      model_frwrd=None,
+      model=None,
   ):
     raise NotImplementedError
 
@@ -200,18 +220,24 @@ class Sampling_Experiment(Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model_frwrd,
+      model,
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
-    (
-        chain,
-        acc_ratios,
-        hops,
-        running_time,
-    ) = self._initialize_chain_vars()
+    (chain, acc_ratios, hops, running_time, samples) = (
+        self._initialize_chain_vars()
+    )
 
     stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
     get_mapped_samples, eval_metric = self._compile_additional_fns(evaluator)
+    rng = jax.random.PRNGKey(10)
+    selected_chains = jax.random.choice(
+        rng,
+        jnp.arange(self.config.batch_size),
+        shape=(self.num_saved_samples,),
+        replace=False,
+    )
 
     # burn in
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
@@ -225,12 +251,13 @@ class Sampling_Experiment(Experiment):
           state=state,
       )
 
+      if (
+          self.config.save_samples or self.config.get_estimation_error
+      ) and step % self.config.save_every_steps == 0:
+        chains = new_x.reshape(self.config.batch_size, -1)
+        samples.append(chains[selected_chains])
+
       if self.config.get_additional_metrics:
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[0]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
@@ -250,18 +277,21 @@ class Sampling_Experiment(Experiment):
       )
       running_time += time.time() - start
 
+      if (
+          self.config.save_samples or self.config.get_estimation_error
+      ) and step % self.config.save_every_steps == 0:
+        chains = new_x.reshape(self.config.batch_size, -1)
+        samples.append(chains[selected_chains])
+
       if self.config.get_additional_metrics:
-        if step % self.config.save_every_steps == 0:
-          saved_sample = new_x[0]
-          saver.dump_sample(
-              saved_sample, step, self.config_model.get('visualize', False)
-          )
         # avg over all models
         acc = jnp.mean(acc)
         acc_ratios.append(acc)
         # hop avg over batch size and num models
         hops.append(get_hop(x, new_x))
-      chain.append(get_mapped_samples(new_x, x0_ess))
+      mapped_sample = get_mapped_samples(new_x, x0_ess)
+      mapped_sample = jax.device_put(mapped_sample, jax.devices('cpu')[0])
+      chain.append(mapped_sample)
       x = new_x
 
     chain = jnp.array(chain)
@@ -272,11 +302,27 @@ class Sampling_Experiment(Experiment):
     num_ll_calls = int(state['num_ll_calls'][0])
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
+    if self.config.save_samples or self.config.get_estimation_error:
+      if self.config.save_samples and self.config_model.name in [
+          'rbm',
+          'resnet',
+      ]:
+        saver.dump_samples(samples, visualize=True)
+      elif (
+          self.config.get_estimation_error
+          and self.config_model.name == 'bernoulli'
+      ):
+        saver.dump_samples(samples, visualize=False)
+        # samples= np.array(samples)
+        params = params['params'][0].reshape(self.config_model.shape)
+        saver.dump_params(params)
+        # saver.plot_estimation_error(model, params, samples)
 
   def _initialize_chain_vars(self):
     chain = []
     acc_ratios = []
     hops = []
+    samples = []
     running_time = 0
 
     return (
@@ -284,6 +330,7 @@ class Sampling_Experiment(Experiment):
         acc_ratios,
         hops,
         running_time,
+        samples,
     )
 
   def _compile_additional_fns(self, evaluator):
@@ -297,6 +344,144 @@ class Sampling_Experiment(Experiment):
     x0_ess = x0_ess.reshape((-1,) + self.config_model.shape)
     x0_ess = x0_ess.reshape(x0_ess.shape[0], -1)
     return jnp.sum(jnp.abs(samples - x0_ess), -1)
+
+
+class Text_Infilling_Experiment(Sampling_Experiment):
+
+  def get_results(self, model, sampler, evaluator, saver):
+    infill_sents = []
+    infill_sents_topk = []
+    rnd_key = 0
+    while True:
+      contin, sents, sents_topk = self._get_chains_and_evaluations(
+          model, sampler, evaluator, saver, rnd_key=rnd_key
+      )
+      rnd_key += 1
+      if not contin:
+        break
+      infill_sents.extend(sents)
+      if self.config.use_topk:
+        infill_sents_topk.extend(sents_topk)
+    res = evaluator.evaluate(infill_sents, self.config_model.data_root)
+    if self.config.use_topk:
+      res_topk = evaluator.evaluate(
+          infill_sents_topk, self.config_model.data_root
+      )
+    else:
+      res_topk = []
+    saver.dump_dict(res, res_topk)
+
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, saver, rnd_key=0
+  ):
+    preprocessed_info = self.preprocess(
+        model, sampler, evaluator, saver, rnd_key=0
+    )
+    if not preprocessed_info:
+      return False, None, None
+
+    # def body_fun(i, val):
+    #   pdb.set_trace()
+    #   sentences, preprocces_info =  val
+    #   sent, rng = self._compute_chain(*preprocessed_info)
+    #   preprocessed_info = preprocessed_info.at[3].set(rng)
+    #   sentences.append(sent)
+    #   return (sentence, preprocessed_info)
+    # init_val = ([], preprocessed_info)
+    # _ = jax.lax.fori_loop(
+    #    0, self.config.num_same_resample, body_fun, init_val
+    # )
+    sentences = []
+    loglikes = []
+    topk_sentences = []
+    for i in range(self.config.num_same_resample):
+      sent, rng, loglike = self._compute_chain(*preprocessed_info)
+      if self.config.use_topk:
+        sent = str(i) + ' ' + sent
+        loglikes.append(loglike)
+      sentences.append(sent)
+      preprocessed_info[3] = rng
+
+    if self.config.use_topk:
+      sent_to_loglike = dict(zip(sentences, loglikes))
+      sorted_sent = {
+          k: v
+          for k, v in sorted(sent_to_loglike.items(), key=lambda item: item[1])
+      }
+      topk_sentences = list(sorted_sent.keys())[-self.config.topk_num :]
+      for i, sent in enumerate(topk_sentences):
+        topk_sentences[i] = sent[2:]
+      for i, sent in enumerate(sentences):
+        sentences[i] = sent[2:]
+
+    return True, sentences, topk_sentences
+
+  def _compute_chain(
+      self,
+      compiled_fns,
+      state,
+      params,
+      rng,
+      x,
+      x0_ess,
+      saver,
+      evaluator,
+      fn_reshape,
+      bshape,
+      model_frwrd,
+      model,
+  ):
+    """Generates the chain of samples."""
+    assert self.config.num_models == 1
+    (_, acc_ratios, hops, running_time, _) = self._initialize_chain_vars()
+
+    stp_burnin, stp_mixing, get_hop, _ = compiled_fns
+    # burn in
+    burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
+    for step in tqdm.tqdm(range(1, burn_in_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      new_x, state, acc = stp_burnin(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      x = new_x
+
+    for step in tqdm.tqdm(range(burn_in_length, 1 + self.config.chain_length)):
+      rng = jax.random.fold_in(rng, step)
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      start = time.time()
+      new_x, state, acc = stp_mixing(
+          rng=step_rng,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      running_time += time.time() - start
+      if self.config.get_additional_metrics:
+        # avg over all models
+        acc = jnp.mean(acc)
+        acc_ratios.append(acc)
+        # hop avg over batch size and num models
+        hops.append(get_hop(x, new_x))
+      x = new_x
+
+    loglike = 0
+    if self.config.use_topk:
+      x = x.astype(jnp.float32)
+      loglike = model_frwrd(params, x)[0]
+
+    sampled_sentence = model.decode(x, params)
+    print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike)
+    return sampled_sentence, rng, loglike
 
 
 class CO_Experiment(Experiment):
@@ -356,6 +541,8 @@ class CO_Experiment(Experiment):
       evaluator,
       fn_reshape,
       bshape,
+      model_frwrd,
+      model,
   ):
     """Generates the chain of samples."""
 
@@ -368,6 +555,7 @@ class CO_Experiment(Experiment):
         init_temperature,
         t_schedule,
         sample_mask,
+        best_samples,
     ) = self._initialize_chain_vars(bshape)
 
     stp_burnin, stp_mixing, get_hop, obj_fn = compiled_fns
@@ -391,9 +579,28 @@ class CO_Experiment(Experiment):
         eval_val = obj_fn(samples=new_x, params=params)
         eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
+        is_better = ratio > best_ratio
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
-        chain.append(np.array(best_ratio[sample_mask]))
+
+        br = np.array(best_ratio[sample_mask])
+        br = jax.device_put(br, jax.devices('cpu')[0])
+        chain.append(br)
+
+        if self.config.save_samples or self.config_model.name == 'normcut':
+          step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+          rnew_x = jnp.reshape(
+              new_x,
+              (self.config.num_models, self.config.batch_size)
+              + self.config_model.shape,
+          )
+          chosen_samples = jnp.take_along_axis(
+              rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
+          )
+          chosen_samples = jnp.squeeze(chosen_samples, -2)
+          best_samples = jnp.where(
+              jnp.expand_dims(is_better, -1), chosen_samples, best_samples
+          )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -421,9 +628,28 @@ class CO_Experiment(Experiment):
         eval_val = obj_fn(samples=new_x, params=params)
         eval_val = eval_val.reshape(self.config.num_models, -1)
         ratio = jnp.max(eval_val, axis=-1).reshape(-1) / self.ref_obj
+        is_better = ratio > best_ratio
         best_ratio = jnp.maximum(ratio, best_ratio)
         sample_mask = sample_mask.reshape(best_ratio.shape)
-        chain.append(np.array(best_ratio[sample_mask]))
+
+        br = np.array(best_ratio[sample_mask])
+        br = jax.device_put(br, jax.devices('cpu')[0])
+        chain.append(br)
+
+        if self.config.save_samples or self.config_model.name == 'normcut':
+          step_chosen = jnp.argmax(eval_val, axis=-1, keepdims=True)
+          rnew_x = jnp.reshape(
+              new_x,
+              (self.config.num_models, self.config.batch_size)
+              + self.config_model.shape,
+          )
+          chosen_samples = jnp.take_along_axis(
+              rnew_x, jnp.expand_dims(step_chosen, -1), axis=-2
+          )
+          chosen_samples = jnp.squeeze(chosen_samples, -2)
+          best_samples = jnp.where(
+              jnp.expand_dims(is_better, -1), chosen_samples, best_samples
+          )
 
       if self.config.get_additional_metrics:
         # avg over all models
@@ -433,20 +659,24 @@ class CO_Experiment(Experiment):
         hops.append(get_hop(x, new_x))
       x = new_x
 
-    saver.dump_results(chain, best_ratio[sample_mask], running_time)
+    if not (self.config.save_samples or self.config_model.name == 'normcut'):
+      best_samples = []
+    saver.dump_results(
+        chain, best_ratio[sample_mask], running_time, best_samples
+    )
     saver.save_results(acc_ratios, hops, None, running_time)
 
   def _initialize_chain_vars(self, bshape):
     t_schedule = self._build_temperature_schedule(self.config)
     sample_mask = self.sample_idx >= 0
-
     chain = []
     acc_ratios = []
     hops = []
     running_time = 0
     best_ratio = jnp.ones(self.config.num_models, dtype=jnp.float32) * -1e9
     init_temperature = jnp.ones(bshape, dtype=jnp.float32)
-
+    dim = math.prod(self.config_model.shape)
+    best_samples = jnp.zeros([self.config.num_models, dim])
     return (
         chain,
         acc_ratios,
@@ -456,4 +686,5 @@ class CO_Experiment(Experiment):
         init_temperature,
         t_schedule,
         sample_mask,
+        best_samples,
     )

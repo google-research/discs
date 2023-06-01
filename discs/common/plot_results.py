@@ -30,15 +30,16 @@ color_map['bg-'] = 'orange'
 color_map['dma'] = 'purple'
 color_map['hb-'] = 'blue'
 
+
 def get_color(sampler):
-  
   if sampler[0:4] != 'dlmc':
     return color_map[sampler[0:3]]
   else:
     if sampler[0:5] == 'dlmcf':
       return 'gray'
   return 'pink'
-  
+
+
 def get_diff_key(key_diff, dict1, dict2):
   if key_diff in dict1 and key_diff in dict2:
     if dict1[key_diff] == dict2[key_diff]:
@@ -79,16 +80,17 @@ def plot_results(all_mapped_names, key_diff, xticks):
   for num, res_cluster in enumerate(all_mapped_names):
     plot_graph_cluster(num, res_cluster, key_diff, xticks)
 
+
 def plot_graph_cluster(num, res_cluster, key_diff, xticks):
   key0 = list(res_cluster.keys())[0]
   result_keys = res_cluster[key0].keys()
   num_samplers = len(res_cluster.keys())
-  for res_key in result_keys:      
+  for res_key in result_keys:
     f = plt.figure()
     f.set_figwidth(12)
-    f.set_figheight(4)
+    f.set_figheight(8)
     bar_width = 0.1
-    for i, sampler in enumerate(res_cluster.keys()):    
+    for i, sampler in enumerate(res_cluster.keys()):
       if sampler == 'save_title':
         save_title = res_cluster[sampler]
         continue
@@ -100,10 +102,22 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             * np.arange(len(res_cluster[sampler][res_key]))
         )
         local_pos = np.arange(num_samplers) - (num_samplers / 2)
+        
+      if xticks[0] == 'samplers':
+        local_pos = local_pos + 0.1
+       
 
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
-      
+
+
+      if sampler.endswith('(s)'):
+        label_sampler = sampler + '$\\sqrt{t}$'
+      elif sampler.endswith('(r)'):
+        label_sampler = sampler + '$\\frac{t}{t+1}$'
+      else:
+        label_sampler = sampler 
+      # pdb.set_trace()
       assert len(x_poses) == len(xticks)
       if FLAGS.evaluation_type == 'ess':
         plt.yscale('log')
@@ -111,45 +125,73 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           plt.ylabel('ESS EE')
         else:
           plt.ylabel('ESS Clock')
-          
-        if (len(values) != len(x_poses)):
-          print("Gonna be Appending 0")
-        while(len(values) < len(x_poses)):
+
+        if len(values) != len(x_poses):
+          print('Gonna be Appending 0')
+        while len(values) < len(x_poses):
           values.append(0)
-        plt.bar(x_poses + local_pos[i] * bar_width, values, bar_width, label = sampler, color=c)
+        plt.bar(
+            x_poses + local_pos[i] * bar_width,
+            values,
+            bar_width,
+            label=label_sampler,
+            color=c,
+        )
       else:
-        threshold = 0.00025
-        # values = [float(values[0])-1.0]
-        values = [float(values[0]) - 1.0 - threshold]
-        plt.bar(x_poses + local_pos[i] * bar_width, values, bar_width, label = sampler, bottom=1, color=c)
-      
+        if FLAGS.evaluation_type != 'lm':
+          threshold = 0.00025
+          values = [float(values[0]) - 1.0 - threshold]
+          plt.bar(
+              x_poses + local_pos[i] * bar_width,
+              values,
+              bar_width,
+              label=label_sampler,
+              bottom=1,
+              color=c,
+          )
+        else:
+          values = [float(values[0])*100]
+          plt.bar(
+              x_poses + local_pos[i] * bar_width,
+              values,
+              bar_width,
+              label=label_sampler,
+              color=c,
+          )
+          
 
     if key_diff == 'name':
       key_diff = 'sampler'
     plt.title(f'The effect of {key_diff}', fontsize=16)
     plt.xticks(x_poses, xticks)
     plt.legend(
-      loc='upper right',
-      fontsize=10,
-      fancybox=True,
-      framealpha=0.4,)
-    
+        loc='upper left',
+        fontsize=10,
+        fancybox=True,
+        framealpha=0.4,
+    )
+
     if GRAPHTYPE.value == 'mis':
-      if values[-1] >100:
+      if values[-1] > 100:
         plt.ylabel('Size of Independent Set', fontsize=16)
       else:
         plt.ylabel('Ratio \u03B1', fontsize=16)
     elif GRAPHTYPE.value == 'maxclique':
       plt.ylabel('Ratio \u03B1', fontsize=16)
       # plt.ylim(0.5, 1.1)
+
     plt.grid()
     plt.show()
-    
+
     plot_dir = f'./plots/{FLAGS.gcs_results_path}/'
     if not os.path.exists(plot_dir):
       os.makedirs(plot_dir)
     plt.savefig(
         f'{plot_dir}/{res_key}_{key_diff}_based_{save_title}.png',
+        bbox_inches='tight',
+    )
+    plt.savefig(
+        f'{plot_dir}/{res_key}_{key_diff}_based_{save_title}.pdf',
         bbox_inches='tight',
     )
 
@@ -260,7 +302,7 @@ def organize_experiments(results_index_cluster, experiments_results, key_diff):
         # name_mapped_index[curr_name][key_diff] = []
         for res_key in dict_o_keys['results']:
           name_mapped_index[curr_name][f'{res_key}'] = []
-          
+
       # name_mapped_index[curr_name]['indeces'].append(index)
       # name_mapped_index[curr_name][key_diff].append(dict_o_keys[key_diff])
       for res_key in dict_o_keys['results']:
@@ -268,36 +310,56 @@ def organize_experiments(results_index_cluster, experiments_results, key_diff):
             dict_o_keys['results'][res_key]
         )
     all_mapped_names.append(name_mapped_index)
-  
+
   return all_mapped_names
+
 
 def sort_based_on_key(folders, key_diff):
   keydiff_vals = []
   for folder in folders:
     if folder[-3:] == 'png' or folder[-3:] == 'pdf':
       continue
-    value_of_keydiff = folder[1+folder.find(key_diff)+len(key_diff):]
+    value_of_keydiff = folder[1 + folder.find(key_diff) + len(key_diff) :]
     if value_of_keydiff.find(',') != -1:
-      value_of_keydiff = value_of_keydiff[0:value_of_keydiff.find(',')]
+      value_of_keydiff = value_of_keydiff[0 : value_of_keydiff.find(',')]
     if value_of_keydiff.find('(') != -1:
-      value_of_keydiff = value_of_keydiff[1+value_of_keydiff.find('('):]
+      value_of_keydiff = value_of_keydiff[1 + value_of_keydiff.find('(') :]
     try:
       keydiff_vals.append(float(value_of_keydiff))
     except ValueError:
       keydiff_vals.append(value_of_keydiff)
   xticks = sorted(keydiff_vals)
   dict_to_sort = dict(zip(folders, keydiff_vals))
-  sorted_dict = {k: v for k, v in sorted(dict_to_sort.items(), key=lambda item: item[1])}
+  sorted_dict = {
+      k: v for k, v in sorted(dict_to_sort.items(), key=lambda item: item[1])
+  }
   xticks = np.unique(xticks)
-  print("xticks = ", xticks)
+  print('xticks = ', xticks)
   return sorted_dict.keys(), xticks
-  
-  
+
+
 def sort_based_on_samplers(all_mapped_names):
-  
-  sampler_list = ['h', 'b', 'r', 'gwg(s', 'gwg(r', 'dmala(s', 'dmala(r', 'pafs(s', 'pafs(r', 'dlmcf(s', 'dlmcf(r', 'dlmc(s', 'dlmc(r']
+  sampler_list = [
+      'h',
+      'b',
+      'r',
+      'gwg(s',
+      'gwg(r',
+      'gwg',
+      'dmala(s',
+      'dmala(r',
+      'dmala',
+      'pafs(s',
+      'pafs(r',
+      'pafs',
+      'dlmcf(s',
+      'dlmcf(r',
+      'dlmcf',
+      'dlmc(s',
+      'dlmc(r',
+      'dlmc',
+  ]
   for i, cluster_dict in enumerate(all_mapped_names):
-    
     sampler_to_index = {}
     for key in cluster_dict.keys():
       if key == 'save_title':
@@ -306,21 +368,45 @@ def sort_based_on_samplers(all_mapped_names):
         if key.startswith(sampler):
           sampler_to_index[key] = sampler_id
           break
-    sorted_sampler_to_index = {k: v for k, v in sorted(sampler_to_index.items(), key=lambda item: item[1])}
+    sorted_sampler_to_index = {
+        k: v
+        for k, v in sorted(sampler_to_index.items(), key=lambda item: item[1])
+    }
     sorted_keys_based_on_list = sorted_sampler_to_index.keys()
-    print("***********************")
+    print('***********************')
     print(sorted_keys_based_on_list)
     for key in sorted_keys_based_on_list:
       print(cluster_dict[key])
-    print("***********************")
+    print('***********************')
     sorted_res = {key: cluster_dict[key] for key in sorted_keys_based_on_list}
     sorted_res['save_title'] = cluster_dict['save_title']
-    print("%%%%%%%%")
+    print('%%%%%%%%')
     print(sorted_res)
-    print("%%%%%%%%")
+    print('%%%%%%%%')
     all_mapped_names[i] = sorted_res
 
   return all_mapped_names
+
+def save_as_csv(all_mapped_names):
+  
+  csv_dir = f'./lm_csv/{FLAGS.gcs_results_path}/'
+  if not os.path.exists(csv_dir):
+    os.makedirs(csv_dir)
+  
+  for res in all_mapped_names:
+    csv_file = res['save_title']
+    csv_dir = f'{csv_dir}/{csv_file}.csv'
+    del res['save_title']
+    key0 = list(res.keys())[0]
+    csv_columns = list(res[key0].keys())
+    csv_columns.insert(0, 'sampler')
+    with open(csv_dir, 'w') as csvfile:
+      writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+      writer.writeheader()
+      for sampler in res.keys():
+        data = res[sampler]
+        data['sampler'] = sampler
+        writer.writerow(data)
 
 def main(argv) -> None:
   if len(argv) > 1:
@@ -339,36 +425,44 @@ def main(argv) -> None:
       subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
       res_dic = get_experiment_config(folder)
       res_dic = process_keys(res_dic)
+      if 'save_samples' in res_dic:
+        del res_dic['save_samples']
       print(res_dic)
       print('******************')
-      filename = os.path.join(subfolderpath, 'results.csv')
-      filename = open(filename, 'r')
-      # creating dictreader object
-      file = csv.DictReader(filename)
-      results = {}
-      for col in file:
-        if FLAGS.evaluation_type == 'ess':
-          results['ess_ee'] = float(col['ESS_EE']) * 50000
-          results['ess_clock'] = float(col['ESS_T'])
-        else:
-          results['best_ratio_mean'] = col['best_ratio_mean']
-          # results['best_ratio_mean'] = float(col['best_ratio_mean']) / float(col['running_time'])
-          # results['running_time'] = col['running_time']
+      
+      if FLAGS.evaluation_type == 'lm':
+        filename = os.path.join(subfolderpath, 'results.pkl')
+        results = pickle.load(open(filename, 'rb'))
+        del results['infill_sents']
+      else:
+        filename = os.path.join(subfolderpath, 'results.csv')
+        filename = open(filename, 'r')
+        file = csv.DictReader(filename)
+        results = {}
+        for col in file:
+          if FLAGS.evaluation_type == 'ess':
+            results['ess_ee'] = float(col['ESS_EE']) * 50000
+            results['ess_clock'] = float(col['ESS_T'])
+          elif FLAGS.evaluation_type == 'co':
+            results['best_ratio_mean'] = col['best_ratio_mean']
+            # results['best_ratio_mean'] = float(col['best_ratio_mean']) / float(col['running_time'])
+            # results['running_time'] = col['running_time']
       res_dic['results'] = results
       experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
-  # print(FLAGS.key, results_index_cluster)
+  print(FLAGS.key, results_index_cluster)
   all_mapped_names = organize_experiments(
       results_index_cluster, experiments_results, key_diff
   )
   for key in all_mapped_names[0].keys():
-    print(key, " ", all_mapped_names[0][key])
+    print(key, ' ', all_mapped_names[0][key])
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
-  if FLAGS.key == 'name':
+  if FLAGS.key == 'name' and key_diff != 'balancing_fn_type':
     x_ticks = ['samplers']
-  print("xtickssssss: ", x_ticks)
-  
+  print('xtickssssss: ', x_ticks)
   plot_results(all_mapped_names, key_diff, x_ticks)
+  if FLAGS.evaluation_type == 'lm':
+    save_as_csv(all_mapped_names)
 
 
 if __name__ == '__main__':

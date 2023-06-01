@@ -1,8 +1,10 @@
+import pdb
 from discs.evaluators import abstractevaluator
 import jax
 import jax.numpy as jnp
-import ml_collections
 import matplotlib.pyplot as plt
+import ml_collections
+
 
 class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
   """Evaluator class specific to evaluating samplees run on bernoulli model."""
@@ -45,7 +47,6 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
 
   def _compute_error_across_chain_and_batch(self, samples, model, params):
     """Computes the error over chains and the combined last sample of all chains."""
-
     (
         avg_mean_error,
         max_mean_error,
@@ -73,30 +74,48 @@ class Bernoullievaluator(abstractevaluator.AbstractEvaluator):
   def evaluate(self, samples, model, params):
     return self._compute_error_across_chain_and_batch(samples, model, params)
 
-  def plot_mixing_time_graph_over_chain(self, model, params, chain):
+  def plot_mixing_time_graph_over_chain(
+      self, save_dir, model, all_params, all_samples, all_labels
+  ):
     """Plots the error over window of samples of chains over time."""
-    mean_errors = []
-    max_mean_errors = []
-    for start in range(0, len(chain), self.config.experiment.window_stride):
-      if (len(chain) - start) < self.config.experiment.window_size:
-        break
-      samples = chain[start : start + self.config.experiment.window_size]
-      avg_mean_error, max_mean_error, _, _ = self._compute_error(
-          model, params, samples
+    f = plt.figure()
+    f.set_figwidth(12)
+    f.set_figheight(8)
+    for i, chain in enumerate(all_samples):
+      label = all_labels[i]
+      params = all_params[i]
+      mean_errors = []
+      max_mean_errors = []
+      for start in range(0, len(chain), self.config.experiment.window_stride):
+        if (len(chain) - start) < self.config.experiment.window_size:
+          break
+        samples = chain[start : start + self.config.experiment.window_size]
+        avg_mean_error, max_mean_error, _, _ = self._compute_error(
+            model, params, samples
+        )
+        mean_errors.append(avg_mean_error)
+        max_mean_errors.append(max_mean_error)
+      mean_errors = jnp.array(mean_errors)
+      plt.plot(
+          jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--', label=label
       )
-      mean_errors.append(avg_mean_error)
-      max_mean_errors.append(max_mean_error)
-    plt.plot(jnp.arange(1, 1 + len(mean_errors)), mean_errors, '--bo')
     plt.xlabel('Iteration Step Over Chain')
     plt.ylabel('Avg Mean Error')
-    plt.title('Avg Mean Error Over Chains for {}!'.format(self.config.sampler))
-    plt.savefig('MixingTimeAvgMean_{}'.format(self.config.sampler))
-    plt.clf()
-    plt.plot(jnp.arange(1, 1 + len(max_mean_errors)), max_mean_errors, '--bo')
+    plt.title('Avg Mean Error Over Chains!')
+    plt.legend()
+    plt.savefig(f'{save_dir}/MixingTimeAvgMean.png')
+    '''plt.clf()
+    plt.plot(
+        jnp.arange(1, 1 + len(max_mean_errors)),
+        max_mean_errors,
+        '--bo',
+        label=label,
+    )
     plt.xlabel('Iteration Step Over Chain')
     plt.ylabel('Max Mean Error')
-    plt.title('Max Mean Error Over Chains for {}!'.format(self.config.sampler))
-    plt.savefig('MixingTimeMaxMean_{}'.format(self.config.sampler))
+    plt.title('Max Mean Error Over Chains!')
+    plt.legend()
+    plt.savefig(f'{save_dir}/MixingTimeMaxMean.png')'''
 
 
 def build_evaluator(config):

@@ -2,7 +2,7 @@ import copy
 import os
 import pdb
 import pickle
-
+import csv
 from absl import app
 from absl import flags
 from matplotlib import cm
@@ -136,6 +136,7 @@ def plot_graph_cluster(num, key, dict_results, indeces):
     traj_mean = traj_mean[idx:]
     traj_var = 0 * traj_var[idx:]
 
+    x = x * float(result['results']['running_time'])
     # plotting
     plt.plot(
         x, traj_mean, color= get_color(key_value), label=f'{key_value}', linewidth=2
@@ -238,6 +239,7 @@ def process_keys(dict_o_keys):
 
 
 def get_experiment_config(exp_config):
+  exp_config = exp_config[1 + exp_config.find('_') :]
   keys = []
   values = []
   splits = str.split(exp_config, ',')
@@ -294,7 +296,19 @@ def main(argv) -> None:
         else:
           experiment_result['results']['log_every_steps'] = '100'
           del experiment_result['log_every_steps']
+          
+        csv_path = os.path.join(subfolderpath, 'results.csv')
+        filename = open(csv_path, 'r')
+        file = csv.DictReader(filename)
+        for col in file:
+          experiment_result['results']['best_ratio_mean'] = col['best_ratio_mean']
+          # experiment_result['results']['best_ratio_mean'] = float(col['best_ratio_mean']) / float(col['running_time'])
+          experiment_result['results']['running_time'] = col['running_time']
+        
+        
         experiments_results.append(experiment_result)
+ 
+ 
   for key in [GRAPH_KEY.value]:
     plot_results_keybased(key, experiments_results)
 

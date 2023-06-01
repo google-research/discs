@@ -82,6 +82,10 @@ def main(argv) -> None:
     executable_args['model_config.data_root'] = (
         '/gcs/xcloud-shared/hadai/data/sco'
     )
+  elif job_config.get('model') == 'text_infilling':
+    executable_args['config'] = (
+        '/workdir/discs/experiment/configs/lm_experiment.py'
+    )
   else:
     executable_args['config'] = '/workdir/discs/common/configs.py'
     num_gpus = 4
@@ -150,9 +154,16 @@ def main(argv) -> None:
       for k, v in kwargs.items():
         if k.startswith('config.'):
           k = k[len('config.') :]
+        elif k.startswith('model_config.'):
+          k = k[len('model_config.') :]
+        elif k.startswith('sampler_config.'):
+          k = k[len('sampler_config.') :]
+        if isinstance(v, str) and v.startswith('/gcs'):
+          splits = v.split('/')
+          v = splits[-3] + '/' + splits[-2] + '/' + splits[-1]
         sweep_str_parts.append(f'{k}={v!r}')
       sweep_str = ','.join(sweep_str_parts)
-      sweep_str = sweep_str.replace('/','-')
+      sweep_str = sweep_str.replace('/', '-')
       args[
           'config.experiment.save_root'
       ] += f'/{work_unit.work_unit_id}_{sweep_str}'

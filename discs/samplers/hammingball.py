@@ -80,46 +80,37 @@ class HammingBallSampler(abstractsampler.AbstractSampler):
     u = jnp.where(rad, self.compute_u(rng2, x, block), x)
     u = jnp.reshape(u, x_shape)
 
-    def generate_new_samples(indices_to_flip, x):
-      x_flatten = x.reshape(1, -1)
-      y_flatten = jnp.repeat(
-          x_flatten, (self.num_categories - 1) * self.block_size, axis=0
-      )
-      indices_to_flip = jnp.repeat(
-          indices_to_flip, self.num_categories - 1, axis=0
-      )
-      categories_iter = jnp.tile(
-          jnp.arange(1, self.num_categories), self.block_size
-      )
-      b_idx = jnp.arange(y_flatten.shape[0])
-      y_flatten = y_flatten.at[b_idx, indices_to_flip].set(
-          (y_flatten[b_idx, indices_to_flip] + categories_iter)
-          % self.num_categories
-      )
-      y = y_flatten.reshape((y_flatten.shape[0],) + self.sample_shape)
-      return y
+    def get_ll_at_block(indices_to_flip, x, model_param):
+      def fn_ll(_, i):
+        y_flatten = x.reshape(x.shape[0], -1)
+        index = i // self.block_size
+        categ = 1 + i % (self.num_categories - 1)
+        val = (
+            y_flatten[:, indices_to_flip[index]] + categ
+        ) % self.num_categories
+        y_flatten = y_flatten.at[:, indices_to_flip[index]].set(val)
+        y = y_flatten.reshape((-1,) + self.sample_shape)
+        ll = model.forward(model_param, y)
+        return None, ll
 
-    def select_new_samples(model_param, x, y, rnd_categorical):
-      loglikelihood = model.forward(model_param, y)
-      selected_index = random.categorical(rnd_categorical, loglikelihood)
-      x = jnp.take(y, selected_index, axis=0)
-      x = x.reshape(self.sample_shape)
+      num_neighs = (self.num_categories - 1) * self.block_size
+      _, ll_all = jax.lax.scan(fn_ll, None, jnp.arange(num_neighs))
+      return ll_all
+
+    def select_new_samples(rnd_categorical, loglikelihood, x, indices_to_flip):
+      selected_index = random.categorical(
+          rnd_categorical, loglikelihood, axis=0
+      )
+      index = selected_index // self.block_size
+      categ = 1 + selected_index % (self.num_categories - 1)
+      x_flatten = x.reshape(x.shape[0], -1)
+      val = (x_flatten[:, indices_to_flip[index]] + categ) % self.num_categories
+      x = x_flatten.at[:, indices_to_flip[index]].set(val)
+      x = x.reshape((-1,) + self.sample_shape)
       return x
 
-    def loop_body(i, val):
-      rng_key, x, indices_to_flip, model_param = val
-      curr_sample = x[i]
-      y = generate_new_samples(indices_to_flip, curr_sample)
-      y_all = jnp.concatenate([jnp.array([curr_sample]), y], axis=0)
-      rnd_categorical, next_key = jax.random.split(rng_key)
-      selected_sample = select_new_samples(
-          model_param, curr_sample, y_all, rnd_categorical
-      )
-      x = x.at[i].set(selected_sample)
-      return (next_key, x, indices_to_flip, model_param)
-
-    init_val = (rng3, u, block, model_param)
-    _, new_x, _, _ = jax.lax.fori_loop(0, x.shape[0], loop_body, init_val)
+    loglikelihood = get_ll_at_block(block, u, model_param)
+    new_x = select_new_samples(rng3, loglikelihood, u, block)
     new_state = self.update_sampler_state(state_init)
     return new_x, new_state, 1
 

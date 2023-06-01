@@ -1,14 +1,15 @@
 """Saver Class."""
 
-import ml_collections
+import csv
+import os
+import pdb
+import pickle
+from discs.evaluators import bernoulli_eval as b_eval
 import jax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import os
-import csv
-import pickle
-import pdb
+import matplotlib.pyplot as plt
+import ml_collections
 import numpy as np
 
 
@@ -55,7 +56,7 @@ class Saver:
     results['sampler'] = self.config.sampler.name
     if 'adaptive' in self.config.sampler.keys():
       results['sampler'] = f'a_{self.config.sampler.name}'
-      
+
     if 'solver' in self.config.sampler.keys():
       if self.config.sampler.solver == 'euler_forward':
         results['sampler'] = results['sampler'] + 'f'
@@ -114,26 +115,28 @@ class Saver:
     if self.config.experiment.evaluator == 'ess_eval':
       self._save_results(metrcis, running_time)
 
-  def dump_sample(self, sample, step, visualize=False):
-    root_path = os.path.join(self.save_dir, self.config.sampler.name)
+  def dump_samples(self, samples, visualize=False):
+    root_path = self.save_dir
     if not os.path.isdir(root_path):
-        os.makedirs(root_path)
+      os.makedirs(root_path)
     path = os.path.join(root_path, 'samples.pkl')
-    if os.path.exists(path):
-      samples = pickle.load(open(path, 'rb'))
-    else:
-      samples = {}
-    samples[step] = sample
+    res = {}
+    trajectory = jnp.array(samples)
+    res['trajectory'] = trajectory
     with open(path, 'wb') as file:
-      pickle.dump(samples, file, protocol=pickle.HIGHEST_PROTOCOL)
+      pickle.dump(res, file, protocol=pickle.HIGHEST_PROTOCOL)
     if visualize:
-      size = int(jnp.sqrt(sample.shape[0]))
-      sample = jnp.reshape(sample, (size, size))
-      image_path = os.path.join(root_path, f'sample_{step}.jpeg')
-      plt.imsave(image_path, np.array(sample), cmap=cm.gray)
-  
-  def dump_results(self, trajectory, best_ratio, running_time):
+      for step, samples in enumerate(trajectory):
+        size = int(jnp.sqrt(samples[0].shape[0]))
+        samples = jnp.reshape(samples, (-1, size, size))
+        for chain in range(samples.shape[0]):
+          img = samples[chain]
+          image_path = os.path.join(
+              root_path, f'sample_{step}_of_chain_{chain}.jpeg'
+          )
+          plt.imsave(image_path, np.array(img), cmap=cm.gray)
 
+  def dump_results(self, trajectory, best_ratio, running_time, best_samples):
     if not os.path.isdir(self.save_dir):
       os.makedirs(self.save_dir)
     path = os.path.join(self.save_dir, 'results.pkl')
@@ -141,8 +144,11 @@ class Saver:
     results['trajectory'] = np.array(trajectory)
     results['best_ratio'] = np.array(best_ratio)
     results['running_time'] = running_time
+    if len(best_samples) != 0:
+      results['best_samples'] = np.array(best_samples)
     with open(path, 'wb') as file:
       pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
+
     results = {}
     results['best_ratio_mean'] = np.mean(np.array(best_ratio))
     results['running_time'] = running_time
@@ -151,6 +157,32 @@ class Saver:
       writer.writeheader()
       writer.writerow(results)
       csvfile.close()
+
+  def dump_params(self, params):
+    path = os.path.join(self.save_dir, 'params.pkl')
+    params_dict = {}
+    params_dict['params'] = params
+    with open(path, 'wb') as file:
+      pickle.dump(params_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+  def dump_dict(self, results, results_topk):
+    if not os.path.isdir(self.save_dir):
+      os.makedirs(self.save_dir)
+    path = os.path.join(self.save_dir, 'results.pkl')
+    with open(path, 'wb') as file:
+      pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
+    if results_topk:
+      path = os.path.join(self.save_dir, 'results_topk.pkl')
+      with open(path, 'wb') as file:
+        pickle.dump(results_topk, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+  def plot_estimation_error(self, model, params, samples):
+    ber_eval = b_eval.build_evaluator(self.config)
+    ber_eval.plot_mixing_time_graph_over_chain(
+        self.save_dir, model, params, samples
+    )
+
 
 def build_saver(save_dir, config):
   return Saver(save_dir, config)

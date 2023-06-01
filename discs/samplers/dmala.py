@@ -15,24 +15,23 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
   def update_sampler_state(self, state, acc, local_stats):
     cur_step = state['steps']
     state['num_ll_calls'] += 4
-    if not self.adaptive:
+    if not self.adaptive or self.co_opt_prob:
       return
     if self.reset_z_est > 0:
-      log_z = jnp.where(cur_step % self.reset_z_est == 0,
-                        local_stats['log_z'], state['log_z'])
-    else:
       log_z = jnp.where(
-          cur_step == 1, local_stats['log_z'], state['log_z'])
-    #TODO: add scheduling of logz_ema
+          cur_step % self.reset_z_est == 0, local_stats['log_z'], state['log_z']
+      )
+    else:
+      log_z = jnp.where(cur_step == 1, local_stats['log_z'], state['log_z'])
+    # TODO: add scheduling of logz_ema
     logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
-    log_z = (logs_ema * log_z) + ( (1 - logs_ema)*local_stats['log_z'])
-    
+    log_z = (logs_ema * log_z) + ((1 - logs_ema) * local_stats['log_z'])
+
     # updating tau
     n = jnp.exp(state['log_tau'] + log_z)
     n = n + 3 * (acc - self.target_acceptance_rate)
     state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
     state['log_z'] = log_z
-
 
   def select_sample(
       self, rng, local_stats, log_acc, current_sample, new_sample, sampler_state
@@ -64,12 +63,15 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
       ll_delta = (1 - 2 * x) * grad_x
     else:
       ll_delta = grad_x - jnp.sum(grad_x * x, axis=-1, keepdims=True)
+
     log_weight_x = self.apply_weight_function_logscale(ll_delta)
     return ll_x, {'weights': log_weight_x, 'delta': ll_delta}
 
   def __init__(self, config: ml_collections.ConfigDict):
     super().__init__(config)
     self.adaptive = config.sampler.adaptive
+    self.co_opt_prob = config.experiment.co_opt_prob
+    self.step_size = config.sampler.get('step_size', 0.3)
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.get('schedule_step', 100)
@@ -88,16 +90,24 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
     ll_x, log_rate_x = self.get_value_and_rates(model, model_param, x)
-    local_stats = self.reset_stats(log_rate_x['weights'])
-    log_tau = jnp.where(
-        state['steps'] == 0, local_stats['log_tau'], state['log_tau']
-    )
+    if self.adaptive:
+      local_stats = self.reset_stats(log_rate_x['weights'])
+      log_tau = jnp.where(
+          state['steps'] == 0, local_stats['log_tau'], state['log_tau']
+      )
+      log_tau = jnp.where(self.co_opt_prob, local_stats['log_tau'], log_tau)
+    else:
+      local_stats = None
+      log_tau = -1 /(2 * self.step_size)
 
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
+    if self.adaptive and self.co_opt_prob:
+      local_stats = self.reset_stats(log_rate_y['weights'])
+      log_tau = local_stats['log_tau']
     dist_y = self.get_dist_at(y, log_tau, log_rate_y)
     aux = jnp.where(self.num_categories > 2, x, aux)
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux)
@@ -113,13 +123,11 @@ class BinaryDMALA(DMALASampler):
   """DMALA sampler in biary case."""
 
   def get_dist_at(self, x, log_tau, log_rate_x):
-    _ = x
+    # _ = x
     log_weight_x = log_rate_x['weights']
     threshold_x = log_tau + log_weight_x
     threshold_x -= jnp.logaddexp(threshold_x, jnp.zeros_like(threshold_x))
-    return jnp.exp(
-        jnp.clip(threshold_x, a_max=0.0)
-    )  # Kati check the values of this
+    return jnp.exp(jnp.clip(threshold_x, a_max=0.0))
 
   def sample_from_proposal(self, rng, x, dist_x):
     flip = jax.random.bernoulli(rng, p=dist_x)
@@ -140,14 +148,7 @@ class CategoricalDMALA(DMALASampler):
     log_weight_x = log_rate_x['weights']
     log_posterior_x = log_tau + log_weight_x
     log_posterior_x = log_posterior_x * (1 - x)
-    log_posterior_x -= jnp.log(
-        jnp.sum(jnp.exp(log_posterior_x), axis=-1, keepdims=True)
-    )
-    log_posterior_x = (
-        log_posterior_x * (1 - x) + x * jnp.log1p(
-            -jnp.clip(jnp.sum(jnp.exp(log_posterior_x) * (1 - x),
-                              axis=-1, keepdims=True), a_max=1-1e-12))
-    )
+    log_posterior_x = jax.nn.log_softmax(log_posterior_x, axis=-1)
     return log_posterior_x
 
   def sample_from_proposal(self, rng, x, dist_x):

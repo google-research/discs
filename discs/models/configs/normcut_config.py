@@ -10,7 +10,7 @@ def get_config():
           graph_type='nets',
           cfg_str='r-INCEPTION',
           data_root='./sco/',
-          stype='span',
+          stype='quad',
       )
   )
   model_config['save_dir_name'] = model_config['name']
