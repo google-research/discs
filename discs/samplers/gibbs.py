@@ -13,6 +13,12 @@ class GibbsSampler(abstractsampler.AbstractSampler):
   def __init__(self, config: ml_collections.ConfigDict):
     self.sample_shape = config.model.shape
     self.num_categories = config.model.num_categories
+    
+  def make_init_state(self, rng):
+    """Init sampler state."""
+    state = super().make_init_state(rng)
+    state['index'] = jnp.zeros(shape=(), dtype=jnp.int32)
+    return state
 
   def update_sampler_state(self, sampler_state):
     sampler_state = super().update_sampler_state(sampler_state)
