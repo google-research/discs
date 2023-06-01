@@ -27,7 +27,7 @@ def get_config():
           plot_every_steps=10,
           save_root='./discs/results',
           fig_folder='',
-          save_every_steps=100,
+          save_every_steps=10000,
           save_samples=False,
           get_estimation_error=False,
           use_tqdm=False,
