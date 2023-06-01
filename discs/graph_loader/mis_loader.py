@@ -73,6 +73,34 @@ class ErTestGraphGen(MISGen):
         break
 
 
+class ErDensityGraphGen(MISGen):
+  """Generator for ErdosRenyi test graphs with different densities."""
+
+  def __init__(self, data_root, model_config):
+    super().__init__()
+    data_folder = os.path.join(data_root, 'er_700_800')
+    fname = os.path.join(data_folder,
+                         'ER-700-800-%s.pkl' % model_config.rand_type)
+    with open(fname, 'rb') as f:
+      g_list = pickle.load(f)
+      for g in g_list:
+        self._max_num_nodes = max(self._max_num_nodes, len(g))
+        self._max_num_edges = max(self._max_num_edges, len(g.edges()))
+        self._num_instances += 1
+      self.g_list = g_list
+    print('max num nodes', self.max_num_nodes)
+    print('max num edges', self.max_num_edges)
+    print('num instances', self.num_instances)
+
+  def sample_gen(self, phase, repeat=False):
+    assert phase == 'test'
+    while True:
+      for g in self.g_list:
+        yield g, 1
+      if not repeat:
+        break
+
+
 class SatLibGraphGen(MISGen):
   """Generator for SATLIB test graphs."""
 

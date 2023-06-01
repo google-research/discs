@@ -6,9 +6,9 @@ def get_config():
 
   config = config_dict.ConfigDict(
       dict(
-          model='mis',
+          model='maxcut',
           sampler='path_auxiliary',
-          graph_type='ertest',
+          graph_type='optsicom',
           sweep=[
               {
                   'sampler_config.name': [
@@ -16,25 +16,37 @@ def get_config():
                       'blockgibbs',
                       'hammingball',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-b',
+                  ],
                   'config.experiment.log_every_steps': [100],
+                  'config.experiment.num_models': [10],
+                  'config.experiment.batch_size': [16],
               },
               {
+                  'config.experiment.num_models': [10],
+                  'config.experiment.batch_size': [16], 
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-b',
+                  ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
               },
               {
+                  'config.experiment.num_models': [10],
+                  'config.experiment.batch_size': [16], 
                   'sampler_config.name': [
                       'gwg',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-b',
+                  ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
@@ -42,10 +54,14 @@ def get_config():
                   'sampler_config.adaptive': [False],
               },
               {
+                  'config.experiment.num_models': [10],
+                  'config.experiment.batch_size': [16], 
                   'sampler_config.name': [
                       'dlmc',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-b',
+                  ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
@@ -56,4 +72,3 @@ def get_config():
       )
   )
   return config
-

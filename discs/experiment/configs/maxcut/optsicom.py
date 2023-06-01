@@ -10,7 +10,7 @@ def get_config():
           num_models=1,
           batch_size=32,
           t_schedule='exp_decay',
-          chain_length=1000,
+          chain_length=25000,
           log_every_steps=100,
           init_temperature=1.0,
           decay_rate=0.05,

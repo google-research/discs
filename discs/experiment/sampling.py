@@ -506,6 +506,8 @@ class CO_Experiment(Experiment):
     sample_idx, params, reference_obj = zip(*data_list)
     params = flax.core.frozen_dict.unfreeze(utils.tree_stack(params))
     self.ref_obj = jnp.array(reference_obj)
+    if self.config_model.name == 'mis':
+      self.ref_obj = jnp.ones_like(self.ref_obj)
     self.sample_idx = jnp.array(sample_idx)
     return params, x0, state, x0_es
 

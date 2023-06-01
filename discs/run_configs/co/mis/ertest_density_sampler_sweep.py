@@ -8,7 +8,7 @@ def get_config():
       dict(
           model='mis',
           sampler='path_auxiliary',
-          graph_type='ertest',
+          graph_type='er_density',
           sweep=[
               {
                   'sampler_config.name': [
@@ -16,7 +16,13 @@ def get_config():
                       'blockgibbs',
                       'hammingball',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-0.05',
+                      'r-0.1',
+                      'r-0.15',
+                      'r-0.2',
+                      'r-0.25',
+                  ],
                   'config.experiment.log_every_steps': [100],
               },
               {
@@ -24,7 +30,13 @@ def get_config():
                       'dmala',
                       'path_auxiliary',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-0.05',
+                      'r-0.1',
+                      'r-0.15',
+                      'r-0.2',
+                      'r-0.25',
+                  ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
@@ -34,7 +46,13 @@ def get_config():
                   'sampler_config.name': [
                       'gwg',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-0.05',
+                      'r-0.1',
+                      'r-0.15',
+                      'r-0.2',
+                      'r-0.25',
+                  ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
@@ -45,7 +63,13 @@ def get_config():
                   'sampler_config.name': [
                       'dlmc',
                   ],
-                  'model_config.cfg_str': ['r-10k', 'r-800'],
+                  'model_config.cfg_str': [
+                      'r-0.05',
+                      'r-0.1',
+                      'r-0.15',
+                      'r-0.2',
+                      'r-0.25',
+                  ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
@@ -56,4 +80,3 @@ def get_config():
       )
   )
   return config
-
