@@ -5,6 +5,7 @@ from discs.samplers import abstractsampler
 import jax
 import jax.numpy as jnp
 import ml_collections
+import pdb
 
 
 class GibbsSampler(abstractsampler.AbstractSampler):
@@ -46,9 +47,9 @@ class GibbsSampler(abstractsampler.AbstractSampler):
       cur_ll = jnp.expand_dims(cur_ll, axis=0)
       all_new_scores = get_ll_at_dim(cur_sample, index)
       all_scores = jnp.concatenate((cur_ll, all_new_scores), axis=0)
-      cur_key, _ = jax.random.split(rng_key)
-      val_change = jax.random.categorical(cur_key, all_scores, axis=0)
+      val_change = jax.random.categorical(rng_key, all_scores, axis=0)
       y = cur_sample.at[:, index].add(val_change) % self.num_categories
+      y = jnp.reshape(y, (-1,)+self.sample_shape)
       return y
 
     index = state['index']
