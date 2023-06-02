@@ -89,6 +89,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       if sampler == 'save_title':
         save_title = res_cluster[sampler]
         continue
+      elif sampler == 'model':
+        model = res_cluster[sampler]
+        continue
       if i == 0:
         x_poses = (
             2
@@ -96,13 +99,20 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             * bar_width
             * np.arange(len(res_cluster[sampler][res_key]))
         )
-        local_pos = np.arange(num_samplers) - (num_samplers / 2)
+        local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1.5
 
       if xticks[0] == 'samplers':
         local_pos = local_pos + 0.1
 
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
+      
+      if sampler[-3:] == '(r)':
+        label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
+      elif sampler[-3:] == '(s)':
+        label_sampler = sampler[0:-3] + '$\\sqrt{t}$'
+      else:
+        label_sampler= sampler
 
       # pdb.set_trace()
       assert len(x_poses) == len(xticks)
@@ -121,7 +131,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             x_poses + local_pos[i] * bar_width,
             values,
             bar_width,
-            label=sampler,
+            label=label_sampler,
             color=c,
         )
       else:
@@ -132,7 +142,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               x_poses + local_pos[i] * bar_width,
               values,
               bar_width,
-              label=sampler,
+              label=label_sampler,
               bottom=1,
               color=c,
           )
@@ -142,20 +152,31 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               x_poses + local_pos[i] * bar_width,
               values,
               bar_width,
-              label=sampler,
+              label=label_sampler,
               color=c,
           )
 
     if key_diff == 'name':
       key_diff = 'sampler'
-    plt.title(f'The effect of {key_diff}', fontsize=16)
+    elif key_diff == 'shape':
+      key_diff = 'sample dimension'
+    print(key_diff)
+    plt.title(f'Effect of {key_diff} on {model}', fontsize=16)
     plt.xticks(x_poses, xticks)
-    plt.legend(
+    if key_diff == 'sampler':
+      plt.legend(
         loc='upper left',
         fontsize=10,
         fancybox=True,
-        framealpha=0.4,
-    )
+        framealpha=0.2,
+      )
+    else:
+      plt.legend(
+          loc='upper right',
+          fontsize=10,
+          fancybox=True,
+          framealpha=0.2,
+      )
 
     if GRAPHTYPE.value == 'mis':
       if values[-1] > 100:
@@ -166,7 +187,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       plt.ylabel('Ratio \u03B1', fontsize=16)
       # plt.ylim(0.5, 1.1)
 
-    plt.grid()
+    plt.grid(axis='y')
     plt.show()
 
     plot_dir = f'./plots/{FLAGS.gcs_results_path}/'
@@ -226,9 +247,9 @@ def process_keys(dict_o_keys):
   if 'balancing_fn_type' in dict_o_keys:
     if 'name' in dict_o_keys:
       if dict_o_keys['balancing_fn_type'] == 'SQRT':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '$\\sqrt{t}$'
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)' 
       elif dict_o_keys['balancing_fn_type'] == 'RATIO':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '$\\frac{t}{t+1}$'
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
       elif dict_o_keys['balancing_fn_type'] == 'MIN':
         dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
       elif dict_o_keys['balancing_fn_type'] == 'MAX':
@@ -237,7 +258,7 @@ def process_keys(dict_o_keys):
   return dict_o_keys
 
 
-def organize_experiments(results_index_cluster, experiments_results, key_diff):
+def organize_experiments(results_index_cluster, experiments_results, key_diff, model):
   all_mapped_names = []
   for i, cluster in enumerate(results_index_cluster):
     name_mapped_index = {}
@@ -249,6 +270,8 @@ def organize_experiments(results_index_cluster, experiments_results, key_diff):
           if key_dict != 'results':
             graph_save += str(key_dict) + '=' + str(val_dict) + ','
         name_mapped_index['save_title'] = graph_save
+        name_mapped_index['model'] = model
+        
       dict_o_keys = experiments_results[index]
       curr_name = dict_o_keys['name']
       if key_diff == 'balancing_fn_type':
@@ -277,7 +300,7 @@ def sort_based_on_key(folders, key_diff):
     if value_of_keydiff.find('(') != -1:
       value_of_keydiff = value_of_keydiff[1 + value_of_keydiff.find('(') :]
     try:
-      keydiff_vals.append(float(value_of_keydiff))
+      keydiff_vals.append(int(float(value_of_keydiff)))
     except ValueError:
       keydiff_vals.append(value_of_keydiff)
   xticks = sorted(keydiff_vals)
@@ -314,7 +337,7 @@ def sort_based_on_samplers(all_mapped_names):
   for i, cluster_dict in enumerate(all_mapped_names):
     sampler_to_index = {}
     for key in cluster_dict.keys():
-      if key == 'save_title':
+      if key in ['save_title', 'model']:
         continue
       for sampler_id, sampler in enumerate(sampler_list):
         if key.startswith(sampler):
@@ -327,6 +350,8 @@ def sort_based_on_samplers(all_mapped_names):
     sorted_keys_based_on_list = sorted_sampler_to_index.keys()
     sorted_res = {key: cluster_dict[key] for key in sorted_keys_based_on_list}
     sorted_res['save_title'] = cluster_dict['save_title']
+    sorted_res['model'] = cluster_dict['model']
+    
     all_mapped_names[i] = sorted_res
 
   return all_mapped_names
@@ -364,6 +389,7 @@ def main(argv) -> None:
   folders = os.listdir(FLAGS.gcs_results_path)
   folders = sorted(folders)
   folders, x_ticks = sort_based_on_key(folders, key_diff)
+  model = str.split(FLAGS.gcs_results_path, '-')[1]
   for folder in folders:
     subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
     res_dic = get_experiment_config(folder)
@@ -393,7 +419,7 @@ def main(argv) -> None:
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
   print(FLAGS.key, results_index_cluster)
   all_mapped_names = organize_experiments(
-      results_index_cluster, experiments_results, key_diff
+      results_index_cluster, experiments_results, key_diff, model
   )
   for key in all_mapped_names[0].keys():
     print(key, ' ', all_mapped_names[0][key])
