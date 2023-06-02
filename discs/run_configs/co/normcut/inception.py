@@ -36,11 +36,23 @@ def get_config():
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
-                      'gwg',
                   ],
                   'model_config.stype': ['quad'],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.adaptive': [True, False]
+              },
+              {
+                  'config.experiment.batch_size': [32],
+                  'config.experiment.chain_length': [800000],
+                  'config.experiment.decay_rate': [0.15],
+                  'model_config.cfg_str': [
+                      'r-INCEPTION',
+                  ],
+                  'sampler_config.name': [
+                      'gwg',
+                  ],
+                  'model_config.stype': ['quad'],
+                  'config.experiment.log_every_steps': [100],
               },
               {
                   'config.experiment.batch_size': [32],
