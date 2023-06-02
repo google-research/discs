@@ -50,28 +50,26 @@ class TextInfilling(abstractmodel.AbstractModel):
     sampled_sentence = self.tokenizer.decode(token_ids[0, 1:-1])
     return sampled_sentence
 
-  def make_init_params(self, rnd):
+  def get_params(self):
     try:
       data = next(self.infill_dataset)
     except:
       return None
-    self.sentence = data['sentence']
-    print(self.sentence)
-    self.infill_pos = data['infill_pos']  ### infill positions
-    print(self.infill_pos)
-    self.shape = (len(self.infill_pos),)
-    inputs = self.tokenizer(self.sentence, return_tensors='jax')
+    sentence = data['sentence']
+    print(sentence)
+    inputs = self.tokenizer(sentence, return_tensors='jax')
     params = {}
     params['input_ids'] = inputs['input_ids']
     params['attention_mask'] = inputs['attention_mask']
     params['token_type_ids'] = inputs['token_type_ids']
+    params['infill_pos'] = data['infill_pos']
     print(params['input_ids'])
-    self.input_ids = params['input_ids']
-    self.attention_mask = params['attention_mask']
-    self.token_type_ids = params['token_type_ids']
     return params
+    
+  def make_init_params(self, rnd):
+    return self.get_params()
 
-  def get_init_samples(self, rnd, num_samples: int):
+  def get_init_samples(self, rnd, num_samples: int, params):
     assert (
         num_samples == 1
     )  ### currently only works with one sentence at a time
@@ -87,19 +85,17 @@ class TextInfilling(abstractmodel.AbstractModel):
       )
     else:
       ### NOTE: categorical init
-      mask_dummy_array = jnp.zeros(
-          (1, len(self.infill_pos), self.num_categories)
-      )
+      mask_dummy_array = jnp.zeros((1, self.shape[0], self.num_categories))
       mask_dummy_array = mask_dummy_array.at[:, :, self.mask_token].set(1.0)
       outputs = self.model(
-          input_ids=self.input_ids,
+          input_ids=params['input_ids'],
           infill_one_hots=mask_dummy_array,
-          infill_pos=self.infill_pos,
-          attention_mask=self.attention_mask,
-          token_type_ids=self.token_type_ids,
+          infill_pos=params['infill_pos'],
+          attention_mask=params['attention_mask'],
+          token_type_ids=params['token_type_ids'],
       )
       logits = outputs.logits
-      infill_logits = logits[:, self.infill_pos, :]
+      infill_logits = logits[:, params['infill_pos'], :]
       x0 = jax.random.categorical(rnd, infill_logits, axis=-1)
 
     return x0
@@ -119,47 +115,23 @@ class TextInfilling(abstractmodel.AbstractModel):
   def single_forward(self, params, x):
     if x.shape[-1] != self.num_categories:
       x = jax.nn.one_hot(x, self.num_categories)
-    x = jnp.where(x.shape[0] == len(self.infill_pos), jnp.array([x]), x)
+    x = jnp.where(x.shape[0] == self.shape[0], jnp.array([x]), x)
 
     mask_dummy_array = jnp.zeros([1, self.num_categories])
     mask_dummy_array = mask_dummy_array.at[1, self.mask_token].set(1.0)
-    """loglikelihood = 0.0
-
-    def func_body(i, val):
-      pdb.set_trace()
-      x, params, mask_dummy_array, loglikelihood = val
-      x_new = x.at[:, i, :].set(mask_dummy_array)
-      outputs = self.model(
-          input_ids=params['input_ids'],
-          infill_one_hots=x_new,
-          infill_pos=self.infill_pos,
-          attention_mask=params['attention_mask'],
-          token_type_ids=params['token_type_ids'],
-      )
-      logits = outputs.logits
-      loglikelihood = loglikelihood + jnp.sum(
-          logits[:, self.infill_pos[i], :] * x[:, i, :], axis=-1
-      )
-      return (x, params, mask_dummy_array, loglikelihood)
-
-    init_val = (x, params, mask_dummy_array, loglikelihood)
-    _, _, _, loglikelihood = jax.lax.fori_loop(
-        0, len(self.infill_pos), func_body, init_val
-    )"""
-
     loglikelihood = 0.0
-    for i in range(0, len(self.infill_pos)):
+    for i in range(0, self.shape[0]):
       x_new = x.at[:, i, :].set(mask_dummy_array)
       outputs = self.model(
           input_ids=params['input_ids'],
           infill_one_hots=x_new,
-          infill_pos=self.infill_pos,
+          infill_pos=params['infill_pos'],
           attention_mask=params['attention_mask'],
           token_type_ids=params['token_type_ids'],
       )
       logits = outputs.logits
       loglikelihood = loglikelihood + jnp.sum(
-          jax.nn.log_softmax(logits[:, self.infill_pos[i], :], axis=-1)
+          jax.nn.log_softmax(logits[:, params['infill_pos'][i], :], axis=-1)
           * x[:, i, :],
           axis=-1,
       )

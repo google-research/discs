@@ -348,60 +348,43 @@ class Sampling_Experiment(Experiment):
 
 class Text_Infilling_Experiment(Sampling_Experiment):
 
-  def get_results(self, model, sampler, evaluator, saver):
-    infill_sents = []
-    infill_sents_topk = []
-    rnd_key = 0
-    while True:
-      contin, sents, sents_topk = self._get_chains_and_evaluations(
-          model, sampler, evaluator, saver, rnd_key=rnd_key
-      )
-      rnd_key += 1
-      if not contin:
-        break
-      infill_sents.extend(sents)
-      if self.config.use_topk:
-        infill_sents_topk.extend(sents_topk)
-    res = evaluator.evaluate(infill_sents, self.config_model.data_root)
-    if self.config.use_topk:
-      res_topk = evaluator.evaluate(
-          infill_sents_topk, self.config_model.data_root
-      )
-    else:
-      res_topk = []
-    saver.dump_dict(res, res_topk)
+  def _initialize_model_and_sampler(self, rnd, model, sampler):
+    """Initializes model params, sampler state and gets the initial samples."""
+    rng_param, rng_x0, rng_state = jax.random.split(rnd, num=3)
+    del rnd
+    params = model.make_init_params(rng_param)
+    x0 = model.get_init_samples(rng_x0, 1, params)
+    state = sampler.make_init_state(rng_state)
+    return params, x0, state
 
-  def _get_chains_and_evaluations(
-      self, model, sampler, evaluator, saver, rnd_key=0
-  ):
-    preprocessed_info = self.preprocess(
-        model, sampler, evaluator, saver, rnd_key=0
+  def _compile_fns(self, sampler, model):
+    mdl_frwrd = jax.jit(model.forward)
+    step_fn = jax.jit(sampler.step)
+    return (
+        mdl_frwrd,
+        step_fn,
     )
-    if not preprocessed_info:
-      return False, None, None
 
-    # def body_fun(i, val):
-    #   pdb.set_trace()
-    #   sentences, preprocces_info =  val
-    #   sent, rng = self._compute_chain(*preprocessed_info)
-    #   preprocessed_info = preprocessed_info.at[3].set(rng)
-    #   sentences.append(sent)
-    #   return (sentence, preprocessed_info)
-    # init_val = ([], preprocessed_info)
-    # _ = jax.lax.fori_loop(
-    #    0, self.config.num_same_resample, body_fun, init_val
-    # )
-    sentences = []
-    loglikes = []
+  def preprocess(self, model, sampler, evaluator, saver, rnd_key=0):
+    rnd = jax.random.PRNGKey(rnd_key)
+    params, x, state = self._initialize_model_and_sampler(rnd, model, sampler)
+    compiled_fns = self._compile_fns(sampler, model)
+    return [
+        compiled_fns,
+        state,
+        params,
+        rnd,
+        x,
+        saver,
+        evaluator,
+        model,
+    ]
+
+  def get_results(self, model, sampler, evaluator, saver):
+    self._get_chains_and_evaluations(model, sampler, evaluator, saver)
+
+  def get_topk_sentence(self, sentences, loglikes):
     topk_sentences = []
-    for i in range(self.config.num_same_resample):
-      sent, rng, loglike = self._compute_chain(*preprocessed_info)
-      if self.config.use_topk:
-        sent = str(i) + ' ' + sent
-        loglikes.append(loglike)
-      sentences.append(sent)
-      preprocessed_info[3] = rng
-
     if self.config.use_topk:
       sent_to_loglike = dict(zip(sentences, loglikes))
       sorted_sent = {
@@ -413,8 +396,45 @@ class Text_Infilling_Experiment(Sampling_Experiment):
         topk_sentences[i] = sent[2:]
       for i, sent in enumerate(sentences):
         sentences[i] = sent[2:]
+    return sentences, topk_sentences
 
-    return True, sentences, topk_sentences
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, saver, rnd_key=0
+  ):
+    preprocessed_info = self.preprocess(
+        model, sampler, evaluator, saver, rnd_key=0
+    )
+
+    params = preprocessed_info[2]
+    rng = preprocessed_info[3]
+    infill_sents = []
+    infill_sents_topk = []
+    while params:
+      sentences = []
+      loglikes = []
+      for i in range(self.config.num_same_resample):
+        sent, loglike = self._compute_chain(*preprocessed_info)
+        if self.config.use_topk:
+          sent = str(i) + ' ' + sent
+          loglikes.append(loglike)
+        sentences.append(sent)
+        rng, _ = jax.random.split(rng)
+        preprocessed_info[3] = rng
+
+      sentences, topk_sentences = self.get_topk_sentence(sentences, loglikes)
+      infill_sents.extend(sentences)
+      if self.config.use_topk:
+        infill_sents_topk.extend(topk_sentences)
+      params = model.get_params()
+      preprocessed_info[2] = params
+
+    res_topk = []
+    res = evaluator.evaluate(infill_sents, self.config_model.data_root)
+    if self.config.use_topk:
+      res_topk = evaluator.evaluate(
+          infill_sents_topk, self.config_model.data_root
+      )
+    saver.dump_dict(res, res_topk)
 
   def _compute_chain(
       self,
@@ -423,56 +443,29 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       params,
       rng,
       x,
-      x0_ess,
       saver,
       evaluator,
-      fn_reshape,
-      bshape,
-      model_frwrd,
       model,
   ):
     """Generates the chain of samples."""
     assert self.config.num_models == 1
-    (_, acc_ratios, hops, running_time, _) = self._initialize_chain_vars()
+    running_time = self._initialize_chain_vars()
 
-    stp_burnin, stp_mixing, get_hop, _ = compiled_fns
-    # burn in
-    burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
-    for step in tqdm.tqdm(range(1, burn_in_length)):
+    model_frwrd, stp = compiled_fns
+    for step in tqdm.tqdm(range(1, self.config.chain_length)):
       rng = jax.random.fold_in(rng, step)
-      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
-      new_x, state, acc = stp_burnin(
-          rng=step_rng,
-          x=x,
-          model_param=params,
-          state=state,
-      )
-      if self.config.get_additional_metrics:
-        # avg over all models
-        acc = jnp.mean(acc)
-        acc_ratios.append(acc)
-        # hop avg over batch size and num models
-        hops.append(get_hop(x, new_x))
-      x = new_x
-
-    for step in tqdm.tqdm(range(burn_in_length, 1 + self.config.chain_length)):
-      rng = jax.random.fold_in(rng, step)
-      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      step_rng, rng = jax.random.split(rng)
       start = time.time()
-      new_x, state, acc = stp_mixing(
+      new_x, state, _ = stp(
           rng=step_rng,
           x=x,
           model_param=params,
           state=state,
       )
       running_time += time.time() - start
-      if self.config.get_additional_metrics:
-        # avg over all models
-        acc = jnp.mean(acc)
-        acc_ratios.append(acc)
-        # hop avg over batch size and num models
-        hops.append(get_hop(x, new_x))
+
       x = new_x
+    running_time = running_time / 2
 
     loglike = 0
     if self.config.use_topk:
@@ -481,7 +474,10 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
     sampled_sentence = model.decode(x, params)
     print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike)
-    return sampled_sentence, rng, loglike
+    return sampled_sentence, loglike
+
+  def _initialize_chain_vars(self):
+    return 0
 
 
 class CO_Experiment(Experiment):
