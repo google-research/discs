@@ -358,10 +358,10 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     return params, x0, state
 
   def _compile_fns(self, sampler, model):
-    mdl_frwrd = jax.jit(model.forward)
-    step_fn = jax.jit(sampler.step)
+    mdl_decode = jax.jit(model.get_sent_and_ll)
+    step_fn = jax.jit(functools.partial(sampler.step, model=model))
     return (
-        mdl_frwrd,
+        mdl_decode,
         step_fn,
     )
 
@@ -451,8 +451,8 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     assert self.config.num_models == 1
     running_time = self._initialize_chain_vars()
 
-    model_frwrd, stp = compiled_fns
-    for step in tqdm.tqdm(range(1, self.config.chain_length)):
+    model_decode, stp = compiled_fns
+    for step in tqdm.tqdm(range(1, 1+self.config.chain_length)):
       rng = jax.random.fold_in(rng, step)
       step_rng, rng = jax.random.split(rng)
       start = time.time()
@@ -467,12 +467,8 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       x = new_x
     running_time = running_time / 2
 
-    loglike = 0
-    if self.config.use_topk:
-      x = x.astype(jnp.float32)
-      loglike = model_frwrd(params, x)[0]
-
-    sampled_sentence = model.decode(x, params)
+    sent_tokenized, loglike = model_decode(params, x, self.config.use_topk)
+    sampled_sentence = model.tokenizer.decode(sent_tokenized)
     print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike)
     return sampled_sentence, loglike
 

@@ -12,7 +12,7 @@ def get_config():
           max_n=4,
           num_same_resample=25,
           topk_num=5,
-          use_topk=False,
+          use_topk=True,
           run_parallel=False,
           save_root='',
       )

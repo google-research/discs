@@ -27,6 +27,7 @@ class TextInfilling(abstractmodel.AbstractModel):
     self.get_value_and_grad_vmap = jax.vmap(
         self.single_get_value_and_grad, [None, (0)]
     )
+    self.shape = config.shape
 
   def load_dataset(self, data_root):
     if not os.path.exists(os.path.join(data_root, 'infilling_task.json')):
@@ -43,12 +44,14 @@ class TextInfilling(abstractmodel.AbstractModel):
     print('Length of the DATASET is: ', len(infill_dataset))
     return iter(infill_dataset)
 
-  def decode(self, x, params):
-    sampled_infill_tokens = jnp.array(x[0, 0])
-    token_ids = params['input_ids'][0]
-    token_ids = token_ids.at[:, self.infill_pos].set(sampled_infill_tokens)
-    sampled_sentence = self.tokenizer.decode(token_ids[0, 1:-1])
-    return sampled_sentence
+  def get_sent_and_ll(self, params, x, get_ll):
+    x_ = x.astype(jnp.float32)
+    ll = jnp.where(get_ll, self.forward(params, x_)[0], 0)
+    sampled_infill_tokens = jnp.array(x[0])
+    token_ids = params['input_ids']
+    token_ids = token_ids.at[:, params['infill_pos']].set(sampled_infill_tokens)
+    sampled_sentence_tokenized = token_ids[0, 1:-1]
+    return sampled_sentence_tokenized, ll
 
   def get_params(self):
     try:
@@ -107,7 +110,6 @@ class TextInfilling(abstractmodel.AbstractModel):
 
   def get_value_and_grad(self, params, x):
     bs = x.shape[0]
-    print(x.shape)
     res = self.get_value_and_grad_vmap(params, x)
     ll = res[0].reshape(bs)
     return (ll, res[1])
