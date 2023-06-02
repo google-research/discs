@@ -41,13 +41,8 @@ def get_color(sampler):
 
 
 def get_diff_key(key_diff, dict1, dict2):
-  if key_diff in dict1 and key_diff in dict2:
-    if dict1[key_diff] == dict2[key_diff]:
-      return False
-  else:
-    return False
   for key in dict1.keys():
-    if key == 'results':
+    if key in ['results', 'name']:
       continue
     if key not in dict2:
       return False
@@ -61,7 +56,7 @@ def get_clusters_key_based(key, results_dict_list):
   for i, result_dict in enumerate(results_dict_list):
     if key not in result_dict:
       continue
-    if len(results_index_cluster) == 0:
+    if not results_index_cluster:
       results_index_cluster.append([i])
       continue
 
@@ -102,10 +97,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             * np.arange(len(res_cluster[sampler][res_key]))
         )
         local_pos = np.arange(num_samplers) - (num_samplers / 2)
-        
+
       if xticks[0] == 'samplers':
         local_pos = local_pos + 0.1
-       
 
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
@@ -143,7 +137,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               color=c,
           )
         else:
-          values = [float(values[0])*100]
+          values = [float(values[0]) * 100]
           plt.bar(
               x_poses + local_pos[i] * bar_width,
               values,
@@ -151,7 +145,6 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               label=sampler,
               color=c,
           )
-          
 
     if key_diff == 'name':
       key_diff = 'sampler'
@@ -189,38 +182,6 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
     )
 
 
-def get_diff_key(key_diff, dict1, dict2):
-  for key in dict1.keys():
-    if key in ['results', 'name']:
-      continue
-    if key not in dict2:
-      return False
-    if dict1[key] != dict2[key] and key != key_diff:
-      return None
-  return True
-
-
-def get_clusters_key_based(key, results_dict_list):
-  results_index_cluster = []
-  for i, result_dict in enumerate(results_dict_list):
-    if key not in result_dict:
-      continue
-    if len(results_index_cluster) == 0:
-      results_index_cluster.append([i])
-      continue
-
-    found_match = False
-    for j, cluster in enumerate(results_index_cluster):
-      if get_diff_key(key, results_dict_list[cluster[0]], result_dict):
-        found_match = True
-        results_index_cluster[j].append(i)
-        break
-    if key in results_dict_list[i] and not found_match:
-      results_index_cluster.append([i])
-
-  return results_index_cluster
-
-
 def get_experiment_config(exp_config):
   exp_config = exp_config[1 + exp_config.find('_') :]
   keys = []
@@ -234,14 +195,8 @@ def get_experiment_config(exp_config):
         value = value[1:-1]
       elif len(value) >= 2 and value[1] == '(':
         value = value[2:]
-    # if key != 'cfg_str':
     keys.append(str.split(key, '.')[-1])
     values.append(value)
-  # keys.append('cfg_str')
-  # idx = exp_config.find('cfg_str')
-  # string = str.split(exp_config[len('cfg_str') + idx + 4 :], "'")[0]
-  # method = str.split(string, ',')[0]
-  # values.append(method)
   return dict(zip(keys, values))
 
 
@@ -259,14 +214,15 @@ def process_keys(dict_o_keys):
     if dict_o_keys['solver'] == 'euler_forward':
       dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
     del dict_o_keys['solver']
-    
+
   if 'adaptive' in dict_o_keys:
     if dict_o_keys['adaptive'] == 'False':
+      dict_o_keys['name'] = str(dict_o_keys['name']) + 'nA'
+      del dict_o_keys['adaptive']
+    if 'step_size' in dict_o_keys:
       dict_o_keys['name'] = str(dict_o_keys['name']) + dict_o_keys['step_size']
-    del dict_o_keys['adaptive']
-    del dict_o_keys['step_size']
-    
-    
+      del dict_o_keys['step_size']
+
   if 'balancing_fn_type' in dict_o_keys:
     if 'name' in dict_o_keys:
       if dict_o_keys['balancing_fn_type'] == 'SQRT':
@@ -299,13 +255,8 @@ def organize_experiments(results_index_cluster, experiments_results, key_diff):
         curr_name = curr_name[0 : curr_name.find('(')]
       if curr_name not in name_mapped_index:
         name_mapped_index[curr_name] = {}
-        # name_mapped_index[curr_name]['indeces'] = []
-        # name_mapped_index[curr_name][key_diff] = []
         for res_key in dict_o_keys['results']:
           name_mapped_index[curr_name][f'{res_key}'] = []
-
-      # name_mapped_index[curr_name]['indeces'].append(index)
-      # name_mapped_index[curr_name][key_diff].append(dict_o_keys[key_diff])
       for res_key in dict_o_keys['results']:
         name_mapped_index[curr_name][f'{res_key}'].append(
             dict_o_keys['results'][res_key]
@@ -374,26 +325,17 @@ def sort_based_on_samplers(all_mapped_names):
         for k, v in sorted(sampler_to_index.items(), key=lambda item: item[1])
     }
     sorted_keys_based_on_list = sorted_sampler_to_index.keys()
-    print('***********************')
-    print(sorted_keys_based_on_list)
-    for key in sorted_keys_based_on_list:
-      print(cluster_dict[key])
-    print('***********************')
     sorted_res = {key: cluster_dict[key] for key in sorted_keys_based_on_list}
     sorted_res['save_title'] = cluster_dict['save_title']
-    print('%%%%%%%%')
-    print(sorted_res)
-    print('%%%%%%%%')
     all_mapped_names[i] = sorted_res
 
   return all_mapped_names
 
-def save_as_csv(all_mapped_names):
-  
-  csv_dir = f'./lm_csv/{FLAGS.gcs_results_path}/'
+
+def save_result_as_csv(all_mapped_names, dir_name):
+  csv_dir = f'./{dir_name}/{FLAGS.gcs_results_path}/'
   if not os.path.exists(csv_dir):
     os.makedirs(csv_dir)
-  
   for res in all_mapped_names:
     csv_file = res['save_title']
     csv_dir = f'{csv_dir}/{csv_file}.csv'
@@ -409,6 +351,7 @@ def save_as_csv(all_mapped_names):
         data['sampler'] = sampler
         writer.writerow(data)
 
+
 def main(argv) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
@@ -422,34 +365,31 @@ def main(argv) -> None:
   folders = sorted(folders)
   folders, x_ticks = sort_based_on_key(folders, key_diff)
   for folder in folders:
-    if folder[-3:] != 'png' and folder[-3:] != 'pdf':
-      subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
-      res_dic = get_experiment_config(folder)
-      res_dic = process_keys(res_dic)
-      if 'save_samples' in res_dic:
-        del res_dic['save_samples']
-      print(res_dic)
-      print('******************')
-      
-      if FLAGS.evaluation_type == 'lm':
-        filename = os.path.join(subfolderpath, 'results_topk.pkl')
-        results = pickle.load(open(filename, 'rb'))
-        del results['infill_sents']
-      else:
-        filename = os.path.join(subfolderpath, 'results.csv')
-        filename = open(filename, 'r')
-        file = csv.DictReader(filename)
-        results = {}
-        for col in file:
-          if FLAGS.evaluation_type == 'ess':
-            results['ess_ee'] = float(col['ESS_EE']) * 50000
-            results['ess_clock'] = float(col['ESS_T'])
-          elif FLAGS.evaluation_type == 'co':
-            results['best_ratio_mean'] = col['best_ratio_mean']
-            # results['best_ratio_mean'] = float(col['best_ratio_mean']) / float(col['running_time'])
-            # results['running_time'] = col['running_time']
-      res_dic['results'] = results
-      experiments_results.append(res_dic)
+    subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
+    res_dic = get_experiment_config(folder)
+    res_dic = process_keys(res_dic)
+    if 'save_samples' in res_dic:
+      del res_dic['save_samples']
+    print(res_dic)
+    print('******************')
+
+    if FLAGS.evaluation_type == 'lm':
+      filename = os.path.join(subfolderpath, 'results_topk.pkl')
+      results = pickle.load(open(filename, 'rb'))
+      del results['infill_sents']
+    else:
+      filename = os.path.join(subfolderpath, 'results.csv')
+      filename = open(filename, 'r')
+      file = csv.DictReader(filename)
+      results = {}
+      for col in file:
+        if FLAGS.evaluation_type == 'ess':
+          results['ess_ee'] = float(col['ESS_EE']) * 50000
+          results['ess_clock'] = float(col['ESS_T'])
+        elif FLAGS.evaluation_type == 'co':
+          results['best_ratio_mean'] = col['best_ratio_mean']
+    res_dic['results'] = results
+    experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
   print(FLAGS.key, results_index_cluster)
   all_mapped_names = organize_experiments(
@@ -463,7 +403,9 @@ def main(argv) -> None:
   print('xtickssssss: ', x_ticks)
   plot_results(all_mapped_names, key_diff, x_ticks)
   if FLAGS.evaluation_type == 'lm':
-    save_as_csv(all_mapped_names)
+    save_result_as_csv(all_mapped_names, 'lm_csv')
+  elif FLAGS.evaluation_type == 'co':
+    save_result_as_csv(all_mapped_names, 'co_csv')
 
 
 if __name__ == '__main__':
