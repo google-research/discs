@@ -13,12 +13,8 @@ def get_config():
           sweep=[
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.save_every_steps': [100],
-                  'config.experiment.init_temperature': [2],
                   'config.experiment.decay_rate': [0.15],
-                  'config.experiment.final_temperature': [0.0000001],
                   'sampler_config.name': [
                       'randomwalk',
                       'blockgibbs',
@@ -32,12 +28,8 @@ def get_config():
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.save_every_steps': [100],
-                  'config.experiment.init_temperature': [2],
                   'config.experiment.decay_rate': [0.15],
-                  'config.experiment.final_temperature': [0.0000001],
                   'model_config.cfg_str': [
                       'r-INCEPTION',
                   ],
@@ -48,18 +40,12 @@ def get_config():
                   ],
                   'model_config.stype': ['quad'],
                   'config.experiment.log_every_steps': [100],
-                  'sampler_config.balancing_fn_type': [
-                      'SQRT',
-                  ],
+                  'sampler_config.adaptive': [True, False]
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.save_every_steps': [100],
-                  'config.experiment.init_temperature': [2],
                   'config.experiment.decay_rate': [0.15],
-                  'config.experiment.final_temperature': [0.0000001],
                   'model_config.cfg_str': [
                       'r-INCEPTION',
                   ],
@@ -68,10 +54,24 @@ def get_config():
                   ],
                   'model_config.stype': ['quad'],
                   'config.experiment.log_every_steps': [100],
-                  'sampler_config.balancing_fn_type': [
-                      'SQRT',
-                  ],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
+                  'sampler_config.adaptive': [False],
+                  'sampler_config.n':[0.2, 0.3, 1, 2],
+              },
+              {
+                  'config.experiment.batch_size': [32],
+                  'config.experiment.chain_length': [800000],
+                  'config.experiment.decay_rate': [0.15],
+                  'model_config.cfg_str': [
+                      'r-INCEPTION',
+                  ],
+                  'sampler_config.name': [
+                      'dlmc',
+                  ],
+                  'model_config.stype': ['quad'],
+                  'config.experiment.log_every_steps': [100],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
+                  'sampler_config.adaptive': [True],
               },
           ],
       )
