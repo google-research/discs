@@ -99,7 +99,11 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             * bar_width
             * np.arange(len(res_cluster[sampler][res_key]))
         )
-        local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1.5
+        if xticks[0] != 'samplers':
+          local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1.5
+        else:
+          local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1
+          
 
       if xticks[0] == 'samplers':
         local_pos = local_pos + 0.1
@@ -127,12 +131,17 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           print('Gonna be Appending 0')
         while len(values) < len(x_poses):
           values.append(0)
+        alpha=1
+        if xticks[0] == 'samplers':
+          if i in [4, 6, 8, 10, 12]:
+            alpha=0.7
         plt.bar(
             x_poses + local_pos[i] * bar_width,
             values,
             bar_width,
             label=label_sampler,
             color=c,
+            alpha=alpha
         )
       else:
         if FLAGS.evaluation_type != 'lm':
@@ -156,14 +165,26 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               color=c,
           )
 
-    if key_diff == 'name':
-      key_diff = 'sampler'
-    elif key_diff == 'shape':
+    if key_diff == 'shape':
       key_diff = 'sample dimension'
-    print(key_diff)
-    plt.title(f'Effect of {key_diff} on {model}', fontsize=16)
+    if key_diff != 'name':
+      plt.title(f'Effect of {key_diff} on {model}', fontsize=16)
+    else:
+      if model == 'bernoulli':
+        splits = str.split(save_title, ',')
+        for split in splits:
+          if split.startswith('init_sigma'):
+            sigma = str.split(split, '=')[1]
+            break
+        if sigma == 0.5:
+          plt.title(f'High temperature {model}', fontsize=16)
+        else:
+          plt.title(f'Low temperature {model}', fontsize=16)
+      else:
+        plt.title(f'{model} model', fontsize=16)
+            
     plt.xticks(x_poses, xticks)
-    if key_diff == 'sampler':
+    if key_diff == 'name':
       plt.legend(
         loc='upper left',
         fontsize=10,

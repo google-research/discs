@@ -63,6 +63,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     self.adaptive = config.sampler.adaptive
     self.co_opt_prob = config.experiment.co_opt_prob
     self.n = config.sampler.get('n', 3)
+    self.log_tau_tmp = 0
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.schedule_step
@@ -93,8 +94,10 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
       log_tau = jnp.where(
           state['steps'] == 0,
           self.reset_stats(log_rate_x['weights'])['log_tau'],
-          log_tau,
+          self.log_tau_tmp,
       )
+      self.log_tau_tmp = log_tau
+      local_stats = None
 
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
