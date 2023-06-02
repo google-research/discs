@@ -64,6 +64,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     self.adaptive = config.sampler.adaptive
     self.co_opt_prob = config.experiment.co_opt_prob
     self.n = config.sampler.get('n', 3)
+    self.step_size = config.sampler.get('step_size', 0.2)
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.schedule_step
@@ -83,19 +84,24 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
     ll_x, log_rate_x = self.get_value_and_rates(model, model_param, x)
-    local_stats = self.reset_stats(log_rate_x['weights'])
-    log_tau = jnp.where(
-        state['steps'] == 0, local_stats['log_tau'], state['log_tau']
-    )
-    log_tau = jnp.where(
-        self.co_opt_prob, local_stats['log_tau'], log_tau
-    )
+    if self.adaptive:
+      local_stats = self.reset_stats(log_rate_x['weights'])
+      log_tau = jnp.where(
+          state['steps'] == 0, local_stats['log_tau'], state['log_tau']
+      )
+      log_tau = jnp.where(
+          self.co_opt_prob, local_stats['log_tau'], log_tau
+      )
+    else:
+      local_stats = None
+      log_tau = -1 /(2 * self.step_size)
+    
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
 
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
-    if self.co_opt_prob:
+    if self.adaptive and self.co_opt_prob:
       local_stats = self.reset_stats(log_rate_y['weights'])
       log_tau = local_stats['log_tau']
     dist_y = self.get_dist_at(y, log_tau, log_rate_y)
