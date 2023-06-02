@@ -452,24 +452,28 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     running_time = self._initialize_chain_vars()
 
     model_decode, stp = compiled_fns
-    for step in tqdm.tqdm(range(1, 1+self.config.chain_length)):
-      rng = jax.random.fold_in(rng, step)
-      step_rng, rng = jax.random.split(rng)
-      start = time.time()
-      new_x, state, _ = stp(
-          rng=step_rng,
-          x=x,
-          model_param=params,
-          state=state,
-      )
-      running_time += time.time() - start
+    
+    for i in range(3):
+      for step in tqdm.tqdm(range(1, 1+self.config.chain_length)):
+        rng = jax.random.fold_in(rng, step)
+        step_rng, rng = jax.random.split(rng)
+        start = time.time()
+        new_x, state, _ = stp(
+            rng=step_rng,
+            x=x,
+            model_param=params,
+            state=state,
+        )
+        running_time += time.time() - start
 
-      x = new_x
-    running_time = running_time / 2
+        x = new_x
+      running_time = running_time / 2
 
-    sent_tokenized, loglike = model_decode(params, x, self.config.use_topk)
-    sampled_sentence = model.tokenizer.decode(sent_tokenized)
-    print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike)
+      sent_tokenized, loglike = model_decode(params, x, self.config.use_topk)
+      sampled_sentence = model.tokenizer.decode(sent_tokenized)
+      print('Sampled Sentence: ', sampled_sentence, 'Likelihood: ', loglike)
+      params= model.get_params()
+    
     return sampled_sentence, loglike
 
   def _initialize_chain_vars(self):
