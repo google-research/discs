@@ -223,6 +223,32 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               plt.title(f'High temperature binary RBM ', fontsize=16)
             elif num_hidden == '200':
               plt.title(f'Low temperature binary RBM ', fontsize=16)
+      elif model == 'fhmm':
+        splits = str.split(save_title, ',')
+        sigma = 'dummy'
+        for split in splits:
+          if split.startswith('shape'):
+            shape = str.split(split, '=')[1]
+            if shape != '200':
+              plt.title(
+                  f'Sharp Binary FHMM',
+                  fontsize=16,
+              )
+              break
+            elif shape != '1000':
+              plt.title(
+                  f'Smooth Binary FHMM',
+                  fontsize=16,
+              )
+              break
+          if split.startswith('num_categories'):
+            num_categories = str.split(split, '=')[1]
+            if num_categories != '2':
+              plt.title(
+                  f'Categorical FHMM with {num_categories} categories',
+                  fontsize=16,
+              )
+              break
       else:
         plt.title(f'{model} model', fontsize=16)
 
