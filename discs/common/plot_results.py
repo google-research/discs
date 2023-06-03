@@ -176,7 +176,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           if split.startswith('init_sigma'):
             sigma = str.split(split, '=')[1]
             break
-        if sigma == 0.5:
+        if sigma == '0.5':
           plt.title(f'High temperature {model}', fontsize=16)
         else:
           plt.title(f'Low temperature {model}', fontsize=16)
@@ -312,6 +312,7 @@ def organize_experiments(results_index_cluster, experiments_results, key_diff, m
 
 def sort_based_on_key(folders, key_diff):
   keydiff_vals = []
+  type_tick_str = False
   for folder in folders:
     if folder[-3:] == 'png' or folder[-3:] == 'pdf':
       continue
@@ -323,7 +324,8 @@ def sort_based_on_key(folders, key_diff):
     try:
       keydiff_vals.append(int(float(value_of_keydiff)))
     except ValueError:
-      keydiff_vals.append(value_of_keydiff)
+      keydiff_vals.append(str(value_of_keydiff))
+      type_tick_str = True
   xticks = sorted(keydiff_vals)
   dict_to_sort = dict(zip(folders, keydiff_vals))
   sorted_dict = {
@@ -447,6 +449,19 @@ def main(argv) -> None:
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
   if FLAGS.key == 'name' and key_diff != 'balancing_fn_type':
     x_ticks = ['samplers']
+  elif key_diff == 'balancing_fn_type':
+    x_ticks_new = []
+    for i, tick in enumerate(x_ticks):
+      if tick == "'SQRT'":
+        x_ticks_new.append('$\\sqrt{t}$')
+      elif tick == "'RATIO'":
+        x_ticks_new.append('$\\frac{t}{t+1}$')
+      elif tick == "'MIN'":
+        x_ticks_new.append('1 \u2228 t')
+      elif tick == "'MAX'":
+        x_ticks_new.append('1 \u2227 t')
+    x_ticks = x_ticks_new
+      
   print('xtickssssss: ', x_ticks)
   plot_results(all_mapped_names, key_diff, x_ticks)
   if FLAGS.evaluation_type == 'lm':
