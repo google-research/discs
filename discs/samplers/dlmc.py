@@ -15,7 +15,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     # pdb.set_trace()
     cur_step = state['steps']
     state['num_ll_calls'] += 4
-    if not self.adaptive or self.co_opt_prob:
+    if self.co_opt_prob or not self.adaptive:
       return
     if self.reset_z_est > 0:
       log_z = jnp.where(
@@ -63,7 +63,6 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     self.adaptive = config.sampler.adaptive
     self.co_opt_prob = config.experiment.co_opt_prob
     self.n = config.sampler.get('n', 3)
-    self.log_tau_tmp = 0
     if self.adaptive:
       self.target_acceptance_rate = config.sampler.target_acceptance_rate
       self.schedule_step = config.sampler.schedule_step
@@ -91,12 +90,8 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
 
       log_tau = jnp.where(self.co_opt_prob, local_stats['log_tau'], log_tau)
     else:
-      log_tau = jnp.where(
-          state['steps'] == 0,
-          self.reset_stats(log_rate_x['weights'])['log_tau'],
-          self.log_tau_tmp,
-      )
-      self.log_tau_tmp = log_tau
+      state['log_tau'] = jnp.where(state['steps']==0,  self.reset_stats(log_rate_x['weights'])['log_tau'], state['log_tau'])
+      log_tau = state['log_tau']
       local_stats = None
 
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
