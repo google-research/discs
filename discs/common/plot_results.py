@@ -259,11 +259,15 @@ def process_keys(dict_o_keys):
 
   if 'adaptive' in dict_o_keys:
     if dict_o_keys['adaptive'] == 'False':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + 'nA'
+      dict_o_keys['name'] = str(dict_o_keys['name']) + '-nA'
       del dict_o_keys['adaptive']
     if 'step_size' in dict_o_keys:
       dict_o_keys['name'] = str(dict_o_keys['name']) + dict_o_keys['step_size']
       del dict_o_keys['step_size']
+    if 'n' in dict_o_keys:
+      dict_o_keys['name'] = str(dict_o_keys['name']) + '-' + dict_o_keys['n']
+      del dict_o_keys['n']
+
 
   if 'balancing_fn_type' in dict_o_keys:
     if 'name' in dict_o_keys:
