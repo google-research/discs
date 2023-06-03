@@ -29,6 +29,7 @@ color_map['gwg'] = 'red'
 color_map['bg-'] = 'orange'
 color_map['dma'] = 'purple'
 color_map['hb-'] = 'blue'
+color_map['blo'] = 'orange'
 
 
 def get_color(sampler):
@@ -103,20 +104,19 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1.5
         else:
           local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1
-          
 
       if xticks[0] == 'samplers':
         local_pos = local_pos + 0.1
 
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
-      
+
       if sampler[-3:] == '(r)':
         label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
       elif sampler[-3:] == '(s)':
         label_sampler = sampler[0:-3] + '$\\sqrt{t}$'
       else:
-        label_sampler= sampler
+        label_sampler = sampler
 
       # pdb.set_trace()
       assert len(x_poses) == len(xticks)
@@ -131,17 +131,17 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           print('Gonna be Appending 0')
         while len(values) < len(x_poses):
           values.append(0)
-        alpha=1
+        alpha = 1
         if xticks[0] == 'samplers':
           if i in [4, 6, 8, 10, 12]:
-            alpha=0.7
+            alpha = 0.7
         plt.bar(
             x_poses + local_pos[i] * bar_width,
             values,
             bar_width,
             label=label_sampler,
             color=c,
-            alpha=alpha
+            alpha=alpha,
         )
       else:
         if FLAGS.evaluation_type != 'lm':
@@ -167,6 +167,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
 
     if key_diff == 'shape':
       key_diff = 'sample dimension'
+      plt.xlabel('Sample Dimension')
+    elif key_diff == 'balancing_fn_type':
+      key_diff = 'balancing function type'
     if key_diff != 'name':
       plt.title(f'Effect of {key_diff} on {model}', fontsize=16)
     else:
@@ -180,16 +183,56 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           plt.title(f'High temperature {model}', fontsize=16)
         else:
           plt.title(f'Low temperature {model}', fontsize=16)
+      elif model == 'ising':
+        splits = str.split(save_title, ',')
+        for split in splits:
+          if split.startswith('init_sigma'):
+            sigma = str.split(split, '=')[1]
+            break
+        if sigma == '1.5':
+          plt.title(f'High temperature {model}', fontsize=16)
+        elif sigma == '3':
+          plt.title(f'Low temperature {model}', fontsize=16)
+        elif sigma == '4.5':
+          plt.title(f'Very low temperature {model}', fontsize=16)
+        elif sigma == '6':
+          plt.title(f'Extremely low temperature {model}', fontsize=16)
+      elif model == 'potts':
+        splits = str.split(save_title, ',')
+        sigma = 'dummy'
+        for split in splits:
+          if split.startswith('init_sigma'):
+            sigma = str.split(split, '=')[1]
+            break
+        plt.title(f'Potts model with sigma {sigma}', fontsize=16)
+      elif model == 'rbm':
+        splits = str.split(save_title, ',')
+        sigma = 'dummy'
+        for split in splits:
+          if split.startswith('num_categories'):
+            num_categories = str.split(split, '=')[1]
+            if num_categories != '2':
+              plt.title(
+                  f'Categorical RBM with {num_categories} categories',
+                  fontsize=16,
+              )
+              break
+          if split.startswith('data_path=RBM_DATA-mnist-2-'):
+            num_hidden = split[len('data_path=RBM_DATA-mnist-2-'):-1]
+            if num_hidden == '25':
+              plt.title(f'High temperature binary RBM ', fontsize=16)
+            elif num_hidden == '200':
+              plt.title(f'Low temperature binary RBM ', fontsize=16)
       else:
         plt.title(f'{model} model', fontsize=16)
-            
+
     plt.xticks(x_poses, xticks)
-    if key_diff == 'name':
+    if key_diff in ['name', 'balancing function type']:
       plt.legend(
-        loc='upper left',
-        fontsize=10,
-        fancybox=True,
-        framealpha=0.2,
+          loc='upper left',
+          fontsize=10,
+          fancybox=True,
+          framealpha=0.2,
       )
     else:
       plt.legend(
@@ -268,11 +311,10 @@ def process_keys(dict_o_keys):
       dict_o_keys['name'] = str(dict_o_keys['name']) + '-' + dict_o_keys['n']
       del dict_o_keys['n']
 
-
   if 'balancing_fn_type' in dict_o_keys:
     if 'name' in dict_o_keys:
       if dict_o_keys['balancing_fn_type'] == 'SQRT':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)' 
+        dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)'
       elif dict_o_keys['balancing_fn_type'] == 'RATIO':
         dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
       elif dict_o_keys['balancing_fn_type'] == 'MIN':
@@ -283,7 +325,9 @@ def process_keys(dict_o_keys):
   return dict_o_keys
 
 
-def organize_experiments(results_index_cluster, experiments_results, key_diff, model):
+def organize_experiments(
+    results_index_cluster, experiments_results, key_diff, model
+):
   all_mapped_names = []
   for i, cluster in enumerate(results_index_cluster):
     name_mapped_index = {}
@@ -296,7 +340,7 @@ def organize_experiments(results_index_cluster, experiments_results, key_diff, m
             graph_save += str(key_dict) + '=' + str(val_dict) + ','
         name_mapped_index['save_title'] = graph_save
         name_mapped_index['model'] = model
-        
+
       dict_o_keys = experiments_results[index]
       curr_name = dict_o_keys['name']
       if key_diff == 'balancing_fn_type':
@@ -378,7 +422,7 @@ def sort_based_on_samplers(all_mapped_names):
     sorted_res = {key: cluster_dict[key] for key in sorted_keys_based_on_list}
     sorted_res['save_title'] = cluster_dict['save_title']
     sorted_res['model'] = cluster_dict['model']
-    
+
     all_mapped_names[i] = sorted_res
 
   return all_mapped_names
@@ -432,12 +476,20 @@ def main(argv) -> None:
       del results['infill_sents']
     else:
       filename = os.path.join(subfolderpath, 'results.csv')
-      filename = open(filename, 'r')
+      try:
+        filename = open(filename, 'r')
+      except:
+        continue
       file = csv.DictReader(filename)
       results = {}
       for col in file:
         if FLAGS.evaluation_type == 'ess':
-          results['ess_ee'] = float(col['ESS_EE']) * 50000
+          if 'chain_length' not in res_dic:
+            results['ess_ee'] = float(col['ESS_EE']) * 50000
+          else:
+            results['ess_ee'] = float(col['ESS_EE']) * int(
+                float(res_dic['chain_length']) // 2
+            )
           results['ess_clock'] = float(col['ESS_T'])
         elif FLAGS.evaluation_type == 'co':
           results['best_ratio_mean'] = col['best_ratio_mean']
@@ -461,11 +513,11 @@ def main(argv) -> None:
       elif tick == "'RATIO'":
         x_ticks_new.append('$\\frac{t}{t+1}$')
       elif tick == "'MIN'":
-        x_ticks_new.append('1 \u2228 t')
-      elif tick == "'MAX'":
         x_ticks_new.append('1 \u2227 t')
+      elif tick == "'MAX'":
+        x_ticks_new.append('1 \u2228 t')
     x_ticks = x_ticks_new
-      
+
   print('xtickssssss: ', x_ticks)
   plot_results(all_mapped_names, key_diff, x_ticks)
   if FLAGS.evaluation_type == 'lm':
