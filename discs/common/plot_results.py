@@ -331,7 +331,7 @@ def process_keys(dict_o_keys):
   if 'adaptive' in dict_o_keys:
     if dict_o_keys['adaptive'] == 'False':
       dict_o_keys['name'] = str(dict_o_keys['name']) + '-nA'
-      del dict_o_keys['adaptive']
+    del dict_o_keys['adaptive']
     if 'step_size' in dict_o_keys:
       dict_o_keys['name'] = str(dict_o_keys['name']) + dict_o_keys['step_size']
       del dict_o_keys['step_size']
@@ -420,15 +420,19 @@ def sort_based_on_samplers(all_mapped_names):
       'gwg(s',
       'gwg(r',
       'gwg',
+      'dmala-',
       'dmala(s',
       'dmala(r',
       'dmala',
+      'pafs-',
       'pafs(s',
       'pafs(r',
       'pafs',
+      'dlmcf-',
       'dlmcf(s',
       'dlmcf(r',
       'dlmcf',
+      'dlmc-',
       'dlmc(s',
       'dlmc(r',
       'dlmc',
@@ -525,7 +529,8 @@ def main(argv) -> None:
           results['ess_clock'] = float(col['ESS_T'])
         elif FLAGS.evaluation_type == 'co':
           results['best_ratio_mean'] = col['best_ratio_mean']
-        results['running_time'] = 2 * col['running_time']
+        if FLAGS.evaluation_type == 'co':
+          results['running_time'] = 2 * col['running_time']
     res_dic['results'] = results
     experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
