@@ -193,14 +193,50 @@ def plot_graph_cluster(num, key, dict_results, indeces):
     plt.yticks(fontsize=16)
     plt.xlabel(x_label, fontsize=16)
     if GRAPHTYPE.value == 'mis':
-      if traj_mean[-1] > 100:
-        plt.ylim(-1000, 500)
-        plt.ylabel('Size of Independent Set', fontsize=16)
-      else:
-        plt.ylim(0, 1.2)
-        plt.ylabel('Ratio \u03B1', fontsize=16)
+      splits = str.split(graph_save, ',')
+      for split in splits:
+        if split.startswith('cfg_str'):
+          val = str.split(split, '=')[1]
+          if val == '0.05':
+            plt.ylim(-100, 115)
+            plt.axhline(y=98.59, color='black', linestyle='--')
+          elif val == '0.10':
+            plt.ylim(-100,70)
+            plt.axhline(y=57.4, color='black', linestyle='--')
+          elif val == '0.20':
+            plt.ylim(-100,45)
+            plt.axhline(y=31.56, color='black', linestyle='--')
+          elif val == '0.25':
+            plt.ylim(-100,35)
+            plt.axhline(y=26.25, color='black', linestyle='--')
+          elif val == '800':
+            plt.axhline(y=44.87, color='black', linestyle='--')
+            plt.ylim(-500,100)
+          elif val == '10k':
+            plt.axhline(y=381.31, color='black', linestyle='--')
+            plt.ylim(-1000, 500)
+          elif val =='dlmc(s)':
+            plt.axhline(y=425.96, color='black', linestyle='--')
+            plt.ylim(300, 450)
+
+          break
+      plt.ylabel('Size of Independent Set', fontsize=16)
     elif GRAPHTYPE.value == 'maxclique':
       plt.ylabel('Ratio \u03B1', fontsize=16)
+      
+      if graph_save == 'cfg_str=dlmc(s),':
+        plt.ylim(bottom=0, top=1.1)
+      else:
+        plt.axhline(y=0.789, color='black', linestyle='--')
+        plt.ylim(bottom=0, top=1.1)
+  
+    if GRAPHTYPE.value == 'maxcut':
+      splits = str.split(graph_save, ',')
+      for split in splits:
+        if split.startswith('cfg_str'):
+          val = str.split(split, '=')[1]
+          if val == 'b':
+            plt.ylim(bottom=0.8)
 
     if GRAPHTYPE.value == 'maxcut':
       plt.ylabel('Ratio \u03B1', fontsize=16)

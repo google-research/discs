@@ -82,6 +82,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
   result_keys = res_cluster[key0].keys()
   num_samplers = len(res_cluster.keys())
   for res_key in result_keys:
+    if res_key in ['running_time']:
+      continue
     f = plt.figure()
     f.set_figwidth(12)
     f.set_figheight(8)
@@ -455,20 +457,24 @@ def sort_based_on_samplers(all_mapped_names):
 
 
 def save_result_as_csv(all_mapped_names, dir_name):
-  csv_dir = f'./{dir_name}/{FLAGS.gcs_results_path}/'
+  
+  csv_dir = os.path.join(dir_name, FLAGS.gcs_results_path[2:])
   if not os.path.exists(csv_dir):
     os.makedirs(csv_dir)
   for res in all_mapped_names:
     csv_file = res['save_title']
-    csv_dir = f'{csv_dir}/{csv_file}.csv'
+    # csv_dir = f'{csv_dir}/{csv_file}.csv'
+    csv_file = os.path.join(csv_dir, f'{csv_file}.csv')
     del res['save_title']
     key0 = list(res.keys())[0]
     csv_columns = list(res[key0].keys())
     csv_columns.insert(0, 'sampler')
-    with open(csv_dir, 'w') as csvfile:
+    with open(csv_file, 'w') as csvfile:
       writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
       writer.writeheader()
       for sampler in res.keys():
+        if sampler == 'model':
+          continue
         data = res[sampler]
         data['sampler'] = sampler
         writer.writerow(data)
@@ -519,6 +525,7 @@ def main(argv) -> None:
           results['ess_clock'] = float(col['ESS_T'])
         elif FLAGS.evaluation_type == 'co':
           results['best_ratio_mean'] = col['best_ratio_mean']
+        results['running_time'] = 2 * col['running_time']
     res_dic['results'] = results
     experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
@@ -545,6 +552,7 @@ def main(argv) -> None:
     x_ticks = x_ticks_new
 
   print('xtickssssss: ', x_ticks)
+  # if FLAGS.evaluation_type == 'ess':
   plot_results(all_mapped_names, key_diff, x_ticks)
   if FLAGS.evaluation_type == 'lm':
     save_result_as_csv(all_mapped_names, 'lm_csv')
