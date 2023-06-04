@@ -2,7 +2,7 @@
 
 from discs.common import configs
 from discs.common import train_configs
-from discs.samplers.configs import dlmc_config
+from discs.samplers.configs import path_auxiliary_config
 
 
 def get_config(img_config):
@@ -25,8 +25,9 @@ def get_config(img_config):
   config.model.name = 'resnet'
   config.model.num_categories = 2
   config.model.n_channels = int(num_channels)
+  config.model.data_path = ''
 
-  config.sampler = dlmc_config.get_config()
+  config.sampler = path_auxiliary_config.get_config()
 
   if dataset in ['dynamic_mnist', 'static_mnist', 'omniglot', 'caltech']:
     config.model.image_shape = (28, 28)

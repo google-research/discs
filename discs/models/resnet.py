@@ -112,8 +112,9 @@ class ImageEBM(deep_ebm.DeepEBM):
       x = jax.nn.one_hot(x, self.num_categories)
     energy = self.net.apply({'params': params}, x=x)
     if self.data_mean is not None:
-      base_prob = x * self.data_mean + (1 - x) * (1 - self.data_mean)
-      base_energy = jnp.sum(jnp.log(base_prob + 1e-20), axis=-1)
+      base_logprob = x * jnp.log(self.data_mean) + (
+          1 - x) * jnp.log1p(-self.data_mean)
+      base_energy = jnp.sum(base_logprob, axis=-1)
       energy = energy + base_energy
     return energy
 

@@ -14,7 +14,7 @@ from discs.common import utils
 from discs.learning import replay_buffer
 from discs.learning import train
 from discs.models import resnet
-from discs.samplers import dlmc
+from discs.samplers import path_auxiliary
 from ml_collections import config_flags
 import jax
 import jax.numpy as jnp
@@ -75,10 +75,10 @@ class EBMTrainer(train.Trainer):
     batch = (batch, samples)
     return batch, local_state
 
-  def plot_batch(self, step, shared_state, local_state):
+  def plot_batch(self, step, shared_state, samples):
     del shared_state
     png_name = '%s/chain-%d.png' % (self.config.experiment.fig_folder, step)
-    plot.plot_shareded_image(png_name, local_state.samples, 28, 28, 1,
+    plot.plot_shareded_image(png_name, samples, 28, 28, 1,
                              rescale=255.0)
 
 
@@ -97,12 +97,31 @@ def main(argv: Sequence[str]) -> None:
   with open(os.path.join(config.experiment.save_root, 'config.yaml'), 'w') as f:
     f.write(config.to_yaml())
 
+  config.model.data_path = '/usr/local/google/home/hadai/gs/discs/storage/models/binary_ebm/dynamic_mnist-64'
   global_key = jax.random.PRNGKey(FLAGS.seed)
   model = resnet.build_model(config)
-  sampler = dlmc.build_sampler(config)
+  sampler = path_auxiliary.build_sampler(config)
   trainer = EBMTrainer(config, model, sampler, data_np)
 
   global_key, init_key = jax.random.split(global_key)
+
+  params = model.make_init_params(global_key)
+  params = jax_utils.replicate(params)
+  init_key, batch_rng_key = jax.random.split(init_key)
+  local_state = utils.create_sharded_sampler_state(
+      init_key, model, sampler, 16)
+  samples, sampler_state = local_state.samples, local_state.sampler_state
+  # samples = jax_utils.unreplicate(samples)
+  # sampler_state = jax_utils.unreplicate(sampler_state)
+  for step in range(1000):
+    print(step)
+    batch_rng_key = jax.random.fold_in(batch_rng_key, step)
+    batch_rng = utils.shard_prng_key(batch_rng_key)
+    samples, sampler_state, _ = trainer.sampler_step(
+        rng=batch_rng, x=samples, model_param=params,
+        state=sampler_state)
+    trainer.plot_batch(step, None, samples)
+  return
   global_state, local_state = trainer.init_states(init_key)
 
   train_loader = data_loader.prepare_dataloader(

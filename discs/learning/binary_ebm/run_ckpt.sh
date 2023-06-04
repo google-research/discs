@@ -1,11 +1,11 @@
 #!/bin/bash
 
-dataset=caltech
+dataset=dynamic_mnist
 # model size
 num_channels=64
 
 data_dir=${HOME}/gs/discs/storage/data
-pt_path=${HOME}/gs/discs/storage/models/binary_ebm/${dataset}-${num_channels}/best_ckpt-2299.pt
+pt_path=${HOME}/gs/discs/storage/models/binary_ebm/${dataset}-${num_channels}/best_ckpt-90.pt
 save_root=${HOME}/gs/discs/storage/models/binary_ebm/${dataset}-${num_channels}
 
 export CUDA_VISIBLE_DEVICES=
