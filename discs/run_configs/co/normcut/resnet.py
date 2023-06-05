@@ -14,14 +14,14 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'sampler_config.name': [
                       'randomwalk',
                       'blockgibbs',
                       'hammingball',
                   ],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'model_config.stype': ['quad'],
                   'config.experiment.log_every_steps': [100],
@@ -29,9 +29,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'sampler_config.name': [
                       'dmala',
@@ -43,9 +43,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'sampler_config.name': [
                       'path_auxiliary',
@@ -57,9 +57,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'sampler_config.name': [
                       'path_auxiliary',
@@ -72,9 +72,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'sampler_config.name': [
                       'gwg',
@@ -85,9 +85,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'sampler_config.name': [
                       'dlmc',
@@ -101,9 +101,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'sampler_config.name': [
                       'dlmc',
@@ -117,9 +117,9 @@ def get_config():
               {
                   'config.experiment.batch_size': [32],
                   'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.decay_rate': [0.1],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-RESNET',
                   ],
                   'sampler_config.name': [
                       'dlmc',

@@ -13,25 +13,27 @@ def get_config():
           sweep=[
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'sampler_config.name': [
                       'randomwalk',
                       'blockgibbs',
                       'hammingball',
                   ],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'model_config.stype': ['quad'],
                   'config.experiment.log_every_steps': [100],
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'sampler_config.name': [
                       'dmala',
@@ -42,10 +44,11 @@ def get_config():
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'sampler_config.name': [
                       'path_auxiliary',
@@ -56,10 +59,11 @@ def get_config():
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'sampler_config.name': [
                       'path_auxiliary',
@@ -71,10 +75,11 @@ def get_config():
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'sampler_config.name': [
                       'gwg',
@@ -84,10 +89,11 @@ def get_config():
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'sampler_config.name': [
                       'dlmc',
@@ -100,10 +106,11 @@ def get_config():
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'sampler_config.name': [
                       'dlmc',
@@ -116,10 +123,11 @@ def get_config():
               },
               {
                   'config.experiment.batch_size': [32],
-                  'config.experiment.chain_length': [800000],
-                  'config.experiment.decay_rate': [0.15],
+                  'config.experiment.chain_length': [500000],
+                  'config.experiment.decay_rate': [0.05],
+                  'config.experiment.init_temperature': [5],
                   'model_config.cfg_str': [
-                      'r-INCEPTION',
+                      'r-ALEXNET',
                   ],
                   'sampler_config.name': [
                       'dlmc',
