@@ -46,7 +46,7 @@ def get_config():
                   'model_config.bert_model': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
                   ],
-                  'sampler_config.adaptive': [True],
+                  'sampler_config.adaptive': [True, False],
                   'sampler_config.name': ['path_auxiliary'],
               },
               {
@@ -59,9 +59,8 @@ def get_config():
                   'model_config.bert_model': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
                   ],
-                  'sampler_config.adaptive': [False],
-                  'sampler_config.name': ['path_auxiliary'],
-                  'sampler_config.num_flips': [2],
+                  'sampler_config.name': ['gwg'],
+                  'sampler_config.adaptive': [True],
               },
               {
                   'config.experiment.chain_length': [50],
@@ -73,8 +72,9 @@ def get_config():
                   'model_config.bert_model': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
                   ],
-                  'sampler_config.name': ['dlmc', 'gwg'],
+                  'sampler_config.name': ['dlmc'],
                   'sampler_config.adaptive': [True],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
               {
                   'config.experiment.chain_length': [50],

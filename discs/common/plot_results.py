@@ -582,7 +582,7 @@ def main(argv) -> None:
         elif FLAGS.evaluation_type == 'co':
           results['best_ratio_mean'] = col['best_ratio_mean']
         if FLAGS.evaluation_type == 'co':
-          results['running_time'] = 2 * col['running_time']
+          results['running_time'] = 2 * float(col['running_time'])
     res_dic['results'] = results
     experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
@@ -609,8 +609,8 @@ def main(argv) -> None:
     x_ticks = x_ticks_new
 
   print('xtickssssss: ', x_ticks)
-  # if FLAGS.evaluation_type == 'ess':
-  plot_results(all_mapped_names, key_diff, x_ticks)
+  if FLAGS.evaluation_type == 'ess':
+    plot_results(all_mapped_names, key_diff, x_ticks)
   if FLAGS.evaluation_type == 'lm':
     save_result_as_csv(all_mapped_names, 'lm_csv')
   elif FLAGS.evaluation_type == 'co':
