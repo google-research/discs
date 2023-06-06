@@ -1,7 +1,7 @@
 #!/bin/bash
 
-experiment_folder=discs-normcut-nets_sampler_sweep_56834938
-graphtype=normcut
+experiment_folder=discs-maxclique-rb_sampler_sweep_57644072
+graphtype=maxclique
 graphkey=name
 graphtitle='Sampler'
 graphlabel='sampler'

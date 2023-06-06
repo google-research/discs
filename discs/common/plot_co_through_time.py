@@ -140,7 +140,7 @@ def plot_graph_cluster(num, key, dict_results, indeces):
       traj_var = 0 * traj_var[idx:]
 
       if x_label != 'Steps':
-        x = 2* np.arange(0, 1, (1 / len(x))) * float(
+        x = np.arange(0, 1, (1 / len(x))) * float(
             result['results']['running_time']
         )
 
@@ -188,7 +188,7 @@ def plot_graph_cluster(num, key, dict_results, indeces):
       plt.xscale('log')
     # plt.yscale('log')
     plt.grid()
-    plt.title(gragh_title, fontsize=16)
+    # plt.title(gragh_title, fontsize=16)
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
     plt.xlabel(x_label, fontsize=16)
@@ -287,16 +287,16 @@ def process_keys(dict_o_keys):
 
 
   if 'balancing_fn_type' in dict_o_keys:
-    if 'name' in dict_o_keys:
-      if dict_o_keys['balancing_fn_type'] == 'SQRT':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)' 
-      elif dict_o_keys['balancing_fn_type'] == 'RATIO':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
-      elif dict_o_keys['balancing_fn_type'] == 'MIN':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
-      elif dict_o_keys['balancing_fn_type'] == 'MAX':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(max)'
-      del dict_o_keys['balancing_fn_type']
+    # if 'name' in dict_o_keys:
+    #   if dict_o_keys['balancing_fn_type'] == 'SQRT':
+    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)' 
+    #   elif dict_o_keys['balancing_fn_type'] == 'RATIO':
+    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
+    #   elif dict_o_keys['balancing_fn_type'] == 'MIN':
+    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
+    #   elif dict_o_keys['balancing_fn_type'] == 'MAX':
+    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(max)'
+    del dict_o_keys['balancing_fn_type']
   return dict_o_keys
 
 def get_experiment_config(exp_config):
@@ -361,7 +361,7 @@ def main(argv) -> None:
       file = csv.DictReader(filename)
       for col in file:
         experiment_result['results']['best_ratio_mean'] = col['best_ratio_mean']
-        experiment_result['results']['running_time'] = col['running_time']
+        experiment_result['results']['running_time'] = 2 * float(col['running_time'])
       experiments_results.append(experiment_result)
 
   for key in [GRAPH_KEY.value]:

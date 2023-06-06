@@ -87,7 +87,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
     f = plt.figure()
     f.set_figwidth(12)
     f.set_figheight(8)
-    bar_width = 0.1
+    bar_width = 0.5
     for i, sampler in enumerate(res_cluster.keys()):
       if sampler == 'save_title':
         save_title = res_cluster[sampler]
@@ -97,18 +97,44 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         continue
       if i == 0:
         x_poses = (
-            2
-            * num_samplers
+            num_samplers
             * bar_width
             * np.arange(len(res_cluster[sampler][res_key]))
         )
         if xticks[0] != 'samplers':
           local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1.5
         else:
-          local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1
-
-      if xticks[0] == 'samplers':
-        local_pos = local_pos + 0.1
+          alphas = [1, 1, 1, 1, 0.5, 1, 0.5, 1, 0.5, 1, 0.5, 1, 0.5]
+          bar_widths = [
+              0.3,
+              0.3,
+              0.3,
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+          ]
+          x_poses = [
+              1.0,
+              1.4,
+              1.8,
+              2.125,
+              2.275,
+              2.525,
+              2.675,
+              2.925,
+              3.075,
+              3.325,
+              3.475,
+              3.725,
+              3.875,
+          ]
 
       values = res_cluster[sampler][res_key]
       c = get_color(sampler)
@@ -120,31 +146,40 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       else:
         label_sampler = sampler
 
-      # pdb.set_trace()
-      assert len(x_poses) == len(xticks)
-      if FLAGS.evaluation_type == 'ess':
-        plt.yscale('log')
-        if res_key == 'ess_ee':
-          plt.ylabel('ESS EE')
-        else:
-          plt.ylabel('ESS Clock')
-
+      if xticks[0] != 'samplers':
+        assert len(x_poses) == len(xticks)
         if len(values) != len(x_poses):
           print('Gonna be Appending 0')
         while len(values) < len(x_poses):
           values.append(0)
-        alpha = 1
-        if xticks[0] == 'samplers':
-          if i in [4, 6, 8, 10, 12]:
-            alpha = 0.7
-        plt.bar(
-            x_poses + local_pos[i] * bar_width,
-            values,
-            bar_width,
-            label=label_sampler,
-            color=c,
-            alpha=alpha,
-        )
+
+      if FLAGS.evaluation_type == 'ess':
+        plt.yscale('log')
+        if res_key == 'ess_ee':
+          plt.ylabel('ESS w.r.t Energy Evaluation', fontsize=16)
+        else:
+          plt.ylabel('ESS w.r.t Clock', fontsize=16)
+
+        if xticks[0] != 'samplers':
+          alpha = 1
+          plt.bar(
+              x_poses + local_pos[i] * bar_width,
+              values,
+              bar_width,
+              label=label_sampler,
+              color=c,
+              alpha=alpha,
+          )
+        else:
+          len(x_poses)
+          plt.bar(
+              x_poses[i],
+              values,
+              bar_widths[i],
+              label=label_sampler,
+              color=c,
+              alpha=alphas[i],
+          )
       else:
         if FLAGS.evaluation_type != 'lm':
           threshold = 0.00025
@@ -167,38 +202,47 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               color=c,
           )
 
+    if model not in ['fhmm' or 'rbm']:
+      model = model.capitalize()
+    else:
+      if model == 'fhmm':
+        model = 'FHMM'
+      else:
+        model = 'RBM'
+  
     if key_diff == 'shape':
       key_diff = 'sample dimension'
-      plt.xlabel('Sample Dimension')
     elif key_diff == 'balancing_fn_type':
       key_diff = 'balancing function type'
+    elif key_diff == 'num_categories':
+      key_diff = 'number of categories'
     if key_diff != 'name':
-      plt.title(f'Effect of {key_diff} on {model}', fontsize=16)
+      plt.title(f'Effect of {key_diff} on {model}', fontsize=18)
     else:
-      if model == 'bernoulli':
+      if model == 'Bernoulli':
         splits = str.split(save_title, ',')
         for split in splits:
           if split.startswith('init_sigma'):
             sigma = str.split(split, '=')[1]
             break
         if sigma == '0.5':
-          plt.title(f'High temperature {model}', fontsize=16)
+          plt.title(f'High temperature {model}', fontsize=18)
         else:
-          plt.title(f'Low temperature {model}', fontsize=16)
-      elif model == 'ising':
+          plt.title(f'Low temperature {model}', fontsize=18)
+      elif model == 'Ising':
         splits = str.split(save_title, ',')
         for split in splits:
           if split.startswith('init_sigma'):
             sigma = str.split(split, '=')[1]
             break
         if sigma == '1.5':
-          plt.title(f'High temperature {model}', fontsize=16)
+          plt.title(f'High temperature {model}', fontsize=18)
         elif sigma == '3':
-          plt.title(f'Low temperature {model}', fontsize=16)
+          plt.title(f'Low temperature {model}', fontsize=18)
         elif sigma == '4.5':
-          plt.title(f'Very low temperature {model}', fontsize=16)
+          plt.title(f'Very low temperature {model}', fontsize=18)
         elif sigma == '6':
-          plt.title(f'Extremely low temperature {model}', fontsize=16)
+          plt.title(f'Extremely low temperature {model}', fontsize=18)
       elif model == 'potts':
         splits = str.split(save_title, ',')
         sigma = 'dummy'
@@ -206,8 +250,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           if split.startswith('init_sigma'):
             sigma = str.split(split, '=')[1]
             break
-        plt.title(f'Potts model with sigma {sigma}', fontsize=16)
-      elif model == 'rbm':
+        plt.title(f'Potts model with sigma {sigma}', fontsize=18)
+      elif model == 'RBM':
         splits = str.split(save_title, ',')
         sigma = 'dummy'
         for split in splits:
@@ -216,16 +260,16 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             if num_categories != '2':
               plt.title(
                   f'Categorical RBM with {num_categories} categories',
-                  fontsize=16,
+                  fontsize=18,
               )
               break
           if split.startswith('data_path=RBM_DATA-mnist-2-'):
-            num_hidden = split[len('data_path=RBM_DATA-mnist-2-'):-1]
+            num_hidden = split[len('data_path=RBM_DATA-mnist-2-') : -1]
             if num_hidden == '25':
-              plt.title(f'High temperature binary RBM ', fontsize=16)
+              plt.title(f'High temperature binary RBM ', fontsize=18)
             elif num_hidden == '200':
-              plt.title(f'Low temperature binary RBM ', fontsize=16)
-      elif model == 'fhmm':
+              plt.title(f'Low temperature binary RBM ', fontsize=18)
+      elif model == 'FHMM':
         splits = str.split(save_title, ',')
         sigma = 'dummy'
         for split in splits:
@@ -240,7 +284,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             elif shape != '1000':
               plt.title(
                   f'Smooth Binary FHMM',
-                  fontsize=16,
+                  fontsize=18,
               )
               break
           if split.startswith('num_categories'):
@@ -248,24 +292,28 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
             if num_categories != '2':
               plt.title(
                   f'Categorical FHMM with {num_categories} categories',
-                  fontsize=16,
+                  fontsize=18,
               )
               break
       else:
-        plt.title(f'{model} model', fontsize=16)
+        plt.title(f'{model} model', fontsize=18)
 
-    plt.xticks(x_poses, xticks)
+    if len(xticks) != 1:
+      plt.xticks(x_poses, xticks, fontsize=16)
+    else:
+      plt.xticks([], [], fontsize=16)
+
     if key_diff in ['name', 'balancing function type']:
       plt.legend(
           loc='upper left',
-          fontsize=10,
+          fontsize=14,
           fancybox=True,
           framealpha=0.2,
       )
     else:
       plt.legend(
           loc='upper right',
-          fontsize=10,
+          fontsize=14,
           fancybox=True,
           framealpha=0.2,
       )
@@ -338,6 +386,11 @@ def process_keys(dict_o_keys):
     if 'n' in dict_o_keys:
       dict_o_keys['name'] = str(dict_o_keys['name']) + '-' + dict_o_keys['n']
       del dict_o_keys['n']
+    if 'num_flips' in dict_o_keys:
+      dict_o_keys['name'] = (
+          str(dict_o_keys['name']) + '-' + dict_o_keys['num_flips']
+      )
+      del dict_o_keys['num_flips']
 
   if 'balancing_fn_type' in dict_o_keys:
     if 'name' in dict_o_keys:
@@ -461,7 +514,6 @@ def sort_based_on_samplers(all_mapped_names):
 
 
 def save_result_as_csv(all_mapped_names, dir_name):
-  
   csv_dir = os.path.join(dir_name, FLAGS.gcs_results_path[2:])
   if not os.path.exists(csv_dir):
     os.makedirs(csv_dir)

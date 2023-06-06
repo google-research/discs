@@ -11,10 +11,10 @@ from absl import app
 import csv
 
 
-flags.DEFINE_string('graph_file', './sco/nets/INCEPTION.pkl', 'dir to graph')
+flags.DEFINE_string('graph_file', './sco/nets/VGG.pkl', 'dir to graph')
 flags.DEFINE_string(
     'gcs_results_path',
-    './discs/common/discs-normcut-inception_57773203',
+    './discs/common/discs-normcut-vgg_57805067',
     'where results are being saved',
 )
 FLAGS = flags.FLAGS
@@ -178,6 +178,7 @@ def main(argv) -> None:
     g = pickle.load(f)
 
   folders = os.listdir(FLAGS.gcs_results_path)
+  folders = sorted(folders)
   res = []
   res.append(['sampler', 'cut ratio', 'balanceness'])
   for folder in folders:
@@ -185,15 +186,13 @@ def main(argv) -> None:
     res_dic = get_experiment_config(folder)
     res_dic = process_keys(res_dic)
     filename = os.path.join(subfolderpath, 'results.pkl')
-    new_res= []
+    new_res = []
     with open(filename, 'rb') as f:
       results = pickle.load(f)
       x = results['best_samples'][0]
       x = np.array(x).astype(int)
       adj_mat = nx.to_numpy_array(g)
-      cr, bl, message = evaluate(
-          x, len(g), len(g.edges()) * 2, adj_mat, ng
-      )
+      cr, bl, message = evaluate(x, len(g), len(g.edges()) * 2, adj_mat, ng)
       print(message)
       print(res_dic['name'])
       print('cut ratio', cr)
@@ -201,11 +200,15 @@ def main(argv) -> None:
       new_res.append(res_dic['name'])
       new_res.append(cr)
       new_res.append(bl)
+    res.append(new_res)
   
-  file_path = os.path.join('./normcut_csv/', FLAGS.gcs_results_path)
-  with open(file_path, 'w', newline='') as file:
+  f_name = str.split(FLAGS.gcs_results_path,'/')[-1]
+  file_path = os.path.join('./discs/common/normcut_csv/', f_name)
+  if not os.path.exists(file_path):
+    os.makedirs(file_path)
+  with open(file_path+'/res.csv', 'w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerows(data)   
+    writer.writerows(res)
       
 
 if __name__ == '__main__':
