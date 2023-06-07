@@ -700,6 +700,7 @@ class EBM_Experiment(Experiment):
     rng_param, rng_x, rng_state = jax.random.split(rnd, num=3)
     del rnd
     params = model.make_init_params(rng_param)
+    params['temperature'] = 0
     x  = model.get_init_samples(rng_x, self.config.batch_size)
     state = sampler.make_init_state(rng_state)
     return params, x, state
@@ -709,7 +710,7 @@ class EBM_Experiment(Experiment):
       score_fn = jax.jit(model.forward)
       step_fn = jax.jit(functools.partial(sampler.step, model=model))
     else:
-      score_fn = jax.jit(model.forward)
+      score_fn = jax.pmap(model.forward)
       step_fn = jax.pmap(functools.partial(sampler.step, model=model))
     return (
         score_fn,
@@ -732,8 +733,8 @@ class EBM_Experiment(Experiment):
     if self.parallel:        
       params = jax.device_put_replicated(params, jax.local_devices())
       state = jax.device_put_replicated(state, jax.local_devices())
-      assert self.config.batch_size % jax.ocal_device_countn() == 0
-      nn = self.config.batch_size // jax.ocal_device_countn()
+      assert self.config.batch_size % jax.local_device_count() == 0
+      nn = self.config.batch_size // jax.local_device_count()
       x = x.reshape((jax.local_device_count(), nn)+self.config_model.shape)
     compiled_fns = self._compile_fns(sampler, model)
     return [
@@ -758,32 +759,37 @@ class EBM_Experiment(Experiment):
   ):
     """Generates the chain of samples."""
 
-    pdb.set_trace()
 
     score_fn, stp_fn = compiled_fns
     
     logz_finals= []
     log_w = jnp.zeros(self.config.batch_size)
-    prev_params = unfreeze(params)
-    prev_params['temperature'] = 0.0
+    if self.parallel:
+        log_w = log_w.reshape(x.shape[0], -1)
 
     for step in tqdm.tqdm(range(1, 1 + self.config.chain_length)):
       rng = jax.random.fold_in(rng, step)
 
-      new_params = {}
-      for key in prev_params:
-        new_params[key] = prev_params[key]
-      new_params['temperature'] = step * 1.0 / self.config.chain_length
-
-      log_w = log_w + score_fn(new_params, x) - score_fn(prev_params, x)
+      old_val = score_fn(params, x)
+      if not self.parallel:
+          params['temperature'] = step * 1.0 / self.config.chain_length
+      else:
+          params['temperature'] = jnp.repeat(step*1.0/self.config.chain_length, x.shape[0])
+      
+    
+      log_w = log_w + score_fn(params, x) - old_val
+      if not self.parallel:
+        rng_step = rng
+      else:
+        rng_step = jax.random.split(rng, x.shape[0])
       new_x, state, _ = stp_fn(
-          rng=rng,
+          rng=rng_step,
           x=x,
-          model_param=new_params,
+          model_param=params,
           state=state,
       )
-      prev_params = new_params
-      logz_final = jax.scipy.special.logsumexp(log_w, axis=0) - np.log(
+      log_w_re = log_w.reshape(-1)
+      logz_final = jax.scipy.special.logsumexp(log_w_re, axis=0) - np.log(
           self.config.batch_size
       )
       logz_finals.append(logz_final)
