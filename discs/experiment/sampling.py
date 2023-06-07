@@ -690,3 +690,100 @@ class CO_Experiment(Experiment):
         sample_mask,
         best_samples,
     )
+
+
+class EBM_Experiment(Experiment):
+
+  def _initialize_model_and_sampler(self, rnd, model, sampler):
+    """Initializes model params, sampler state and gets the initial samples."""
+    rng_param, rng_x0, rng_state = jax.random.split(rnd, num=3)
+    del rnd
+    params = model.make_init_params(rng_param)
+    x0 = model.get_init_samples(rng_x0, 1, params)
+    state = sampler.make_init_state(rng_state)
+    return params, x0, state
+
+  def _compile_fns(self, sampler, model):
+    score_fn = jax.jit(model.forward)
+    step_fn = jax.jit(functools.partial(sampler.step, model=model))
+    return (
+        score_fn,
+        step_fn,
+    )
+
+  def preprocess(self, model, sampler, evaluator, saver, rnd_key=0):
+    rnd = jax.random.PRNGKey(rnd_key)
+    params, x, state = self._initialize_model_and_sampler(rnd, model, sampler)
+    compiled_fns = self._compile_fns(sampler, model)
+    return [
+        compiled_fns,
+        state,
+        params,
+        rnd,
+        x,
+        saver,
+        evaluator,
+        model,
+    ]
+
+  def _compute_chain(
+      self,
+      compiled_fns,
+      state,
+      params,
+      rng,
+      x,
+      x0_ess,
+      saver,
+      evaluator,
+      fn_reshape,
+      bshape,
+      model_frwrd,
+      model,
+  ):
+    """Generates the chain of samples."""
+
+    score_fn, stp_fn = compiled_fns
+
+    rng = jax.random.PRNGKey(10)
+    selected_chains = jax.random.choice(
+        rng,
+        jnp.arange(self.config.batch_size),
+        shape=(self.num_saved_samples,),
+        replace=False,
+    )
+    logz_finals= []
+
+    log_w = jnp.zeros(self.config.batch_size)
+    prev_params = params
+    prev_params['temperature'] = 0.0
+
+    for step in tqdm.tqdm(range(1, 1 + self.config.chain_length)):
+      rng = jax.random.fold_in(rng, step)
+
+      new_params = {}
+      for key in prev_params:
+        new_params[key] = prev_params[key]
+      new_params['temperature'] = step * 1.0 / self.config.chain_length
+
+      log_w = log_w + score_fn(new_params, x) - score_fn(prev_params, x)
+
+      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
+      start = time.time()
+      new_x, state, _ = stp_fn(
+          rng=step_rng,
+          x=x,
+          model_param=new_params,
+          state=state,
+          x_mask=params['mask'],
+      )
+      running_time += time.time() - start
+      prev_params = new_params
+      logz_final = jax.scipy.special.logsumexp(log_w, axis=0) - np.log(
+          self.config.batch_size
+      )
+      logz_finals.append(logz_final)
+      x = new_x
+      
+    saver.save_logz(logz_finals)
+
