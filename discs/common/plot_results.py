@@ -24,7 +24,7 @@ FLAGS = flags.FLAGS
 color_map = {}
 color_map['rmw'] = 'green'
 color_map['fdl'] = 'gray'
-color_map['paf'] = 'saddlebrown'
+color_map['pas'] = 'saddlebrown'
 color_map['gwg'] = 'red'
 color_map['bg-'] = 'orange'
 color_map['dma'] = 'purple'
@@ -202,14 +202,15 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               color=c,
           )
 
-    if model not in ['fhmm' or 'rbm']:
+
+    if model not in ['fhmm','rbm']:
       model = model.capitalize()
     else:
       if model == 'fhmm':
         model = 'FHMM'
       else:
         model = 'RBM'
-  
+
     if key_diff == 'shape':
       key_diff = 'sample dimension'
     elif key_diff == 'balancing_fn_type':
@@ -266,9 +267,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           if split.startswith('data_path=RBM_DATA-mnist-2-'):
             num_hidden = split[len('data_path=RBM_DATA-mnist-2-') : -1]
             if num_hidden == '25':
-              plt.title(f'High temperature binary RBM ', fontsize=18)
+              plt.title(f'Binary RBM with hidden dimension {num_hidden}', fontsize=18)
             elif num_hidden == '200':
-              plt.title(f'Low temperature binary RBM ', fontsize=18)
+              plt.title(f'Binary RBM with hidden dimension {num_hidden}', fontsize=18)
       elif model == 'FHMM':
         splits = str.split(save_title, ',')
         sigma = 'dummy'
@@ -299,7 +300,16 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         plt.title(f'{model} model', fontsize=18)
 
     if len(xticks) != 1:
-      plt.xticks(x_poses, xticks, fontsize=16)
+      if model not in ['Potts', 'Ising']:
+        plt.xticks(x_poses, xticks, fontsize=16)
+      else:
+        if key_diff == 'sample dimension':
+          new_xticks =[]
+          for i, tick in enumerate(xticks):
+            new_xticks.append(str(tick)+'x'+str(tick))
+          plt.xticks(x_poses, new_xticks, fontsize=16)
+        else:
+          plt.xticks(x_poses, xticks, fontsize=16)
     else:
       plt.xticks([], [], fontsize=16)
 
@@ -369,12 +379,15 @@ def process_keys(dict_o_keys):
   elif dict_o_keys['name'] == 'randomwalk':
     dict_o_keys['name'] = 'rmw'
   elif dict_o_keys['name'] == 'path_auxiliary':
-    dict_o_keys['name'] = 'pafs'
+    dict_o_keys['name'] = 'pas'
 
   if 'solver' in dict_o_keys:
     if dict_o_keys['solver'] == 'euler_forward':
       dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
     del dict_o_keys['solver']
+    
+  if 'approx_with_grad' in dict_o_keys:
+    del dict_o_keys['approx_with_grad']
 
   if 'adaptive' in dict_o_keys:
     if dict_o_keys['adaptive'] == 'False':
@@ -477,10 +490,10 @@ def sort_based_on_samplers(all_mapped_names):
       'dmala(s',
       'dmala(r',
       'dmala',
-      'pafs-',
-      'pafs(s',
-      'pafs(r',
-      'pafs',
+      'pas-',
+      'pas(s',
+      'pas(r',
+      'pas',
       'dlmcf-',
       'dlmcf(s',
       'dlmcf(r',

@@ -27,7 +27,7 @@ DEFAULT_SAMPLER = 'dlmc(s)'
 color_map = {}
 color_map['rmw'] = 'green'
 color_map['fdl'] = 'gray'
-color_map['paf'] = 'saddlebrown'
+color_map['pas'] = 'saddlebrown'
 color_map['gwg'] = 'red'
 color_map['bg-'] = 'orange'
 color_map['dma'] = 'purple'
@@ -267,8 +267,11 @@ def process_keys(dict_o_keys):
   elif dict_o_keys['name'] == 'randomwalk':
     dict_o_keys['name'] = 'rmw'
   elif dict_o_keys['name'] == 'path_auxiliary':
-    dict_o_keys['name'] = 'pafs'
+    dict_o_keys['name'] = 'pas'
 
+  if 'approx_with_grad' in dict_o_keys:
+    del dict_o_keys['approx_with_grad']
+    
   if 'solver' in dict_o_keys:
     if dict_o_keys['solver'] == 'euler_forward':
       dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'

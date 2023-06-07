@@ -44,7 +44,7 @@ def process_keys(dict_o_keys):
   elif dict_o_keys['name'] == 'randomwalk':
     dict_o_keys['name'] = 'rmw'
   elif dict_o_keys['name'] == 'path_auxiliary':
-    dict_o_keys['name'] = 'pafs'
+    dict_o_keys['name'] = 'pas'
 
   if 'solver' in dict_o_keys:
     if dict_o_keys['solver'] == 'euler_forward':
@@ -91,8 +91,16 @@ def main(_):
     res_dic = get_experiment_config(folder)
     res_dic = process_keys(res_dic)
     y_ticks.append(res_dic['name'])
+    if res_dic['name'] in ['dlmc', 'hb-10-1']:
+      chain = 1
+    elif res_dic['name'] == 'bg-2':
+      chain = 2
+    elif res_dic['name'] in ['dlmcf', 'dmala']:
+      chain = 3
+    elif res_dic['name'] in ['gwg', 'pas']:
+      chain = 0
     for i in range(10):
-      image_file = os.path.join(subfolderpath, f'sample_{i}_of_chain_0.jpeg')
+      image_file = os.path.join(subfolderpath, f'sample_{i}_of_chain_{chain}.jpeg')
       image_paths.append(image_file)
 
   # Calculate the total number of subplots required
@@ -129,7 +137,7 @@ def main(_):
       axes[i].set_ylabel(y_ticks[i//num_cols], fontsize=14)
 
   # Set x-label for the entire figure
-  fig.text(0.5, -0.02, 'x1k Steps', ha='center', fontsize=16)
+  fig.text(0.55, -0.01, 'x1k Steps', ha='center', fontsize=16)
   
   # Set y-label for the entire figure
   fig.text(-0.02, 0.5, 'Samplers', va='center', rotation='vertical', fontsize=16)
@@ -149,6 +157,10 @@ def main(_):
     os.makedirs(plot_dir)
   plt.savefig(
       f'{plot_dir}/res.png',
+      bbox_inches='tight',
+  )
+  plt.savefig(
+      f'{plot_dir}/res.pdf',
       bbox_inches='tight',
   )
 

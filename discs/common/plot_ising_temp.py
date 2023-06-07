@@ -8,9 +8,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+# gsutil -m cp -r \
+#   "gs://xcloud-shared/kgoshvadi/results/discs/discs-ising-lamdasweep_bigger_57932311" \
+#   "gs://xcloud-shared/kgoshvadi/results/discs/discs-ising-mode_config_lamdasweep_57926523" \
+#   .
+  
 flags.DEFINE_string(
     'gcs_results_path',
-    './discs-ising-model_config_sweep_extended_57873057',
+    './discs-ising-mode_config_lamdasweep_57926523',
     'where results are being saved',
 )
 flags.DEFINE_string('key', 'name', 'what key to plot against')
@@ -22,7 +27,7 @@ FLAGS = flags.FLAGS
 color_map = {}
 color_map['rmw'] = 'green'
 color_map['fdl'] = 'gray'
-color_map['paf'] = 'saddlebrown'
+color_map['pas'] = 'saddlebrown'
 color_map['gwg'] = 'red'
 color_map['bg-'] = 'orange'
 color_map['dma'] = 'purple'
@@ -70,34 +75,39 @@ def get_clusters_key_based(key, results_dict_list):
   return results_index_cluster
 
 
-def plot_results(all_mapped_names, x_ticks):
-  plot_graph(all_mapped_names, x_ticks)
+def plot_results(all_mapped_names):
+  plot_graph(all_mapped_names)
 
 
-def plot_graph(all_mapped_names, x_ticks):
+def plot_graph(all_mapped_names):
   for res_key in ['ess_ee', 'ess_clock']:
     f = plt.figure()
-    f.set_figwidth(12)
-    f.set_figheight(8)
-    plt.yscale('log')
+    f.set_figwidth(18)
+    f.set_figheight(12)
+    # plt.yscale('log')
     for sampler in all_mapped_names.keys():
+      if sampler in ['hb-10-1', 'bg-2', 'rmw']:
+        continue
       if sampler[-3:] == '(r)':
         alpha = 0.5
+        line_style= '--'
       else:
         alpha = 1
+        line_style= '-'
       if sampler[-3:] == '(r)':
         label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
       elif sampler[-3:] == '(s)':
         label_sampler = sampler[0:-3] + '$\\sqrt{t}$'
       else:
         label_sampler = sampler
+      print(all_mapped_names[sampler]['x'])
       plt.plot(
           all_mapped_names[sampler]['x'],
           all_mapped_names[sampler][res_key],
           label=label_sampler,
           c=get_color(sampler),
           alpha=alpha,
-          linestyle='-', marker='o'
+          linestyle=line_style, marker='o'
       )
 
     plt.legend(
@@ -106,8 +116,13 @@ def plot_graph(all_mapped_names, x_ticks):
         fancybox=True,
         framealpha=0.2,
     )
-
-    plt.xticks(x_ticks)
+    # pdb.set_trace()
+    
+    plt.ylabel('ESS w.r.t Energy Evaluation', fontsize=16)
+    plt.xlabel('Inverse temperature $\\beta$', fontsize=16)
+    xticks = all_mapped_names[sampler]['x']
+    plt.xticks(xticks, fontsize=14)
+    plt.yticks(fontsize=14)
     plt.grid(axis='y')
     plt.show()
 
@@ -150,7 +165,7 @@ def process_keys(dict_o_keys):
   elif dict_o_keys['name'] == 'randomwalk':
     dict_o_keys['name'] = 'rmw'
   elif dict_o_keys['name'] == 'path_auxiliary':
-    dict_o_keys['name'] = 'pafs'
+    dict_o_keys['name'] = 'pas'
 
   if 'solver' in dict_o_keys:
     if dict_o_keys['solver'] == 'euler_forward':
@@ -224,15 +239,13 @@ def sort_based_on_key(folders, key_diff):
   keydiff_vals = []
   type_tick_str = False
   for folder in folders:
-    if folder[-3:] == 'png' or folder[-3:] == 'pdf':
-      continue
     value_of_keydiff = folder[1 + folder.find(key_diff) + len(key_diff) :]
     if value_of_keydiff.find(',') != -1:
       value_of_keydiff = value_of_keydiff[0 : value_of_keydiff.find(',')]
     if value_of_keydiff.find('(') != -1:
       value_of_keydiff = value_of_keydiff[1 + value_of_keydiff.find('(') :]
     try:
-      keydiff_vals.append(int(float(value_of_keydiff)))
+      keydiff_vals.append(float(value_of_keydiff))
     except ValueError:
       keydiff_vals.append(str(value_of_keydiff))
       type_tick_str = True
@@ -258,10 +271,10 @@ def sort_based_on_samplers(all_mapped_names):
       'dmala(s',
       'dmala(r',
       'dmala',
-      'pafs-',
-      'pafs(s',
-      'pafs(r',
-      'pafs',
+      'pas-',
+      'pas(s',
+      'pas(r',
+      'pas',
       'dlmcf-',
       'dlmcf(s',
       'dlmcf(r',
@@ -318,9 +331,15 @@ def save_result_as_csv(all_mapped_names, dir_name):
 
 
 def map_temp(save_title):
-  sigma = str.split(save_title, ',')[-2]
-  sigma = str.split(sigma, '=')[-1]
-  return int(float(sigma) / (0.75))
+  lamda = str.split(save_title, ',')[-2]
+  lamda = str.split(lamda, '=')[-1]
+  print("iadkjasdlsjdglsadjhgdjlfh = ", lamda)
+  # pdb.set_trace()
+  # print(float(lamda))
+  # print((float(lamda) - (0.1607))/0.4)
+  # res = round((float(lamda) - (0.1607))/0.04) + 1
+  # print(res)
+  return float(lamda)
 
 
 def prepare_for_ising(all_mapped_names):
@@ -331,7 +350,7 @@ def prepare_for_ising(all_mapped_names):
     res[sampler] = {}
     res[sampler]['ess_ee'] = [all_mapped_names[0][sampler]['ess_ee'][0]]
     res[sampler]['ess_clock'] = [all_mapped_names[0][sampler]['ess_clock'][0]]
-    res[sampler]['x'] = [1]
+    res[sampler]['x'] = [0.1607]
     for temp in range(1, len(all_mapped_names)):
       x_val = map_temp(all_mapped_names[temp]['save_title'])
       res[sampler]['x'].append(x_val)
@@ -356,7 +375,7 @@ def main(argv) -> None:
   experiments_results = []
   folders = os.listdir(FLAGS.gcs_results_path)
   folders = sorted(folders)
-  folders, x_ticks = sort_based_on_key(folders, 'init_sigma')
+  folders, x_ticks = sort_based_on_key(folders, 'lambdaa')
   model = str.split(FLAGS.gcs_results_path, '-')[1]
   for folder in folders:
     subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
@@ -394,6 +413,7 @@ def main(argv) -> None:
   # for key in all_mapped_names[0].keys():
   #   print(key, ' ', all_mapped_names[0][key])
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
+  # pdb.set_trace()
   all_mapped_names = prepare_for_ising(all_mapped_names)
   
 
@@ -412,9 +432,8 @@ def main(argv) -> None:
   #       x_ticks_new.append('1 \u2228 t')
   #   x_ticks = x_ticks_new
 
-  x_ticks = np.array(x_ticks) + 1
-  print('xtickssssss: ', x_ticks)
-  plot_results(all_mapped_names, x_ticks)
+
+  plot_results(all_mapped_names)
 
 
 if __name__ == '__main__':
