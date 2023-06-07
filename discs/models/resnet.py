@@ -112,10 +112,13 @@ class ImageEBM(deep_ebm.DeepEBM):
       x = jax.nn.one_hot(x, self.num_categories)
     energy = self.net.apply({'params': params}, x=x)
     if self.data_mean is not None:
-      base_logprob = x * jnp.log(self.data_mean) + (
-          1 - x) * jnp.log1p(-self.data_mean)
+      base_logprob = x * jnp.log(self.data_mean + 1e-20) + (
+          1 - x) * jnp.log1p(-self.data_mean + 1e-20)
       base_energy = jnp.sum(base_logprob, axis=-1)
       energy = energy + base_energy
+      if 'temperature' in params:  # for the use of AIS
+        beta = params['temperature']
+        energy = base_energy * (1 - beta) + energy * beta
     return energy
 
   def get_value_and_grad(self, params, x):

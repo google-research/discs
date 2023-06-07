@@ -6,7 +6,7 @@ import os
 from absl import app
 from absl import flags
 from flax import jax_utils
-from flax.core.frozen_dict import unfreeze
+from flax.core.frozen_dict import unfreeze, freeze
 
 from discs.common import data_loader
 from discs.common import plot
@@ -82,6 +82,39 @@ class EBMTrainer(train.Trainer):
                              rescale=255.0)
 
 
+def loop(rng, params, model, sampler):
+  sampler_step = functools.partial(sampler.step, model=model)
+  sampler_step = jax.jit(sampler_step)
+  score_fn = jax.jit(model.forward)
+  init_rng, sampler_init_rng, rng = jax.random.split(rng, 3)
+
+  num_samples = 100
+  chain_length = 10000
+  samples = model.get_init_samples(init_rng, num_samples)
+  sampler_state = sampler.make_init_state(sampler_init_rng)
+
+  log_w = jnp.zeros(num_samples)
+  prev_params = unfreeze(params)
+  prev_params['temperature'] = 0.0
+
+  for step in range(1, chain_length):
+    print(step)
+    rng = jax.random.fold_in(rng, step)
+    new_params = {}
+    for key in prev_params:
+      new_params[key] = prev_params[key]
+    new_params['temperature'] = step * 1.0 / chain_length
+
+    log_w = log_w + score_fn(
+        new_params, samples) - score_fn(prev_params, samples)
+    samples, sampler_state, _ = sampler_step(
+        rng=rng, x=samples, model_param=new_params, state=sampler_state)
+    prev_params = new_params
+    logZ_final = jax.scipy.special.logsumexp(
+        log_w, axis=0) - np.log(num_samples)
+    print(step, logZ_final)  # plot the curve of logZ_final
+
+
 def main(argv: Sequence[str]) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
@@ -100,6 +133,10 @@ def main(argv: Sequence[str]) -> None:
   global_key = jax.random.PRNGKey(FLAGS.seed)
   model = resnet.build_model(config)
   sampler = dlmc.build_sampler(config)
+  params = model.make_init_params(global_key)
+  loop(global_key, params, model, sampler)
+  import sys
+  sys.exit()
   trainer = EBMTrainer(config, model, sampler, data_np)
 
   global_key, init_key = jax.random.split(global_key)
