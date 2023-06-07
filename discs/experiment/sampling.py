@@ -750,12 +750,6 @@ class EBM_Experiment(Experiment):
     score_fn, stp_fn = compiled_fns
 
     rng = jax.random.PRNGKey(10)
-    selected_chains = jax.random.choice(
-        rng,
-        jnp.arange(self.config.batch_size),
-        shape=(self.num_saved_samples,),
-        replace=False,
-    )
     logz_finals= []
 
     log_w = jnp.zeros(self.config.batch_size)
