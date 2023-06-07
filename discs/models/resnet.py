@@ -8,6 +8,7 @@ from flax import linen as nn
 import jax
 import jax.numpy as jnp
 import ml_collections
+import pdb
 
 
 def conv3x3(out_planes, stride=1):
@@ -110,6 +111,7 @@ class ImageEBM(deep_ebm.DeepEBM):
   def forward(self, params, x):
     if self.num_categories != 2 and len(x.shape) - 1 == len(self.shape):
       x = jax.nn.one_hot(x, self.num_categories)
+    pdb.set_trace()
     energy = self.net.apply({'params': params}, x=x)
     if self.data_mean is not None:
       base_logprob = x * jnp.log(self.data_mean + 1e-20) + (

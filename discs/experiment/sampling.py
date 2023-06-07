@@ -696,12 +696,12 @@ class EBM_Experiment(Experiment):
 
   def _initialize_model_and_sampler(self, rnd, model, sampler):
     """Initializes model params, sampler state and gets the initial samples."""
-    rng_param, rng_x0, rng_state = jax.random.split(rnd, num=3)
+    rng_param, rng_x, rng_state = jax.random.split(rnd, num=3)
     del rnd
     params = model.make_init_params(rng_param)
-    x0 = model.get_init_samples(rng_x0, 1, params)
+    x  = model.get_init_samples(rng_x, self.config.batch_size)
     state = sampler.make_init_state(rng_state)
-    return params, x0, state
+    return params, x, state
 
   def _compile_fns(self, sampler, model):
     score_fn = jax.jit(model.forward)
@@ -710,6 +710,16 @@ class EBM_Experiment(Experiment):
         score_fn,
         step_fn,
     )
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, saver, rnd_key=0
+  ):
+    """Sets up the model and the samlping alg and gets the chain of samples."""
+
+    preprocessed_info = self.preprocess(
+        model, sampler, evaluator, saver, rnd_key=0
+    )
+    self._compute_chain(*preprocessed_info)
+    
 
   def preprocess(self, model, sampler, evaluator, saver, rnd_key=0):
     rnd = jax.random.PRNGKey(rnd_key)
@@ -722,7 +732,6 @@ class EBM_Experiment(Experiment):
         rnd,
         x,
         saver,
-        evaluator,
         model,
     ]
 
@@ -733,12 +742,7 @@ class EBM_Experiment(Experiment):
       params,
       rng,
       x,
-      x0_ess,
       saver,
-      evaluator,
-      fn_reshape,
-      bshape,
-      model_frwrd,
       model,
   ):
     """Generates the chain of samples."""
