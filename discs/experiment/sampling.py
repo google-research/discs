@@ -12,6 +12,7 @@ from ml_collections import config_dict
 import numpy as np
 import optax
 import tqdm
+from flax.core.frozen_dict import unfreeze, freeze
 
 
 class Experiment:
@@ -747,13 +748,13 @@ class EBM_Experiment(Experiment):
   ):
     """Generates the chain of samples."""
 
+    pdb.set_trace()
+
     score_fn, stp_fn = compiled_fns
-
-    rng = jax.random.PRNGKey(10)
+    
     logz_finals= []
-
     log_w = jnp.zeros(self.config.batch_size)
-    prev_params = params
+    prev_params = unfreeze(params)
     prev_params['temperature'] = 0.0
 
     for step in tqdm.tqdm(range(1, 1 + self.config.chain_length)):
@@ -765,17 +766,12 @@ class EBM_Experiment(Experiment):
       new_params['temperature'] = step * 1.0 / self.config.chain_length
 
       log_w = log_w + score_fn(new_params, x) - score_fn(prev_params, x)
-
-      step_rng = fn_reshape(jax.random.split(rng, math.prod(bshape)))
-      start = time.time()
       new_x, state, _ = stp_fn(
-          rng=step_rng,
+          rng=rng,
           x=x,
           model_param=new_params,
           state=state,
-          x_mask=params['mask'],
       )
-      running_time += time.time() - start
       prev_params = new_params
       logz_final = jax.scipy.special.logsumexp(log_w, axis=0) - np.log(
           self.config.batch_size
