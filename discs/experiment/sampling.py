@@ -705,8 +705,12 @@ class EBM_Experiment(Experiment):
     return params, x, state
 
   def _compile_fns(self, sampler, model):
-    score_fn = jax.jit(model.forward)
-    step_fn = jax.jit(functools.partial(sampler.step, model=model))
+    if not self.parallel:
+      score_fn = jax.jit(model.forward)
+      step_fn = jax.jit(functools.partial(sampler.step, model=model))
+    else:
+      score_fn = jax.jit(model.forward)
+      step_fn = jax.pmap(functools.partial(sampler.step, model=model))
     return (
         score_fn,
         step_fn,
@@ -725,6 +729,12 @@ class EBM_Experiment(Experiment):
   def preprocess(self, model, sampler, evaluator, saver, rnd_key=0):
     rnd = jax.random.PRNGKey(rnd_key)
     params, x, state = self._initialize_model_and_sampler(rnd, model, sampler)
+    if self.parallel:        
+      params = jax.device_put_replicated(params, jax.local_devices())
+      state = jax.device_put_replicated(state, jax.local_devices())
+      assert self.config.batch_size % jax.ocal_device_countn() == 0
+      nn = self.config.batch_size // jax.ocal_device_countn()
+      x = x.reshape((jax.local_device_count(), nn)+self.config_model.shape)
     compiled_fns = self._compile_fns(sampler, model)
     return [
         compiled_fns,
