@@ -9,17 +9,9 @@ import numpy as np
 
 
 
-# gsutil -m cp -r \
-#   "gs://xcloud-shared/kgoshvadi/results/discs/discs-ising-lamdasweep_small_57936764" \
-#   .
-
-# gsutil -m cp -r \
-#   "gs://xcloud-shared/kgoshvadi/results/discs/discs-ising-lamdasweep_bigger_57937100" \
-#   .
-
 flags.DEFINE_string(
     'gcs_results_path',
-    './discs-ising-lamdasweep_bigger_57937100',
+    './discs-binray_ebm-logz_57945373',
     'where results are being saved',
 )
 flags.DEFINE_string('key', 'name', 'what key to plot against')
@@ -80,67 +72,57 @@ def get_clusters_key_based(key, results_dict_list):
 
 
 def plot_results(all_mapped_names):
-  plot_graph(all_mapped_names)
+  for num, res_cluster in enumerate(all_mapped_names):
+    plot_graph_cluster(num, res_cluster)
 
 
-def plot_graph(all_mapped_names):
-  for res_key in ['ess_ee', 'ess_clock']:
-    f = plt.figure()
-    f.set_figwidth(18)
-    f.set_figheight(12)
-    # plt.yscale('log')
-    for sampler in all_mapped_names.keys():
-      if sampler in ['hb-10-1', 'bg-2', 'rmw']:
-        continue
-      if sampler[-3:] == '(r)':
-        alpha = 0.5
-        line_style= '--'
-      else:
-        alpha = 1
-        line_style= '-'
-      if sampler[-3:] == '(r)':
-        label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
-      elif sampler[-3:] == '(s)':
-        label_sampler = sampler[0:-3] + '$\\sqrt{t}$'
-      else:
-        label_sampler = sampler
-      print(all_mapped_names[sampler]['x'])
-      plt.plot(
-          all_mapped_names[sampler]['x'],
-          all_mapped_names[sampler][res_key],
-          label=label_sampler,
-          c=get_color(sampler),
-          alpha=alpha,
-          linestyle=line_style, marker='o'
-      )
+def plot_graph_cluster(num, res_cluster):
 
-    plt.legend(
-        loc='upper left',
-        fontsize=20,
-        fancybox=True,
-        framealpha=0.2,
-    )
-    # pdb.set_trace()
-    
-    plt.ylabel('ESS w.r.t Energy Evaluation', fontsize=24)
-    plt.xlabel('Inverse temperature $\\beta$', fontsize=24)
-    xticks = all_mapped_names[sampler]['x']
-    plt.xticks(xticks, fontsize=14)
-    plt.yticks(fontsize=16)
-    plt.grid(axis='y')
-    plt.show()
+  f = plt.figure()
+  f.set_figwidth(12)
+  f.set_figheight(8)
+  save_title = 'yum'
+  for i, sampler in enumerate(res_cluster.keys()):
+    if sampler == 'save_title':
+      save_title = res_cluster[sampler]
+      continue
+    elif sampler == 'model':
+      model = res_cluster[sampler]
+      continue
+    if sampler[-3:] == '(r)':
+      label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
+    elif sampler[-3:] == '(s)':
+      label_sampler = sampler[0:-3] + '$\\sqrt{t}$'
+    else:
+      label_sampler = sampler
+    res = res_cluster[sampler]['logz'][0]
+    x = np.arange(len(res))
+    y = np.array(res)
+    print(x)
+    print(y)
+    plt.plot(x, y, label=label_sampler)
 
-    plot_dir = f'./plots_ising/{FLAGS.gcs_results_path}/'
-    if not os.path.exists(plot_dir):
-      os.makedirs(plot_dir)
-    plt.savefig(
-        f'{plot_dir}/{res_key}.png',
-        bbox_inches='tight',
-    )
-    plt.savefig(
-        f'{plot_dir}/{res_key}.pdf',
-        bbox_inches='tight',
-    )
+  plt.legend(
+      loc='upper right',
+      fontsize=14,
+      fancybox=True,
+      framealpha=0.2,
+  )
+  # plt.yscale('log')
+  plt.xlabel('Steps', fontsize= 16)
+  plt.show()
+
+  plot_dir = f'./plots_ais/{FLAGS.gcs_results_path}/'
+  if not os.path.exists(plot_dir):
+    os.makedirs(plot_dir)
+  plt.savefig(
+      f'{plot_dir}/{save_title}.png',
+      bbox_inches='tight',
+  )
+  plt.savefig(
+      f'{plot_dir}/{save_title}.pdf',
+      bbox_inches='tight',
+  )
 
 
 def get_experiment_config(exp_config):
@@ -175,6 +157,9 @@ def process_keys(dict_o_keys):
     if dict_o_keys['solver'] == 'euler_forward':
       dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
     del dict_o_keys['solver']
+    
+  if 'approx_with_grad' in dict_o_keys:
+    del dict_o_keys['approx_with_grad']
 
   if 'adaptive' in dict_o_keys:
     if dict_o_keys['adaptive'] == 'False':
@@ -243,13 +228,15 @@ def sort_based_on_key(folders, key_diff):
   keydiff_vals = []
   type_tick_str = False
   for folder in folders:
+    if folder[-3:] == 'png' or folder[-3:] == 'pdf':
+      continue
     value_of_keydiff = folder[1 + folder.find(key_diff) + len(key_diff) :]
     if value_of_keydiff.find(',') != -1:
       value_of_keydiff = value_of_keydiff[0 : value_of_keydiff.find(',')]
     if value_of_keydiff.find('(') != -1:
       value_of_keydiff = value_of_keydiff[1 + value_of_keydiff.find('(') :]
     try:
-      keydiff_vals.append(float(value_of_keydiff))
+      keydiff_vals.append(int(float(value_of_keydiff)))
     except ValueError:
       keydiff_vals.append(str(value_of_keydiff))
       type_tick_str = True
@@ -334,40 +321,6 @@ def save_result_as_csv(all_mapped_names, dir_name):
         writer.writerow(data)
 
 
-def map_temp(save_title):
-  lamda = str.split(save_title, ',')[-2]
-  lamda = str.split(lamda, '=')[-1]
-  print("iadkjasdlsjdglsadjhgdjlfh = ", lamda)
-  # pdb.set_trace()
-  # print(float(lamda))
-  # print((float(lamda) - (0.1607))/0.4)
-  # res = round((float(lamda) - (0.1607))/0.04) + 1
-  # print(res)
-  return float(lamda)
-
-
-def prepare_for_ising(all_mapped_names):
-  res = {}
-  for sampler in all_mapped_names[0].keys():
-    if sampler in ['save_title', 'model']:
-      continue
-    res[sampler] = {}
-    res[sampler]['ess_ee'] = [all_mapped_names[0][sampler]['ess_ee'][0]]
-    res[sampler]['ess_clock'] = [all_mapped_names[0][sampler]['ess_clock'][0]]
-    res[sampler]['x'] = [0.1607]
-    for temp in range(1, len(all_mapped_names)):
-      x_val = map_temp(all_mapped_names[temp]['save_title'])
-      res[sampler]['x'].append(x_val)
-      res[sampler]['ess_ee'].append(
-          all_mapped_names[temp][sampler]['ess_ee'][0]
-      )
-      res[sampler]['ess_clock'].append(
-          all_mapped_names[temp][sampler]['ess_clock'][0]
-      )
-
-  return res
-
-
 def main(argv) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
@@ -379,7 +332,7 @@ def main(argv) -> None:
   experiments_results = []
   folders = os.listdir(FLAGS.gcs_results_path)
   folders = sorted(folders)
-  folders, x_ticks = sort_based_on_key(folders, 'lambdaa')
+  folders, x_ticks = sort_based_on_key(folders, key_diff)
   model = str.split(FLAGS.gcs_results_path, '-')[1]
   for folder in folders:
     subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
@@ -387,63 +340,19 @@ def main(argv) -> None:
     res_dic = process_keys(res_dic)
     if 'save_samples' in res_dic:
       del res_dic['save_samples']
-    # print(res_dic)
-    # print('******************')
-
-    filename = os.path.join(subfolderpath, 'results.csv')
-    try:
-      filename = open(filename, 'r')
-    except:
-      print(filename)
-      results = {}
-      results['ess_ee'] = 0
-      results['ess_clock'] = 0
-      res_dic['results'] = results
-      experiments_results.append(res_dic)
-      print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-      continue
-    file = csv.DictReader(filename)
-    results = {}
-    for col in file:
-      if 'chain_length' not in res_dic:
-        results['ess_ee'] = float(col['ESS_EE']) * 50000
-      else:
-        results['ess_ee'] = float(col['ESS_EE']) * int(
-            float(res_dic['chain_length']) // 2
-        )
-      results['ess_clock'] = float(col['ESS_T'])
-
-    res_dic['results'] = results
+    print(res_dic)
+    print('******************')
+    filename = os.path.join(subfolderpath, 'logz.pkl')
+    results = pickle.load(open(filename, 'rb'))
+    res_dic['results'] = {}
+    res_dic['results']['logz'] = np.array(results['logz'])
     experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
-  print(FLAGS.key, results_index_cluster)
   all_mapped_names = organize_experiments(
       results_index_cluster, experiments_results, key_diff, model
   )
 
-
-  # for key in all_mapped_names[0].keys():
-  #   print(key, ' ', all_mapped_names[0][key])
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
-  all_mapped_names = prepare_for_ising(all_mapped_names)
-  
-
-  # # if FLAGS.key == 'name' and key_diff != 'balancing_fn_type':
-  #   x_ticks = ['samplers']
-  # elif key_diff == 'balancing_fn_type':
-  #   x_ticks_new = []
-  #   for i, tick in enumerate(x_ticks):
-  #     if tick == "'SQRT'":
-  #       x_ticks_new.append('$\\sqrt{t}$')
-  #     elif tick == "'RATIO'":
-  #       x_ticks_new.append('$\\frac{t}{t+1}$')
-  #     elif tick == "'MIN'":
-  #       x_ticks_new.append('1 \u2227 t')
-  #     elif tick == "'MAX'":
-  #       x_ticks_new.append('1 \u2228 t')
-  #   x_ticks = x_ticks_new
-
-
   plot_results(all_mapped_names)
 
 

@@ -143,7 +143,9 @@ def plot_graph_cluster(num, key, dict_results, indeces):
         x = np.arange(0, 1, (1 / len(x))) * float(
             result['results']['running_time']
         )
-
+      
+      
+      # plt.xscale('log')
       # plotting
       plt.plot(
           x,

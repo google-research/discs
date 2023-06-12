@@ -13,9 +13,7 @@ def get_config():
           sweep=[
               {
                   'config.experiment.name':['EBM_Experiment'],
-                  'config.experiment.chain_length': [1000],
-                  'config.experiment.save_samples': [True],
-                  'config.experiment.save_every_steps': [1000],
+                  'config.experiment.chain_length': [10000],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/BINARY_EBM/caltech-64/',
                       '/gcs/xcloud-shared/kgoshvadi/data/BINARY_EBM/dynamic_mnist-64/',
@@ -29,9 +27,7 @@ def get_config():
               },
               {
                   'config.experiment.name':['EBM_Experiment'],
-                  'config.experiment.chain_length': [1000],
-                  'config.experiment.save_samples': [True],
-                  'config.experiment.save_every_steps': [1000],
+                  'config.experiment.chain_length': [10000],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/BINARY_EBM/caltech-64/',
                       '/gcs/xcloud-shared/kgoshvadi/data/BINARY_EBM/dynamic_mnist-64/',
@@ -42,9 +38,7 @@ def get_config():
               },
               {
                   'config.experiment.name':['EBM_Experiment'],
-                  'config.experiment.chain_length': [1000],
-                  'config.experiment.save_samples': [True],
-                  'config.experiment.save_every_steps': [1000],
+                  'config.experiment.chain_length': [10000],
                   'model_config.data_path': [
                       '/gcs/xcloud-shared/kgoshvadi/data/BINARY_EBM/caltech-64/',
                       '/gcs/xcloud-shared/kgoshvadi/data/BINARY_EBM/dynamic_mnist-64/',
