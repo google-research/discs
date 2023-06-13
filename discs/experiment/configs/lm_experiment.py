@@ -9,7 +9,7 @@ def get_config():
           name='Text_Infilling_Experiment',
           batch_size=1,
           chain_length=50,
-          max_n=4,
+          max_n_grams=4,
           num_same_resample=25,
           topk_num=5,
           use_topk=False,
