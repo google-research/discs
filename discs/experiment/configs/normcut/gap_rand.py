@@ -1,4 +1,4 @@
-"""Config for er-test dataset."""
+"""Experiment config for random graph generator."""
 
 from ml_collections import config_dict
 

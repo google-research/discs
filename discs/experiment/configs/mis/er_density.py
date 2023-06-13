@@ -1,5 +1,4 @@
-"""Config for er-test dataset."""
-
+"""Experiment config for er density dataset."""
 from ml_collections import config_dict
 
 

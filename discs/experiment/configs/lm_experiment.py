@@ -1,3 +1,4 @@
+"""Default experiment configs for language model."""
 from ml_collections import config_dict
 
 

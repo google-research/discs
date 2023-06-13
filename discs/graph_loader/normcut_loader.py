@@ -1,11 +1,11 @@
 """Load normalized cut graphs."""
 
 import os
+from discs.common import utils
+from discs.graph_loader import common as data_common
 import networkx as nx
 import numpy as np
 import pickle5 as pickle
-from discs.common import utils
-from discs.graph_loader import common as data_common
 
 
 class NormCutGen(data_common.GraphGenerator):

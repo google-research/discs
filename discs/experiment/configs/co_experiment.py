@@ -1,3 +1,4 @@
+"""Default experiment configs for combinatorial optimization problems."""
 from ml_collections import config_dict
 
 

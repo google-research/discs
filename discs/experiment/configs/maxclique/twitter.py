@@ -1,5 +1,4 @@
-"""Config for maxcut ba dataset."""
-
+"""Experiment config for maxclique twitter dataset."""
 from ml_collections import config_dict
 
 

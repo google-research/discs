@@ -14,7 +14,7 @@ def get_config():
           name='',
       ),
       experiment=dict(
-          name='EBM_Experiment',
+          name='Sampling_Experiment',
           evaluator='ess_eval',
           num_models=1,
           batch_size=100,
