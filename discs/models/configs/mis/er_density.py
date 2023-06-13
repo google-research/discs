@@ -16,7 +16,6 @@ def get_model_config(cfg_str):
       num_categories=2,
       shape=(0,),
       rand_type=rand_type,
-      penalty=1.001,
   )
   return config_dict.ConfigDict(model_config)
 
