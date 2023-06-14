@@ -9,9 +9,15 @@ Then navigate to the root of project folder and run
 
     pip install -e .
 
+## Experiment
+To run an experiment, three main components are required:
+* model: you need to set the path to the config values of the model.
+* sampler: you need to set the path to the config values of the model.
+* experiment configs
+
 ## Run sampling locally 
 
-under the root folder, run 
+To run an expriment locally under the root folder ./discs/, run 
 
     model=bernoulli sampler=randomwalk ./discs/experiment/run_sampling_local.sh
 
@@ -19,7 +25,8 @@ For combinatorial optimization problems you further need to set the graph type:
 
     model=maxcut graph_type=ba sampler=path_auxiliary ./discs/experiment/run_sampling_local.sh
 
-# List of samplers
+Under the `./discs/samplers/` directory, you can see the list of all the samplers with their corresponding configuration under `./discs/samplers/configs/`.
+List of the samplers:
 * randomwalk
 * hammingball
 * blockgibbs
@@ -27,17 +34,25 @@ For combinatorial optimization problems you further need to set the graph type:
 * dlmc
 * dmala
 
-# List of Models
+Under the `./discs/models/` directory, you can see the list of all the models with their corresponding configuration under `./discs/samplers/configs/`.
+List of Models
 * Classical Models
   * bernoulli
   * categorical
   * ising
   * potts
-* Combinatorial Optimization problems
+  * fhmm
+* Combinatorial optimization problems
   * maxcut
   * maxclique
   * mis
   * normcut
+* Energy based models
+  * rbm
+  * resnet
+  * text_infilling (language model)
+
+
 
 ## Test
 
