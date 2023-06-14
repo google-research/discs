@@ -89,6 +89,9 @@ def main(argv) -> None:
   else:
     executable_args['config'] = '/workdir/discs/common/configs.py'
     num_gpus = 4
+    
+  if job_config.get('model') == 'maxcut' and job_config.get('graph_type') == 'optsicom':
+    num_gpus = 2
   executable_args.update(
       {
           name: value
@@ -152,8 +155,8 @@ def main(argv) -> None:
 
       sweep_str_parts = []
       for k, v in kwargs.items():
-        if k.startswith('config.'):
-          k = k[len('config.') :]
+        if k.startswith('config.experiment.'):
+          k = k[len('config.experiment.') :]
         elif k.startswith('model_config.'):
           k = k[len('model_config.') :]
         elif k.startswith('sampler_config.'):

@@ -12,5 +12,6 @@ def get_config():
       schedule_step=200,
       reset_z_est=20,
       solver='interpolate',
+      n=3.0,
   )
   return config_dict.ConfigDict(model_config)

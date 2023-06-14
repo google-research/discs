@@ -20,8 +20,13 @@ def get_config():
                       'r-ba-4-n-1024-1100',
                       'r-ba-4-n-512-600',
                       'r-ba-4-n-256-300',
+                      'r-ba-4-n-128-150',
+                      'r-ba-4-n-64-75',
+                      'r-ba-4-n-32-40',
+                      'r-ba-4-n-16-20',
                   ],
                   'config.experiment.log_every_steps': [100],
+                  'config.experiment.chain_length': [100000],
               },
               {
                   'sampler_config.name': [
@@ -32,11 +37,16 @@ def get_config():
                       'r-ba-4-n-1024-1100',
                       'r-ba-4-n-512-600',
                       'r-ba-4-n-256-300',
+                      'r-ba-4-n-128-150',
+                      'r-ba-4-n-64-75',
+                      'r-ba-4-n-32-40',
+                      'r-ba-4-n-16-20',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
+                  'config.experiment.chain_length': [100000],
               },
               {
                   'sampler_config.name': [
@@ -46,12 +56,17 @@ def get_config():
                       'r-ba-4-n-1024-1100',
                       'r-ba-4-n-512-600',
                       'r-ba-4-n-256-300',
+                      'r-ba-4-n-128-150',
+                      'r-ba-4-n-64-75',
+                      'r-ba-4-n-32-40',
+                      'r-ba-4-n-16-20',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
-                  'sampler_config.adaptive': [True, False]
+                  'sampler_config.adaptive': [False],
+                  'config.experiment.chain_length': [100000],
               },
               {
                   'sampler_config.name': [
@@ -61,12 +76,17 @@ def get_config():
                       'r-ba-4-n-1024-1100',
                       'r-ba-4-n-512-600',
                       'r-ba-4-n-256-300',
+                      'r-ba-4-n-128-150',
+                      'r-ba-4-n-64-75',
+                      'r-ba-4-n-32-40',
+                      'r-ba-4-n-16-20',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
                       'SQRT',
                   ],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
+                  'config.experiment.chain_length': [100000],
               },
           ],
       )

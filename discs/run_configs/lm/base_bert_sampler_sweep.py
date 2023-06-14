@@ -21,20 +21,7 @@ def get_config():
                   'model_config.bert_model': [
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
                   ],
-                  'sampler_config.name': ['hammingball', 'randomwalk'],
-              },
-              {
-                  'config.experiment.chain_length': [50],
-                  'config.experiment.use_topk': [True],
-                  'config.experiment.num_same_resample': [25],
-                  'model_config.data_root': [
-                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
-                  ],
-                  'model_config.bert_model': [
-                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
-                  ],
-                  'sampler_config.name': ['blockgibbs'],
-                  'sampler_config.block_size': [1],
+                  'sampler_config.name': ['randomwalk'],
               },
               {
                   'config.experiment.chain_length': [50],
@@ -48,8 +35,7 @@ def get_config():
                   ],
                   'sampler_config.adaptive': [True, False],
                   'sampler_config.name': ['dmala'],
-                  'sampler_config.balancing_fn_type': ['SQRT'],
-                  'sampler_config.step_size': [0.1, 0.2, 0.3, 0.4, 0.5],
+                  'sampler_config.balancing_fn_type': ['SQRT','RATIO'],
               },
               {
                   'config.experiment.chain_length': [50],
@@ -62,8 +48,37 @@ def get_config():
                       '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
                   ],
                   'sampler_config.adaptive': [True, False],
-                  'sampler_config.name': ['path_auxiliary', 'gwg'],
-                  'sampler_config.balancing_fn_type': ['SQRT'],
+                  'sampler_config.name': ['path_auxiliary'],
+                  'sampler_config.balancing_fn_type': ['SQRT','RATIO'],
+              },
+              {
+                  'config.experiment.chain_length': [50],
+                  'config.experiment.use_topk': [True],
+                  'config.experiment.num_same_resample': [25],
+                  'model_config.data_root': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
+                  ],
+                  'model_config.bert_model': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
+                  ],
+                  'sampler_config.name': ['gwg'],
+                  'sampler_config.adaptive': [True],
+                  'sampler_config.balancing_fn_type': ['SQRT','RATIO'],
+              },
+              {
+                  'config.experiment.chain_length': [50],
+                  'config.experiment.use_topk': [True],
+                  'config.experiment.num_same_resample': [25],
+                  'model_config.data_root': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
+                  ],
+                  'model_config.bert_model': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
+                  ],
+                  'sampler_config.name': ['dlmc'],
+                  'sampler_config.adaptive': [True],
+                  'sampler_config.solver': ['interpolate', 'euler_forward'],
+                  'sampler_config.balancing_fn_type': ['SQRT','RATIO'],
               },
               {
                   'config.experiment.chain_length': [50],
@@ -78,8 +93,28 @@ def get_config():
                   'sampler_config.name': [
                       'dlmc',
                   ],
-                  'sampler_config.balancing_fn_type': ['SQRT'],
-                  'sampler_config.adaptive': [True, False],
+                  'sampler_config.adaptive': [False],
+                  'sampler_config.solver': ['interpolate'],
+                  'sampler_config.n': [500],
+                  'sampler_config.balancing_fn_type': ['SQRT','RATIO'],
+              },
+              {
+                  'config.experiment.chain_length': [50],
+                  'config.experiment.use_topk': [True],
+                  'config.experiment.num_same_resample': [25],
+                  'model_config.data_root': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_data/',
+                  ],
+                  'model_config.bert_model': [
+                      '/gcs/xcloud-shared/kgoshvadi/data/text_infilling_models/bert-base-uncased/',
+                  ],
+                  'sampler_config.name': [
+                      'dlmc',
+                  ],
+                  'sampler_config.adaptive': [False],
+                  'sampler_config.solver': ['euler_forward'],
+                  'sampler_config.balancing_fn_type': ['SQRT','RATIO'],
+                  'sampler_config.n': [10000],
               },
           ],
       )

@@ -21,12 +21,25 @@ def get_config():
                   'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.batch_size': [16],
                   'config.experiment.init_temperature': [1.0],
-                  'config.experiment.chain_length': [10001], 
+                  'config.experiment.chain_length': [20001], 
               },
               {
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
+                  ],
+                  'config.experiment.log_every_steps': [100],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                  ],
+                  'config.experiment.decay_rate': [0.1],
+                  'config.experiment.t_schedule': ['exp_decay'],
+                  'config.experiment.batch_size': [16],
+                  'config.experiment.init_temperature': [1.0],
+                  'config.experiment.chain_length': [20001],
+              },
+              {
+                  'sampler_config.name': [
                       'gwg',
                   ],
                   'config.experiment.log_every_steps': [100],
@@ -37,7 +50,8 @@ def get_config():
                   'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.batch_size': [16],
                   'config.experiment.init_temperature': [1.0],
-                  'config.experiment.chain_length': [10001],
+                  'config.experiment.chain_length': [20001],
+                  'sampler_config.adaptive': [False],
               },
               {
                   'sampler_config.name': [
@@ -51,7 +65,7 @@ def get_config():
                   'config.experiment.t_schedule': ['exp_decay'],
                   'config.experiment.batch_size': [16],
                   'config.experiment.init_temperature': [1.0],
-                  'config.experiment.chain_length': [10001],
+                  'config.experiment.chain_length': [20001],
                   'sampler_config.solver': ['interpolate', 'euler_forward'],
               },
           ],

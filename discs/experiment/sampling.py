@@ -12,6 +12,7 @@ from ml_collections import config_dict
 import numpy as np
 import optax
 import tqdm
+from flax.core.frozen_dict import unfreeze, freeze
 
 
 class Experiment:
@@ -506,6 +507,8 @@ class CO_Experiment(Experiment):
     sample_idx, params, reference_obj = zip(*data_list)
     params = flax.core.frozen_dict.unfreeze(utils.tree_stack(params))
     self.ref_obj = jnp.array(reference_obj)
+    if self.config_model.name == 'mis':
+      self.ref_obj = jnp.ones_like(self.ref_obj)
     self.sample_idx = jnp.array(sample_idx)
     return params, x0, state, x0_es
 
@@ -688,3 +691,109 @@ class CO_Experiment(Experiment):
         sample_mask,
         best_samples,
     )
+
+
+class EBM_Experiment(Experiment):
+
+  def _initialize_model_and_sampler(self, rnd, model, sampler):
+    """Initializes model params, sampler state and gets the initial samples."""
+    rng_param, rng_x, rng_state = jax.random.split(rnd, num=3)
+    del rnd
+    params = model.make_init_params(rng_param)
+    params['temperature'] = 0
+    x  = model.get_init_samples(rng_x, self.config.batch_size)
+    state = sampler.make_init_state(rng_state)
+    return params, x, state
+
+  def _compile_fns(self, sampler, model):
+    if not self.parallel:
+      score_fn = jax.jit(model.forward)
+      step_fn = jax.jit(functools.partial(sampler.step, model=model))
+    else:
+      score_fn = jax.pmap(model.forward)
+      step_fn = jax.pmap(functools.partial(sampler.step, model=model))
+    return (
+        score_fn,
+        step_fn,
+    )
+  def _get_chains_and_evaluations(
+      self, model, sampler, evaluator, saver, rnd_key=0
+  ):
+    """Sets up the model and the samlping alg and gets the chain of samples."""
+
+    preprocessed_info = self.preprocess(
+        model, sampler, evaluator, saver, rnd_key=0
+    )
+    self._compute_chain(*preprocessed_info)
+    
+
+  def preprocess(self, model, sampler, evaluator, saver, rnd_key=0):
+    rnd = jax.random.PRNGKey(rnd_key)
+    params, x, state = self._initialize_model_and_sampler(rnd, model, sampler)
+    if self.parallel:        
+      params = jax.device_put_replicated(params, jax.local_devices())
+      state = jax.device_put_replicated(state, jax.local_devices())
+      assert self.config.batch_size % jax.local_device_count() == 0
+      nn = self.config.batch_size // jax.local_device_count()
+      x = x.reshape((jax.local_device_count(), nn)+self.config_model.shape)
+    compiled_fns = self._compile_fns(sampler, model)
+    return [
+        compiled_fns,
+        state,
+        params,
+        rnd,
+        x,
+        saver,
+        model,
+    ]
+
+  def _compute_chain(
+      self,
+      compiled_fns,
+      state,
+      params,
+      rng,
+      x,
+      saver,
+      model,
+  ):
+    """Generates the chain of samples."""
+
+
+    score_fn, stp_fn = compiled_fns
+    
+    logz_finals= []
+    log_w = jnp.zeros(self.config.batch_size)
+    if self.parallel:
+        log_w = log_w.reshape(x.shape[0], -1)
+
+    for step in tqdm.tqdm(range(1, 1 + self.config.chain_length)):
+      rng = jax.random.fold_in(rng, step)
+
+      old_val = score_fn(params, x)
+      if not self.parallel:
+          params['temperature'] = step * 1.0 / self.config.chain_length
+      else:
+          params['temperature'] = jnp.repeat(step*1.0/self.config.chain_length, x.shape[0])
+      
+    
+      log_w = log_w + score_fn(params, x) - old_val
+      if not self.parallel:
+        rng_step = rng
+      else:
+        rng_step = jax.random.split(rng, x.shape[0])
+      new_x, state, _ = stp_fn(
+          rng=rng_step,
+          x=x,
+          model_param=params,
+          state=state,
+      )
+      log_w_re = log_w.reshape(-1)
+      logz_final = jax.scipy.special.logsumexp(log_w_re, axis=0) - np.log(
+          self.config.batch_size
+      )
+      logz_finals.append(logz_final)
+      x = new_x
+      
+    saver.save_logz(logz_finals)
+

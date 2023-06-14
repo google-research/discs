@@ -15,7 +15,7 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     # pdb.set_trace()
     cur_step = state['steps']
     state['num_ll_calls'] += 4
-    if not self.adaptive or self.co_opt_prob:
+    if self.co_opt_prob or not self.adaptive:
       return
     if self.reset_z_est > 0:
       log_z = jnp.where(
@@ -31,7 +31,6 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     n = n + 3 * (acc - self.target_acceptance_rate)
     state['log_tau'] = jnp.clip(jnp.log(n) - log_z, a_min=-log_z)
     state['log_z'] = log_z
-
 
   def select_sample(
       self, rng, local_stats, log_acc, current_sample, new_sample, sampler_state
@@ -83,19 +82,23 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
     rng_new_sample, rng_acceptance = jax.random.split(rng)
 
     ll_x, log_rate_x = self.get_value_and_rates(model, model_param, x)
-    local_stats = self.reset_stats(log_rate_x['weights'])
-    log_tau = jnp.where(
-        state['steps'] == 0, local_stats['log_tau'], state['log_tau']
-    )
-    log_tau = jnp.where(
-        self.co_opt_prob, local_stats['log_tau'], log_tau
-    )
+    if self.adaptive:
+      local_stats = self.reset_stats(log_rate_x['weights'])
+      log_tau = jnp.where(
+          state['steps'] == 0, local_stats['log_tau'], state['log_tau']
+      )
+
+      log_tau = jnp.where(self.co_opt_prob, local_stats['log_tau'], log_tau)
+    else:
+      state['log_tau'] = jnp.where(state['steps']==0,  self.reset_stats(log_rate_x['weights'])['log_tau'], state['log_tau'])
+      log_tau = state['log_tau']
+      local_stats = None
+
     dist_x = self.get_dist_at(x, log_tau, log_rate_x)
     y, aux = self.sample_from_proposal(rng_new_sample, x, dist_x)
     ll_x2y = self.get_ll_onestep(dist_x, aux=aux)
-
     ll_y, log_rate_y = self.get_value_and_rates(model, model_param, y)
-    if self.co_opt_prob:
+    if self.adaptive and self.co_opt_prob:
       local_stats = self.reset_stats(log_rate_y['weights'])
       log_tau = local_stats['log_tau']
     dist_y = self.get_dist_at(y, log_tau, log_rate_y)
@@ -152,7 +155,7 @@ class CategoricalDLMC(DLMCSampler):
       log_posterior_x = log_tau + log_weight_x
     else:
       raise ValueError('Unknown solver for DLMC: %s' % self.solver)
-    
+
     log_posterior_x = log_posterior_x * (1 - x) + x * jnp.clip(
         jnp.log1p(
             -jnp.clip(

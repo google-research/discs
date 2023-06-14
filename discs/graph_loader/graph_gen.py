@@ -19,6 +19,8 @@ def get_graphs(config):
     return mis_loader.ErTestGraphGen(config.model.data_root, config.model)
   elif config.model.graph_type.startswith('satlib'):
     return mis_loader.SatLibGraphGen(config.model.data_root, config.model)
+  elif config.model.graph_type.startswith('er_density'):
+    return mis_loader.ErDensityGraphGen(config.model.data_root, config.model)
   elif config.model.graph_type.startswith('er'):
     return maxcut_loader.RandGraphGen(config.model.data_root, config.model)
   elif config.model.graph_type == 'rb':

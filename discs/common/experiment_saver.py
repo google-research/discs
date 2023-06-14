@@ -182,6 +182,13 @@ class Saver:
     ber_eval.plot_mixing_time_graph_over_chain(
         self.save_dir, model, params, samples
     )
+    
+  def save_logz(self, logz_finals):
+    path = os.path.join(self.save_dir, 'logz.pkl')
+    params_dict = {}
+    params_dict['logz'] = np.array(logz_finals)
+    with open(path, 'wb') as file:
+      pickle.dump(params_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def build_saver(save_dir, config):

@@ -4,24 +4,24 @@
 # evaluation_type=ess
 # key=chain_length
 
-# experiment_folder=discs-bernoulli-bernoulli_dlmcf_test_56881684
+# experiment_folder=discs-potts-shape_sweep_57372547
 # evaluation_type=ess
 # key=shape
 
-# experiment_folder=discs-bernoulli-lbf_sweep_56835977
+# experiment_folder=discs-potts-lbf_sweep_57372892
 # evaluation_type=ess
 # key=balancing_fn_type
 
-# experiment_folder=discs-categorical-num_categories_sweep_56828693
+# experiment_folder=discs-potts-num_categories_sweep_57372863
 # evaluation_type=ess
 # key=num_categories
 
 
-experiment_folder=discs-rbm-categ_sweep_57083467
+experiment_folder=discs-ising-model_config_sweep_extended_57873057
 evaluation_type=ess
 key=name
 
-# experiment_folder=discs-normcut-nets_sampler_sweep_56834938
+# experiment_folder=discs-normcut-inception_57768206
 # evaluation_type=co
 # key=name
 # graphtype=normcut

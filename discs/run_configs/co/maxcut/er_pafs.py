@@ -8,28 +8,18 @@ def get_config():
       dict(
           model='maxcut',
           sampler='path_auxiliary',
-          graph_type='optsicom',
+          graph_type='er',
           sweep=[
               {
+                  'config.experiment.chain_length': [50000],
                   'sampler_config.name': [
-                      'randomwalk',
-                      'blockgibbs',
-                      'hammingball',
-                  ],
-                  'model_config.cfg_str': [
-                      'r-b',
-                  ],
-                  'config.experiment.log_every_steps': [100],
-              },
-              {
-                  'sampler_config.name': [
-                      'dmala',
                       'path_auxiliary',
-                      'gwg',
-                      'dlmc',
                   ],
+                  'sampler_config.approx_with_grad': [False, True],
                   'model_config.cfg_str': [
-                      'r-b',
+                      'r-er-0.15-n-1024-1100',
+                      'r-er-0.15-n-512-600',
+                      'r-er-0.15-n-256-300',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [

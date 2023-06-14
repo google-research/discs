@@ -22,8 +22,16 @@ def get_config():
                   'sampler_config.name': [
                       'dmala',
                       'path_auxiliary',
+                  ],
+                  'config.experiment.log_every_steps': [100],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                  ],
+              },
+              {
+                  'sampler_config.adaptive': [False],
+                  'sampler_config.name': [
                       'gwg',
-                      'dlmc',
                   ],
                   'config.experiment.log_every_steps': [100],
                   'sampler_config.balancing_fn_type': [
