@@ -11,9 +11,9 @@ Then navigate to the root of project folder and run
 
 ## Sampling Experiment
 To run a sampling experiment, we need to setup the model we want to sample from, setup the sampler we want to use and also define the experiment setup. To achieve that three main components are required to run an experiment in this package:
-* Model configs which are defined under `./discs/models/configs/`. For each model its corresponding config contains the sample shape and its number of categories and the model specific parameters.
-* Sampler config which are defined under `./discs/sampelr/configs/`. For each sampler its corresponding config contains the parameters required to setup the sampler.
-* Experiment config which are defined under `./discs/experiment/configs/`. Note that the experimental setup varries dependent on the type of the model you wish to run. `./discs/experiment/configs/lm_experiment.py` contains the experiment setup for the `text_infilling` problem. `./discs/experiment/configs/co_experiment.py` contains the common values of a combinatorial optimization problem. Note that for the combinotorial optimization experiment, depending on the problem and type of the graph, the experimental setup varries which are defined under their corresponding folder in `./discs/experiment/configs/`
+* Model configs which are defined under `./discs/models/configs/`. For each model, its corresponding config contains the shape and number of categories of the sample + the parametets specific to that model.
+* Sampler config which are defined under `./discs/sampelr/configs/`. For each sampler, its corresponding config contains the parameters required to setup the sampler.
+* Experiment config which are defined under `./discs/experiment/configs/`. Note that the experimental setup varries dependent on the type of the model we wish to run. `./discs/experiment/configs/lm_experiment.py` contains the experiment setup for the `text_infilling` problem. `./discs/experiment/configs/co_experiment.py` contains the common configs of the combinatorial optimization problem. Note that for the combinotorial optimization experiment, depending on the problem tpye and its corresponding graph type, the experimental setup varries which are defined under their different folder in `./discs/experiment/configs/`.
   
     ### Run an experiment locally 
 
