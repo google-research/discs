@@ -51,31 +51,31 @@ Note that, for running energy-based models, `data_path` and for combinotorial op
 
 ### Run an experiment locally 
 
-    To run an experiment locally, under the root folder `./discs/`, run:
+To run an experiment locally, under the root folder `./discs/`, run:
 
-        model=bernoulli sampler=randomwalk ./discs/experiment/run_sampling_local.sh
+    model=bernoulli sampler=randomwalk ./discs/experiment/run_sampling_local.sh
 
-    For combinatorial optimization problems you further need to set the graph type:
+For combinatorial optimization problems you further need to set the graph type:
 
-        model=maxcut graph_type=ba sampler=path_auxiliary ./discs/experiment/run_sampling_local.sh
+    model=maxcut graph_type=ba sampler=path_auxiliary ./discs/experiment/run_sampling_local.sh
 
    
 ### Running an experiment on Xmanager
-    To run an experiment on xmanager, under the root folder `./discs/`, run:
+To run an experiment on xmanager, under the root folder `./discs/`, run:
 
-        config=./discs/run_configs/co/maxclique/rb_sampler_sweep.py ./discs/run_xmanager.sh
+    config=./discs/run_configs/co/maxclique/rb_sampler_sweep.py ./discs/run_xmanager.sh
 
-    Note that under the `./discs/run_configs/` you can find predefined experiment configs for all model types which are used to study the performance of different samplers and effect of different config values of models, samples and the experiment. The provided example above will run all the samplers on all the `maxclique` problems with graph type of `rb`. 
+Note that under the `./discs/run_configs/` you can find predefined experiment configs for all model types which are used to study the performance of different samplers and effect of different config values of models, samples and the experiment. The provided example above will run all the samplers on all the `maxclique` problems with graph type of `rb`. 
 
 
 
 ### Metric, Results and Plotting
-    Depending on the type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
-    * For the `classical model`, the ESS is computed over the chains after the burn-in phase. The ESS over running time and number of energy evaluations is being stored as a `csv` file. 
-    * For `combinatorial optimization`, the objective function is being evaluated throughout the chain generation and stored in a `pickle` file. Note that for `normcut` problem, the best sample is also being stored in the `pickle` for further post processing to get the `edge cut ratio` and `balanceness`. 
-    * For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, `self-bleu` and `unique-ngrams` are being stored in a pickle file. 
-    * For energy based models, the image of selected samples are also further saved through the chain generation.
-    To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
+Depending on the type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
+* For the `classical model`, the ESS is computed over the chains after the burn-in phase. The ESS over running time and number of energy evaluations is being stored as a `csv` file. 
+* For `combinatorial optimization`, the objective function is being evaluated throughout the chain generation and stored in a `pickle` file. Note that for `normcut` problem, the best sample is also being stored in the `pickle` for further post processing to get the `edge cut ratio` and `balanceness`. 
+* For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, `self-bleu` and `unique-ngrams` are being stored in a pickle file. 
+* For energy based models, the image of selected samples are also further saved through the chain generation.
+To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
 
 ## Data
 The data used in this package could be found [here](https://drive.google.com/drive/u/1/folders/1nEppxuUJj8bsV9Prc946LN_buo30AnDx).
