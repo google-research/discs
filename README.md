@@ -13,7 +13,31 @@ Then navigate to the root of project folder and run
 
 under the root folder, run 
 
-    model=bernoulli sampler=randomwalk ./experiments/run_sampling_local.sh
+    model=bernoulli sampler=randomwalk ./discs/experiment/run_sampling_local.sh
+
+For combinatorial optimization problems you further need to set the graph type:
+
+    model=maxcut graph_type=ba sampler=path_auxiliary ./discs/experiment/run_sampling_local.sh
+
+# List of samplers
+* randomwalk
+* hammingball
+* blockgibbs
+* path_auxiliary
+* dlmc
+* dmala
+
+# List of Models
+* Classical Models
+  * bernoulli
+  * categorical
+  * ising
+  * potts
+* Combinatorial Optimization problems
+  * maxcut
+  * maxclique
+  * mis
+  * normcut
 
 ## Test
 
