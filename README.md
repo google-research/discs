@@ -68,7 +68,10 @@ List of Models
     Depending on the type of the model we are running the sampling on, different metrics and results are being calculated and stored. For the `classical model`, ESS is being computed after the burn in phase and its being in stored in a `csv` file. For `combinatorial optimiation`, the objective function is being evaluated through out the trajectory and stored in a `pickle` file. For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, 'self-bleu` and 'unique-ngrams` are being stored in a pickle file. To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
 
 ## Data
-For combinatorial optimiza
+The data used in this package could be found [here](https://drive.google.com/corp/drive/u/0/folders/1QvRlqRi2-BbDBZvmXStM_v_I4wvLGTJI?resourcekey=0-4D8AT7s80EPgbj6klqR-lA)
+The data mainly contains the following components:
+* Graph data of combinatorial optimization for each model problem and graph type.
+* Text infilling data and the bert-base-uncased model.
 
 ## Test
 
