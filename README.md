@@ -18,7 +18,7 @@ Three main components are required to run an experiment:
 * experiment_config
   contains the information on the sampling experiment such as chain lenght, number of chains, saving directories and, etc.
   
-    # Run sampling locally 
+    ### Run sampling locally 
 
     To run an expriment locally, under the root folder ./discs/, run 
 
@@ -55,7 +55,7 @@ Three main components are required to run an experiment:
     * resnet
     * text_infilling (language model)
 
-    ## Running on xmanager
+    ### Running on xmanager
     To run an experiment on xmanager, under the root folder ./discs/
 
         config=./discs/run_configs/co/maxclique/rb_sampler_sweep.py ./discs/run_xmanager.sh
