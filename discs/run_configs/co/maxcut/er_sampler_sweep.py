@@ -76,7 +76,7 @@ def get_config():
                   'sampler_config.name': [
                       'path_auxiliary',
                   ],
-                  'sampler_config.approx_with_grad': [False],
+                  'sampler_config.approx_with_grad': [True],
                   'model_config.cfg_str': [
                       'r-er-0.15-n-1024-1100',
                       'r-er-0.15-n-512-600',

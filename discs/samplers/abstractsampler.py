@@ -25,8 +25,9 @@ class AbstractSampler(abc.ABC):
       x_mask: (optional) broadcast to x, masking out certain dimensions.
 
     Returns:
-      new_sample: new sample.
+      new_x: new sample.
       new_state: new sampler state.
+      acc: acceptance ratio.
     """
     pass
 

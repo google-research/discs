@@ -1,17 +1,17 @@
 """EBM for combinatorial optimization problems."""
 
-from discs.models import abstractmodel
 from discs.common.utils import get_datagen
+from discs.models import abstractmodel
 import jax
-import ml_collections
 import jax.numpy as jnp
-import pdb
+import ml_collections
 
 
 class CombEBM(abstractmodel.AbstractModel):
   """Comb-opt EBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
+    # loads the data from model config data_root
     self.datagen = get_datagen(config)
 
   def make_init_params(self, rng):

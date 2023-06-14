@@ -1,4 +1,4 @@
-"""LLM Factorized Energy Function."""
+"""LM Factorized Energy Function."""
 
 import json
 import os
@@ -12,7 +12,7 @@ from transformers import BertTokenizer
 
 
 class TextInfilling(abstractmodel.AbstractModel):
-  """Categorical Distribution."""
+  """Language Model for text infilling."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.tokenizer = BertTokenizer.from_pretrained(config.bert_model)
@@ -123,30 +123,6 @@ class TextInfilling(abstractmodel.AbstractModel):
 
     mask_dummy_array = jnp.zeros([1, self.num_categories])
     mask_dummy_array = mask_dummy_array.at[1, self.mask_token].set(1.0)
-    """loglikelihood = 0.0
-
-    def func_body(i, val):
-      pdb.set_trace()
-      x, params, mask_dummy_array, loglikelihood = val
-      x_new = x.at[:, i, :].set(mask_dummy_array)
-      outputs = self.model(
-          input_ids=params['input_ids'],
-          infill_one_hots=x_new,
-          infill_pos=self.infill_pos,
-          attention_mask=params['attention_mask'],
-          token_type_ids=params['token_type_ids'],
-      )
-      logits = outputs.logits
-      loglikelihood = loglikelihood + jnp.sum(
-          logits[:, self.infill_pos[i], :] * x[:, i, :], axis=-1
-      )
-      return (x, params, mask_dummy_array, loglikelihood)
-
-    init_val = (x, params, mask_dummy_array, loglikelihood)
-    _, _, _, loglikelihood = jax.lax.fori_loop(
-        0, len(self.infill_pos), func_body, init_val
-    )"""
-
     loglikelihood = 0.0
     for i in range(0, len(self.infill_pos)):
       x_new = x.at[:, i, :].set(mask_dummy_array)

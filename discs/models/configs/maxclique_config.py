@@ -1,6 +1,4 @@
-"""Config file for graph models for maxcut problem."""
-
-import importlib
+"""Config file for graph models for maxclique problem."""
 from ml_collections import config_dict
 
 def get_config():

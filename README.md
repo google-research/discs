@@ -34,17 +34,19 @@ List of Models
     * fhmm
 * Combinatorial optimization problems
     * maxcut
-        * graph types: ba, er, optsicom
+        * ba, er, optsicom
     * maxclique
-        * graph types: rb, twitter
+        * rb, twitter
     * mis
-        * graph types: er_density, ertest, satlib
+        * er_density, ertest, satlib
     * normcut
         * nets: INCEPTION, ALEXNET, MNIST, RESNET, VGG
 * Energy based models
     * rbm
     * resnet
     * text_infilling (language model)
+
+Note that, for running energy-based models and combinotorial optimization problems, `data_root` in the model config should be set correctly. For the text infilling, additionally `bert_model` model config should point to the bert model. Further information on the data will be found in the following sections.
 
     ### Run an experiment locally 
 
@@ -64,6 +66,8 @@ List of Models
 
     Note that under the `./discs/run_configs/` you can find predefined experiment configs for all model types which are used to study the performance of different samplers and effect of different config values of models, samples and the experiment. The provided example above will run all the samplers on all the `maxclique` problems with graph type of `rb`. 
 
+
+
     ### Metric, Results and Plotting
     Depending on the type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
     * For the `classical model`, the ESS is computed over the chains after the burn-in phase. The ESS over running time and number of energy evaluations is being stored as a `csv` file. 
@@ -73,12 +77,12 @@ List of Models
     To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
 
 ## Data
-The data used in this package could be found [here](https://drive.google.com/corp/drive/u/0/folders/1QvRlqRi2-BbDBZvmXStM_v_I4wvLGTJI?resourcekey=0-4D8AT7s80EPgbj6klqR-lA).
+The data used in this package could be found [here](https://drive.google.com/drive/u/1/folders/1nEppxuUJj8bsV9Prc946LN_buo30AnDx).
 The data contains the following components:
-* Graph data of combinatorial optimization problems for different graph types.
-* Model parameters for resnet and rbm.
-* Text infilling data
-Note that `bert-base-uncased` could be downloade from [here](https://huggingface.co/bert-base-uncased)
+* Graph data of combinatorial optimization problems for different graph types under `/DISCS-DATA/sco/`.
+* Model parameters for energy-based models found at 'DISCS-DATA/BINARY_EBM' and 'DISCS-DATA/RBM_DATA'. Binray ebm is trained on MNIST, Omniglot, and Caltech dataset and binary and categorical RBM are trained on MNIST and Fashion-MNIST dataset. For the launguage model, you could download the model parameters from [here](https://huggingface.co/bert-base-uncased).
+* Text infilling data generated from WT103 and TBC found at `/DISCS-DATA/text_infilling_data/`.
+
 
 ## Test
 

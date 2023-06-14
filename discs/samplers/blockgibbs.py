@@ -1,7 +1,6 @@
-"""Gibbs Sampler Class."""
+"""Block gibbs Sampler Class."""
 
 from itertools import product
-import pdb
 from discs.common import math_util as math
 from discs.samplers import abstractsampler
 import jax
@@ -11,7 +10,7 @@ import ml_collections
 
 
 class BlockGibbsSampler(abstractsampler.AbstractSampler):
-  """Gibbs Sampler Class."""
+  """Block gibbs Sampler Class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.sample_shape = config.model.shape
@@ -38,19 +37,6 @@ class BlockGibbsSampler(abstractsampler.AbstractSampler):
     return sampler_state
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
-    """Given the current sample, returns the next sample of the chain.
-
-    Args:
-      model: target distribution.
-      rnd: random key generator for JAX.
-      x: current sample.
-      model_param: target distribution parameters used for loglikelihood
-        calulation.
-      state: the state of the sampler.
-
-    Returns:
-      New sample.
-    """
     _ = x_mask
 
     def get_ll_at_block(indices_to_flip, x, model_param):
