@@ -5,9 +5,7 @@ import os
 import pdb
 import pickle
 from discs.evaluators import bernoulli_eval as b_eval
-import jax
 import jax.numpy as jnp
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import ml_collections
 import numpy as np
@@ -49,7 +47,7 @@ class Saver:
     plt.savefig(path)
     plt.close()
 
-  def _save_results(self, metrcis, running_time):
+  def _save_ess_results(self, metrcis, running_time):
     """Saving the Evaluation Results in txt and CSV file."""
 
     results = {}
@@ -113,7 +111,7 @@ class Saver:
       self._plot_acc_ratio(acc_ratio)
       self._plot_hops(hops)
     if self.config.experiment.evaluator == 'ess_eval':
-      self._save_results(metrcis, running_time)
+      self._save_ess_results(metrcis, running_time)
 
   def dump_samples(self, samples, visualize=False):
     root_path = self.save_dir
@@ -136,7 +134,7 @@ class Saver:
           )
           plt.imsave(image_path, np.array(img), cmap=cm.gray)
 
-  def dump_results(self, trajectory, best_ratio, running_time, best_samples):
+  def save_co_resuts(self, trajectory, best_ratio, running_time, best_samples):
     if not os.path.isdir(self.save_dir):
       os.makedirs(self.save_dir)
     path = os.path.join(self.save_dir, 'results.pkl')
@@ -165,8 +163,7 @@ class Saver:
     with open(path, 'wb') as file:
       pickle.dump(params_dict, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-
-  def dump_dict(self, results, results_topk):
+  def save_lm_results(self, results, results_topk):
     if not os.path.isdir(self.save_dir):
       os.makedirs(self.save_dir)
     path = os.path.join(self.save_dir, 'results.pkl')
@@ -182,7 +179,7 @@ class Saver:
     ber_eval.plot_mixing_time_graph_over_chain(
         self.save_dir, model, params, samples
     )
-    
+
   def save_logz(self, logz_finals):
     path = os.path.join(self.save_dir, 'logz.pkl')
     params_dict = {}

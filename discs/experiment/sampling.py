@@ -373,7 +373,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
       )
     else:
       res_topk = []
-    saver.dump_dict(res, res_topk)
+    saver.save_lm_results(res, res_topk)
 
   def _get_chains_and_evaluations(
       self, model, sampler, evaluator, saver, rnd_key=0
@@ -664,7 +664,7 @@ class CO_Experiment(Experiment):
 
     if not (self.config.save_samples or self.config_model.name == 'normcut'):
       best_samples = []
-    saver.dump_results(
+    saver.save_co_resuts(
         chain, best_ratio[sample_mask], running_time, best_samples
     )
     saver.save_results(acc_ratios, hops, None, running_time)

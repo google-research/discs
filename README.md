@@ -65,13 +65,20 @@ List of Models
     Note that under the `./discs/run_configs/` you can find predifined experiment configs for all model types which are used to study the performance of different samplers and effect of different config values of models, samples and the experiment. The provided example above will run all the samplers on all the `maxclique` problems with graph type of `rb`. 
 
     ### Metric, Results and Plotting
-    Depending on the type of the model we are running the sampling on, different metrics and results are being calculated and stored. For the `classical model`, ESS is being computed after the burn in phase and its being in stored in a `csv` file. For `combinatorial optimiation`, the objective function is being evaluated through out the trajectory and stored in a `pickle` file. For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, 'self-bleu` and 'unique-ngrams` are being stored in a pickle file. To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
+    Depending on the type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
+    * For the `classical model`, the ESS is being computed over the chains after the burn-in phase. The ESS over running time and number of energy evaluations is being stored as a `csv` file. 
+    * For `combinatorial optimiation`, the objective function is being evaluated through out the chain generation and stored in a `pickle` file. Note that for `normcut` problem, the best sample is also being stored in the `pickle` for further post processing to get the `edge cut ratio` and `balanceness`. 
+    * For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, `self-bleu` and `unique-ngrams` are being stored in a pickle file. 
+    * For energy based models, the image of selected samples are also further saved through the chain generation.
+    To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
 
 ## Data
-The data used in this package could be found [here](https://drive.google.com/corp/drive/u/0/folders/1QvRlqRi2-BbDBZvmXStM_v_I4wvLGTJI?resourcekey=0-4D8AT7s80EPgbj6klqR-lA)
-The data mainly contains the following components:
-* Graph data of combinatorial optimization for each model problem and graph type.
-* Text infilling data and the bert-base-uncased model.
+The data used in this package could be found [here](https://drive.google.com/corp/drive/u/0/folders/1QvRlqRi2-BbDBZvmXStM_v_I4wvLGTJI?resourcekey=0-4D8AT7s80EPgbj6klqR-lA).
+The data contains the following components:
+* Graph data of combinatorial optimization problems for different graph types.
+* Model parameters for resnet and rbm.
+* Text infilling data
+Note that `bert-base-uncased` could be downloade from [here](https://huggingface.co/bert-base-uncased)
 
 ## Test
 
