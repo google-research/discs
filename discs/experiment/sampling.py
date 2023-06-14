@@ -28,12 +28,11 @@ class Experiment:
   def _initialize_model_and_sampler(self, rnd, model, sampler):
     """Initializes model params, sampler state and gets the initial samples."""
 
-    if self.config.num_models != 1:
-      model_init_params_fn = jax.vmap(model.make_init_params)
+    if self.config.evaluator == 'co_eval':
       sampler_init_state_fn = jax.vmap(sampler.make_init_state)
     else:
-      model_init_params_fn = model.make_init_params
       sampler_init_state_fn = sampler.make_init_state
+    model_init_params_fn = model.make_init_params
     rng_param, rng_x0, rng_state = jax.random.split(rnd, num=3)
     # params of the model
     params = model_init_params_fn(
@@ -50,22 +49,9 @@ class Experiment:
 
   def _prepare_data(self, params, x, state):
 
-    pdb.set_trace()
-    for key in params.keys():
-        print(key)
-        try:
-          print(params[key].shape)
-        except:
-          continue
-    for key in state.keys():
-        print(key)
-        print(state[key].shape)
-
-    print("*****************************")
-
     use_put_replicated = False
     reshape_all = True
-    if self.config.num_models == 1:
+    if self.config.evaluator != 'co_eval':
       if self.parallel:
         assert self.config.batch_size % jax.local_device_count() == 0
         mini_batch = self.config.batch_size // jax.local_device_count()
@@ -118,18 +104,6 @@ class Experiment:
 
     print('x shape: ', x.shape)
     print('state shape: ', state['steps'].shape)
-    
-    
-    for key in params.keys():
-      print(key)
-      try:
-        print(params[key].shape)
-      except:
-        continue
-    for key in state.keys():
-        print(key)
-        print(state[key].shape)
-
     return params, x, state, bshape
 
   def _compile_sampler_step(self, step_fn):
@@ -147,7 +121,7 @@ class Experiment:
     return compiled_obj_fn
 
   def _compile_fns(self, sampler, model, evaluator):
-    if self.config.num_models != 1:
+    if self.config.evaluator == 'co_eval':
       step_fn = jax.vmap(functools.partial(sampler.step, model=model))
       obj_fn = self._vmap_evaluator(evaluator, model)
     else:
@@ -245,7 +219,6 @@ class Sampling_Experiment(Experiment):
       saver,
       evaluator,
       bshape,
-      fn_reshape,
       model,
   ):
     """Generates the chain of samples."""
@@ -253,7 +226,7 @@ class Sampling_Experiment(Experiment):
     (chain, acc_ratios, hops, running_time, samples) = (
         self._initialize_chain_vars()
     )
-    #fn_reshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
+    fn_reshape = lambda x: jnp.reshape(x, bshape + x.shape[1:])
     # sample used to map for ess computation
     rng_x0_ess, rng = jax.random.split(rng)
     x0_ess = model.get_init_samples(rng_x0_ess, 1)
@@ -593,8 +566,6 @@ class CO_Experiment(Experiment):
     burn_in_length = int(self.config.chain_length * self.config.ess_ratio) + 1
 
     for step in tqdm.tqdm(range(1, burn_in_length)):
-
-      pdb.set_trace()
       cur_temp = t_schedule(step)
       params['temperature'] = init_temperature * cur_temp
       rng = jax.random.fold_in(rng, step)
