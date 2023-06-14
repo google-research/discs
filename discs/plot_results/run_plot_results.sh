@@ -21,11 +21,10 @@
 # evaluation_type=ess
 # key=name
 
-experiment_folder=discs-mis-er_010_lambda_58250366
+experiment_folder=discs-mis-er_density_penalty_58279781
 evaluation_type=co
-key=name
+key=penalty
 graphtype=mis
-
 
 data_path="./${experiment_folder}"
 

@@ -197,7 +197,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
     elif key_diff == 'num_categories':
       key_diff = 'number of categories'
     if key_diff != 'name':
-      plt.title(f'Effect of {key_diff} on {model}', fontsize=18)
+      #plt.title(f'Effect of {key_diff} on {model}', fontsize=18)
+      print("yum")
     else:
       if model == 'Bernoulli':
         splits = str.split(save_title, ',')
@@ -279,8 +280,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
                   fontsize=18,
               )
               break
-      else:
-        plt.title(f'{model} model', fontsize=18)
+      # else:
+      #   plt.title(f'{model} model', fontsize=18)
 
     if len(xticks) != 1:
       if model not in ['Potts', 'Ising']:
@@ -312,10 +313,32 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       )
 
     if GRAPHTYPE.value == 'mis':
-      if values[-1] > 100:
-        plt.ylabel('Size of Independent Set', fontsize=16)
-      else:
-        plt.ylabel('Ratio \u03B1', fontsize=16)
+      
+      plt.ylabel('Size of Independent Set', fontsize=16)
+      plt.xlabel("λ", fontsize=16)
+      
+      splits = str.split(save_title, ',')
+      for split in splits:
+        if split.startswith('cfg_str'):
+          val = str.split(split, '=')[1][-4:]
+          if val == '0.05':
+            plt.ylim(95, 115)
+            plt.axhline(y=98.59, color='black', linestyle='--')
+          elif val == '0.10':
+            plt.ylim(55, 70)
+            plt.axhline(y=57.4, color='black', linestyle='--')
+          elif val == '0.20':
+            plt.ylim(30, 40)
+            plt.axhline(y=31.56, color='black', linestyle='--')
+          elif val == '0.25':
+            plt.ylim(24, 33)
+            plt.axhline(y=26.25, color='black', linestyle='--')
+          elif val == '800':
+            plt.axhline(y=44.87, color='black', linestyle='--')
+            plt.ylim(85, 100)
+
+      # else:
+      #   plt.ylabel('Ratio \u03B1', fontsize=16)
     elif GRAPHTYPE.value == 'maxclique':
       plt.ylabel('Ratio \u03B1', fontsize=16)
       # plt.ylim(0.5, 1.1)
@@ -399,7 +422,7 @@ def sort_based_on_key(folders, key_diff):
     if value_of_keydiff.find('(') != -1:
       value_of_keydiff = value_of_keydiff[1 + value_of_keydiff.find('(') :]
     try:
-      keydiff_vals.append(int(float(value_of_keydiff)))
+      keydiff_vals.append(float(value_of_keydiff))
     except ValueError:
       keydiff_vals.append(str(value_of_keydiff))
       type_tick_str = True
@@ -557,8 +580,8 @@ def main(argv) -> None:
     x_ticks = x_ticks_new
 
   print('xtickssssss: ', x_ticks)
-  if FLAGS.evaluation_type == 'ess':
-    plot_results(all_mapped_names, key_diff, x_ticks)
+  # if FLAGS.evaluation_type == 'ess':
+  plot_results(all_mapped_names, key_diff, x_ticks)
   if FLAGS.evaluation_type == 'lm':
     save_result_as_csv(all_mapped_names, 'lm_csv')
   elif FLAGS.evaluation_type == 'co':
