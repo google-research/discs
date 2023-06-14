@@ -40,22 +40,22 @@ Three main components are required to run an experiment:
     Under the `./discs/models/` directory, you can see the list of all the models with their corresponding configuration under `./discs/samplers/configs/`.
     List of Models
     * Classical Models
-    * bernoulli
-    * categorical
-    * ising
-    * potts
-    * fhmm
+        * bernoulli
+        * categorical
+        * ising
+        * potts
+        * fhmm
     * Combinatorial optimization problems
-    * maxcut
-    * maxclique
-    * mis
-    * normcut
+        * maxcut
+        * maxclique
+        * mis
+        * normcut
     * Energy based models
-    * rbm
-    * resnet
-    * text_infilling (language model)
+        * rbm
+        * resnet
+        * text_infilling (language model)
 
-    ### Running on xmanager
+    ### Running on Xmanager
     To run an experiment on xmanager, under the root folder ./discs/
 
         config=./discs/run_configs/co/maxclique/rb_sampler_sweep.py ./discs/run_xmanager.sh
