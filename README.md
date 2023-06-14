@@ -48,7 +48,8 @@ List of Models
 
 Note that, for running energy-based models, `data_path` and for combinotorial optimization problems, `data_root`, in the model config should be set. For the text infilling model, additional path of `bert_model` should be set. Further information on the data will be found in the following sections.
 
-    ### Run an experiment locally 
+
+### Run an experiment locally 
 
     To run an experiment locally, under the root folder `./discs/`, run:
 
@@ -68,7 +69,7 @@ Note that, for running energy-based models, `data_path` and for combinotorial op
 
 
 
-    ### Metric, Results and Plotting
+### Metric, Results and Plotting
     Depending on the type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
     * For the `classical model`, the ESS is computed over the chains after the burn-in phase. The ESS over running time and number of energy evaluations is being stored as a `csv` file. 
     * For `combinatorial optimization`, the objective function is being evaluated throughout the chain generation and stored in a `pickle` file. Note that for `normcut` problem, the best sample is also being stored in the `pickle` for further post processing to get the `edge cut ratio` and `balanceness`. 
