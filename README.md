@@ -10,7 +10,7 @@ Then navigate to the root of the project folder `./discs/` and run
     pip install -e .
 
 ## Sampling Experiment
-To run a sampling experiment, we need to set up the model we want to sample from, set up the sampler we want to use and also define the experiment setup. To achieve that three main components are required to run an experiment in this package:
+To run a sampling experiment, we need to set up the model we want to sample from, set up the sampler we want to use and also define the experimental setup (number of chains, chain length, etc.). To achieve that three main components are required to run an experiment in this package:
 * Model configs which are defined under `./discs/models/configs/`. For each model, its corresponding config contains the shape and the number of categories of the sample + the parameter values specific to that model.
 * Sampler config which are defined under `./discs/samplers/configs/`. For each sampler, its corresponding config contains the parameters required to setup the sampler.
 * Experiment config which are defined under `./discs/experiment/configs/`. Note that the experimental setup varries dependent on the type of the model we wish to run. `./discs/experiment/configs/lm_experiment.py` contains the experiment setup for the `text_infilling` problem. `./discs/experiment/configs/co_experiment.py` contains the common configs of the combinatorial optimization problem. Note that for the combinatorial optimization experiment, depending on the problem tpye and its corresponding graph type, the experimental setup varries which are defined under their different folder in `./discs/experiment/configs/`.
