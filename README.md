@@ -1,4 +1,4 @@
-# discrete_mcmc
+# DISCS
 
 ## Installation
 
