@@ -1,3 +1,4 @@
+"""Config file for ising model."""
 from ml_collections import config_dict
 
 

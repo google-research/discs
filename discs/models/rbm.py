@@ -1,4 +1,4 @@
-"""Potts Energy Function."""
+"""RBM Energy Function."""
 
 import functools
 import os

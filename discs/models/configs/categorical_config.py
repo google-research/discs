@@ -1,5 +1,5 @@
+"""Config file for categorical models."""
 from ml_collections import config_dict
-
 
 def get_config():
   model_config = dict(

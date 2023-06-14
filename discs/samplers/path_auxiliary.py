@@ -40,10 +40,6 @@ class PathAuxiliarySampler(locallybalanced.LocallyBalancedSampler):
     return y, new_state
 
 
-class PASTrajectory(PathAuxiliarySampler):
-  pass
-
-
 class PAFSNoReplacement(PathAuxiliarySampler):
   """Path auxiliary sampler with no replacement proposal sampling."""
 

@@ -24,20 +24,6 @@ class RandomWalkSampler(abstractsampler.AbstractSampler):
     return state
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
-    """Given the current sample, returns the next sample of the chain.
-
-    Args:
-      model: target distribution.
-      rng: random key generator for JAX.
-      x: current sample.
-      model_param: target distribution parameters used for loglikelihood
-        calulation.
-      state: the state of the sampler.
-      x_mask: (optional) broadcast to x, masking out certain dimensions.
-
-    Returns:
-      New sample.
-    """
     _ = x_mask
     rng_new_sample, rng_acceptance = jax.random.split(rng)
     ll_x = model.forward(model_param, x)

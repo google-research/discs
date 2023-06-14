@@ -1,11 +1,9 @@
-"""Experiment class that runs sampler on the model to generate chains."""
+"""Main class that runs sampler on the model to generate chains."""
 import functools
-import pdb
 import time
 from discs.common import math_util as math
 from discs.common import utils
 import flax
-from flax.core.frozen_dict import unfreeze
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -48,7 +46,6 @@ class Experiment:
     return params, x0, state
 
   def _prepare_data(self, params, x, state):
-
     use_put_replicated = False
     reshape_all = True
     if self.config.evaluator != 'co_eval':
@@ -203,7 +200,7 @@ class Experiment:
 
 
 class Sampling_Experiment(Experiment):
-  """Experiment class that generates chains of samples."""
+  """Class used to run classical graphical models and computes ESS."""
 
   def _vmap_evaluator(self, evaluator, model):
     obj_fn = evaluator.evaluate
@@ -350,6 +347,7 @@ class Sampling_Experiment(Experiment):
 
 
 class Text_Infilling_Experiment(Sampling_Experiment):
+  """Class used to sample sentences for text infilling."""
 
   def get_results(self, model, sampler, evaluator, saver):
     obj_fn = jax.jit(evaluator.evaluate)
@@ -383,18 +381,6 @@ class Text_Infilling_Experiment(Sampling_Experiment):
     )
     if not preprocessed_info:
       return False, None, None
-
-    # def body_fun(i, val):
-    #   pdb.set_trace()
-    #   sentences, preprocces_info =  val
-    #   sent, rng = self._compute_chain(*preprocessed_info)
-    #   preprocessed_info = preprocessed_info.at[3].set(rng)
-    #   sentences.append(sent)
-    #   return (sentence, preprocessed_info)
-    # init_val = ([], preprocessed_info)
-    # _ = jax.lax.fori_loop(
-    #    0, self.config.num_same_resample, body_fun, init_val
-    # )
     sentences = []
     loglikes = []
     topk_sentences = []
@@ -490,6 +476,7 @@ class Text_Infilling_Experiment(Sampling_Experiment):
 
 
 class CO_Experiment(Experiment):
+  """Class used to run annealing schedule for CO problems."""
 
   def get_results(self, model, sampler, evaluator, saver):
     while True:

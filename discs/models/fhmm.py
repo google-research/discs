@@ -1,8 +1,6 @@
 """FHMM Factorized Energy Function."""
 
 import functools
-import pdb
-from discs.common import math_util as math
 from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
@@ -10,6 +8,7 @@ import ml_collections
 
 
 class FHMM(abstractmodel.AbstractModel):
+  """FHMM class."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.shape = config.shape
@@ -57,12 +56,10 @@ class BinaryFHMM(FHMM):
     return x
 
   def sample_Y(self, rng, x, w, b):
-    return (
-        jax.random.normal(rng, (self.l, 1)) * self.sigma + x @ w + b
-    )
+    return jax.random.normal(rng, (self.l, 1)) * self.sigma + x @ w + b
 
   def log_probab_of_px(self, x, p):
-    return jnp.log(p) * x + jnp.log(1 - p) * (1-x)
+    return jnp.log(p) * x + jnp.log(1 - p) * (1 - x)
 
   def get_init_samples(self, rng, num_samples: int):
     x0 = jax.random.bernoulli(
@@ -72,12 +69,11 @@ class BinaryFHMM(FHMM):
     return x0
 
   def forward(self, params, x):
-    
     x = x.reshape(-1, self.l, self.k)
     w = params['w']
     b = params['b']
     y = params['y']
-    logp_y = -jnp.sum(jnp.square(y - (x@w) - b), [-1, -2]) / (
+    logp_y = -jnp.sum(jnp.square(y - (x @ w) - b), [-1, -2]) / (
         2 * self.sigma**2
     )
     x_0 = x[:, 0, :]
@@ -89,6 +85,7 @@ class BinaryFHMM(FHMM):
     )
     loglikelihood = logp_x + logp_y
     return loglikelihood
+
 
 class CategFHMM(FHMM):
   """FHMM Distribution."""
@@ -117,7 +114,7 @@ class CategFHMM(FHMM):
     alpha = alpha.at[0].set(1 - self.alpha)
     alpha = alpha.at[1:].set(self.alpha * alpha[1:] / jnp.sum(alpha[1:]))
     alpha_logits = jnp.log(alpha)
-    self.p_x0= functools.partial(jax.random.categorical, logits=alpha_logits)
+    self.p_x0 = functools.partial(jax.random.categorical, logits=alpha_logits)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, self.num_categories))  # [k, n]
     b = jax.random.normal(rng3, (1, 1))  # [1, 1]

@@ -1,17 +1,17 @@
+"""Deep Energy Based Models."""
 import os
 import pickle
 from discs.models import abstractmodel
 import flax
-import jax
-import jax.numpy as jnp
 import ml_collections
 import yaml
-import pdb
+
 
 class DeepEBM(abstractmodel.AbstractModel):
   """Deep EBM."""
 
   def __init__(self, config: ml_collections.ConfigDict):
+    # loads the data from model config data_path
     if config.get('data_path', None):
       self.load_params_configs(config)
 
