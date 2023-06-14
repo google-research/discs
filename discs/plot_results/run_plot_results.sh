@@ -17,14 +17,14 @@
 # key=num_categories
 
 
-experiment_folder=discs-ising-model_config_sweep_extended_57873057
-evaluation_type=ess
-key=name
-
-# experiment_folder=discs-normcut-inception_57768206
-# evaluation_type=co
+# experiment_folder=discs-ising-model_config_sweep_extended_57873057
+# evaluation_type=ess
 # key=name
-# graphtype=normcut
+
+experiment_folder=discs-mis-er_010_lambda_58250366
+evaluation_type=co
+key=name
+graphtype=mis
 
 
 data_path="./${experiment_folder}"
