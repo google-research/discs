@@ -60,7 +60,7 @@ Note that, for running energy-based models, `data_path` and for combinotorial op
         model=maxcut graph_type=ba sampler=path_auxiliary ./discs/experiment/run_sampling_local.sh
 
    
-    ### Running an experiment on Xmanager
+### Running an experiment on Xmanager
     To run an experiment on xmanager, under the root folder `./discs/`, run:
 
         config=./discs/run_configs/co/maxclique/rb_sampler_sweep.py ./discs/run_xmanager.sh
