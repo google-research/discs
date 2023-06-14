@@ -1,13 +1,10 @@
 """Main script for sampling based experiments."""
 import importlib
-import logging
-import os
-import pdb
 from absl import app
 from absl import flags
 from discs.common import configs as common_configs
+from discs.common import utils
 import discs.common.experiment_saver as saver_mod
-import discs.common.utils as utils
 from ml_collections import config_flags
 
 
@@ -30,6 +27,7 @@ def get_save_dir(config):
 
 
 def get_main_config():
+  """Merge experiment, model and sampler config."""
   config = common_configs.get_config()
   if (
       'graph_type' not in _MODEL_CONFIG.value

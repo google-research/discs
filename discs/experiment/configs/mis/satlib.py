@@ -1,5 +1,4 @@
-"""Config for satlib dataset."""
-
+"""Experiment config for satlib dataset."""
 from ml_collections import config_dict
 
 
@@ -18,5 +17,4 @@ def get_config():
           save_root='',
       )
   )
-
   return config_dict.ConfigDict(exp_config)

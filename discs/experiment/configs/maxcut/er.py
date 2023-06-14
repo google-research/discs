@@ -1,3 +1,4 @@
+"""Experiment config for maxcut er dataset."""
 from ml_collections import config_dict
 
 

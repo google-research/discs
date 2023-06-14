@@ -1,14 +1,12 @@
-import copy
 import csv
 import os
 import pdb
 import pickle
 from absl import app
 from absl import flags
-from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
-
+import plot_utils as utils
 
 flags.DEFINE_string(
     'gcs_results_path',
@@ -21,26 +19,7 @@ GRAPHTITLE = flags.DEFINE_string('graphtitle', 'sampler', 'title of the graph')
 GRAPHLABEL = flags.DEFINE_string('graphlabel', 'sampler', 'title of the graph')
 
 FLAGS = flags.FLAGS
-
 DEFAULT_SAMPLER = 'dlmc(s)'
-
-color_map = {}
-color_map['rmw'] = 'green'
-color_map['fdl'] = 'gray'
-color_map['pas'] = 'saddlebrown'
-color_map['gwg'] = 'red'
-color_map['bg-'] = 'orange'
-color_map['dma'] = 'purple'
-color_map['hb-'] = 'blue'
-
-
-def get_color(sampler):
-  if sampler[0:4] != 'dlmc':
-    return color_map[sampler[0:3]]
-  else:
-    if sampler[0:5] == 'dlmcf':
-      return 'gray'
-  return 'pink'
 
 
 def get_diff_key(key_diff, dict1, dict2):
@@ -97,7 +76,6 @@ def plot_graph_cluster(num, key, dict_results, indeces):
   label_to_last_val = {}
   save_title_set = False
   for x_label in ['Steps', 'Time (s)']:
-  
     for i, index in enumerate(indeces):
       # computing graph name config-based
       if not save_title_set:
@@ -129,13 +107,6 @@ def plot_graph_cluster(num, key, dict_results, indeces):
           * int(dict_results[index]['results']['log_every_steps'])
       )
       idx = 0
-      # if GRAPHTYPE.value == 'maxcut':
-      #   idx = 0
-      # elif GRAPHTYPE.value == 'mis':
-      #   idx = 0
-      # else:
-      #   idx = 5
-      # x = x[idx:]
       traj_mean = traj_mean[idx:]
       traj_var = 0 * traj_var[idx:]
 
@@ -143,14 +114,11 @@ def plot_graph_cluster(num, key, dict_results, indeces):
         x = np.arange(0, 1, (1 / len(x))) * float(
             result['results']['running_time']
         )
-      
-      
       # plt.xscale('log')
-      # plotting
       plt.plot(
           x,
           traj_mean,
-          color=get_color(key_value),
+          color=utils.get_color(key_value),
           label=f'{key_value}',
           linewidth=2,
       )
@@ -160,9 +128,8 @@ def plot_graph_cluster(num, key, dict_results, indeces):
           traj_mean - traj_var,
           traj_mean + traj_var,
           alpha=0.25,
-          color=get_color(key_value),
+          color=utils.get_color(key_value),
       )
-
     sorted_label_bo_value = {
         k: v
         for k, v in sorted(
@@ -203,21 +170,21 @@ def plot_graph_cluster(num, key, dict_results, indeces):
             plt.ylim(-100, 115)
             plt.axhline(y=98.59, color='black', linestyle='--')
           elif val == '0.10':
-            plt.ylim(-100,70)
+            plt.ylim(-100, 70)
             plt.axhline(y=57.4, color='black', linestyle='--')
           elif val == '0.20':
-            plt.ylim(-100,45)
+            plt.ylim(-100, 45)
             plt.axhline(y=31.56, color='black', linestyle='--')
           elif val == '0.25':
-            plt.ylim(-100,35)
+            plt.ylim(-100, 35)
             plt.axhline(y=26.25, color='black', linestyle='--')
           elif val == '800':
             plt.axhline(y=44.87, color='black', linestyle='--')
-            plt.ylim(-500,100)
+            plt.ylim(-500, 100)
           elif val == '10k':
             plt.axhline(y=381.31, color='black', linestyle='--')
             plt.ylim(-1000, 500)
-          elif val =='dlmc(s)':
+          elif val == 'dlmc(s)':
             plt.axhline(y=425.96, color='black', linestyle='--')
             plt.ylim(300, 450)
 
@@ -225,13 +192,13 @@ def plot_graph_cluster(num, key, dict_results, indeces):
       plt.ylabel('Size of Independent Set', fontsize=16)
     elif GRAPHTYPE.value == 'maxclique':
       plt.ylabel('Ratio \u03B1', fontsize=16)
-      
+
       if graph_save == 'cfg_str=dlmc(s),':
         plt.ylim(bottom=0, top=1.1)
       else:
         plt.axhline(y=0.789, color='black', linestyle='--')
         plt.ylim(bottom=0, top=1.1)
-  
+
     if GRAPHTYPE.value == 'maxcut':
       splits = str.split(graph_save, ',')
       for split in splits:
@@ -260,49 +227,6 @@ def plot_graph_cluster(num, key, dict_results, indeces):
     plt.savefig(f'{plot_dir}/{x_label}_{graph_save}.png', bbox_inches='tight')
     plt.clf()
 
-
-def process_keys(dict_o_keys):
-  if dict_o_keys['name'] == 'hammingball':
-    dict_o_keys['name'] = 'hb-10-1'
-  elif dict_o_keys['name'] == 'blockgibbs':
-    dict_o_keys['name'] = 'bg-2'
-  elif dict_o_keys['name'] == 'randomwalk':
-    dict_o_keys['name'] = 'rmw'
-  elif dict_o_keys['name'] == 'path_auxiliary':
-    dict_o_keys['name'] = 'pas'
-
-  if 'approx_with_grad' in dict_o_keys:
-    del dict_o_keys['approx_with_grad']
-    
-  if 'solver' in dict_o_keys:
-    if dict_o_keys['solver'] == 'euler_forward':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
-    del dict_o_keys['solver']
-
-  if 'adaptive' in dict_o_keys:
-    if dict_o_keys['adaptive'] == 'False':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + '-nA'
-      del dict_o_keys['adaptive']
-    if 'step_size' in dict_o_keys:
-      dict_o_keys['name'] = str(dict_o_keys['name']) + dict_o_keys['step_size']
-      del dict_o_keys['step_size']
-    if 'n' in dict_o_keys:
-      dict_o_keys['name'] = str(dict_o_keys['name']) + '-' + dict_o_keys['n']
-      del dict_o_keys['n']
-
-
-  if 'balancing_fn_type' in dict_o_keys:
-    # if 'name' in dict_o_keys:
-    #   if dict_o_keys['balancing_fn_type'] == 'SQRT':
-    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)' 
-    #   elif dict_o_keys['balancing_fn_type'] == 'RATIO':
-    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
-    #   elif dict_o_keys['balancing_fn_type'] == 'MIN':
-    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
-    #   elif dict_o_keys['balancing_fn_type'] == 'MAX':
-    #     dict_o_keys['name'] = str(dict_o_keys['name']) + '(max)'
-    del dict_o_keys['balancing_fn_type']
-  return dict_o_keys
 
 def get_experiment_config(exp_config):
   exp_config = exp_config[1 + exp_config.find('_') :]
@@ -342,7 +266,7 @@ def main(argv) -> None:
     results_path = os.path.join(subfolderpath, 'results.pkl')
     experiment_result = get_experiment_config(subfolder)
     print(experiment_result)
-    experiment_result = process_keys(experiment_result)
+    experiment_result = utils.process_keys(experiment_result)
     print(experiment_result)
     print('######')
     experiment_result['results'] = {}
@@ -366,7 +290,9 @@ def main(argv) -> None:
       file = csv.DictReader(filename)
       for col in file:
         experiment_result['results']['best_ratio_mean'] = col['best_ratio_mean']
-        experiment_result['results']['running_time'] = 2 * float(col['running_time'])
+        experiment_result['results']['running_time'] = 2 * float(
+            col['running_time']
+        )
       experiments_results.append(experiment_result)
 
   for key in [GRAPH_KEY.value]:

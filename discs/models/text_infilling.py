@@ -44,8 +44,8 @@ class TextInfilling(abstractmodel.AbstractModel):
     return iter(infill_dataset)
 
   def decode(self, x, params):
-    sampled_infill_tokens = jnp.array(x[0, 0])
-    token_ids = params['input_ids'][0]
+    sampled_infill_tokens = jnp.array(x[0])
+    token_ids = params['input_ids']
     token_ids = token_ids.at[:, self.infill_pos].set(sampled_infill_tokens)
     sampled_sentence = self.tokenizer.decode(token_ids[0, 1:-1])
     return sampled_sentence

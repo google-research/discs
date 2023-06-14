@@ -1,15 +1,14 @@
-"""Combinotorial Optimization Evaluator Class."""
+"""Language Model Evaluator Class."""
 
 from collections import Counter
 import os
-import pdb
 from discs.evaluators import abstractevaluator
 from nltk.translate import bleu_score as bleu
 from nltk.util import ngrams
 
 
-class LLMevaluator(abstractevaluator.AbstractEvaluator):
-  """Combinotorial optimization evaluator class."""
+class LMevaluator(abstractevaluator.AbstractEvaluator):
+  """Language model evaluator class."""
 
   def prepare_data(self, data_file, replacements={}, uncased=True):
     data = [d.strip().split() for d in open(data_file, 'r').readlines()]
@@ -23,25 +22,17 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
 
   def prepare_wiki(self, data_file, uncased=True):
     replacements = {'@@unknown@@': '[UNK]'}
-    return self.prepare_data(data_file, replacements=replacements, uncased=uncased)
+    return self.prepare_data(
+        data_file, replacements=replacements, uncased=uncased
+    )
 
   def prepare_tbc(self, data_file):
     replacements = {'``': '"', "''": '"'}
     return self.prepare_data(data_file, replacements=replacements)
 
   def corpus_bleu(self, generated, references):
-    """Compute similarity between two corpora as measured by
-
-    comparing each sentence of `generated` against all sentences in `references`
-
-    args:
-        - generated (List[List[str]]): list of sentences (split into tokens)
-        - references (List[List[str]]): list of sentences (split into tokens)
-
-    returns:
-        - bleu (float)
-    """
-    # print(len(generated), len(references))
+    """Computes similarity between two corpora as measured by comparing 
+    each sentence of `generated` against all sentences in `references`."""
     bleu2, bleu3, bleu4 = bleu.corpus_bleu(
         [references for _ in range(len(generated))],
         generated,
@@ -94,7 +85,7 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
     return pct_unique
 
   def evaluate(self, sentences, data_root):
-    ### NOTE: evaluation and save results
+    """Evaluates the generated sentences bleu+self-bleu+ngrams."""
     results = {}
     results['infill_sents'] = sentences
     wiki103_file = os.path.join(data_root, 'wiki103_remove_infill.5k.txt')
@@ -111,8 +102,8 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
 
     if len(infill_sents) > 1:
       results['self_bleu'] = self.self_bleu(infill_sents)
-    
-    max_n = self.config.max_n
+
+    max_n = self.config.max_n_grams
 
     pct_uniques = self.ref_unique_ngrams(infill_sents, wiki_data, max_n)
     for i in range(1, max_n + 1):
@@ -129,4 +120,4 @@ class LLMevaluator(abstractevaluator.AbstractEvaluator):
 
 
 def build_evaluator(config):
-  return LLMevaluator(config.experiment)
+  return LMevaluator(config.experiment)

@@ -6,6 +6,7 @@ from absl import app
 from absl import flags
 import matplotlib.pyplot as plt
 import numpy as np
+import plot_utils as utils
 
 
 flags.DEFINE_string(
@@ -17,28 +18,7 @@ flags.DEFINE_string('evaluation_type', 'co', 'where results are being saved')
 flags.DEFINE_string('key', 'name', 'what key to plot against')
 GRAPHTYPE = flags.DEFINE_string('graphtype', 'mis', 'graph type')
 
-
 FLAGS = flags.FLAGS
-
-
-color_map = {}
-color_map['rmw'] = 'green'
-color_map['fdl'] = 'gray'
-color_map['pas'] = 'saddlebrown'
-color_map['gwg'] = 'red'
-color_map['bg-'] = 'orange'
-color_map['dma'] = 'purple'
-color_map['hb-'] = 'blue'
-color_map['blo'] = 'orange'
-
-
-def get_color(sampler):
-  if sampler[0:4] != 'dlmc':
-    return color_map[sampler[0:3]]
-  else:
-    if sampler[0:5] == 'dlmcf':
-      return 'gray'
-  return 'pink'
 
 
 def get_diff_key(key_diff, dict1, dict2):
@@ -137,7 +117,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           ]
 
       values = res_cluster[sampler][res_key]
-      c = get_color(sampler)
+      c = utils.get_color(sampler)
 
       if sampler[-3:] == '(r)':
         label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
@@ -202,8 +182,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               color=c,
           )
 
-
-    if model not in ['fhmm','rbm']:
+    if model not in ['fhmm', 'rbm']:
       model = model.capitalize()
     else:
       if model == 'fhmm':
@@ -267,9 +246,13 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           if split.startswith('data_path=RBM_DATA-mnist-2-'):
             num_hidden = split[len('data_path=RBM_DATA-mnist-2-') : -1]
             if num_hidden == '25':
-              plt.title(f'Binary RBM with hidden dimension {num_hidden}', fontsize=18)
+              plt.title(
+                  f'Binary RBM with hidden dimension {num_hidden}', fontsize=18
+              )
             elif num_hidden == '200':
-              plt.title(f'Binary RBM with hidden dimension {num_hidden}', fontsize=18)
+              plt.title(
+                  f'Binary RBM with hidden dimension {num_hidden}', fontsize=18
+              )
       elif model == 'FHMM':
         splits = str.split(save_title, ',')
         sigma = 'dummy'
@@ -304,9 +287,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         plt.xticks(x_poses, xticks, fontsize=16)
       else:
         if key_diff == 'sample dimension':
-          new_xticks =[]
+          new_xticks = []
           for i, tick in enumerate(xticks):
-            new_xticks.append(str(tick)+'x'+str(tick))
+            new_xticks.append(str(tick) + 'x' + str(tick))
           plt.xticks(x_poses, new_xticks, fontsize=16)
         else:
           plt.xticks(x_poses, xticks, fontsize=16)
@@ -369,54 +352,6 @@ def get_experiment_config(exp_config):
     keys.append(str.split(key, '.')[-1])
     values.append(value)
   return dict(zip(keys, values))
-
-
-def process_keys(dict_o_keys):
-  if dict_o_keys['name'] == 'hammingball':
-    dict_o_keys['name'] = 'hb-10-1'
-  elif dict_o_keys['name'] == 'blockgibbs':
-    dict_o_keys['name'] = 'bg-2'
-  elif dict_o_keys['name'] == 'randomwalk':
-    dict_o_keys['name'] = 'rmw'
-  elif dict_o_keys['name'] == 'path_auxiliary':
-    dict_o_keys['name'] = 'pas'
-
-  if 'solver' in dict_o_keys:
-    if dict_o_keys['solver'] == 'euler_forward':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
-    del dict_o_keys['solver']
-    
-  if 'approx_with_grad' in dict_o_keys:
-    del dict_o_keys['approx_with_grad']
-
-  if 'adaptive' in dict_o_keys:
-    if dict_o_keys['adaptive'] == 'False':
-      dict_o_keys['name'] = str(dict_o_keys['name']) + '-nA'
-    del dict_o_keys['adaptive']
-    if 'step_size' in dict_o_keys:
-      dict_o_keys['name'] = str(dict_o_keys['name']) + dict_o_keys['step_size']
-      del dict_o_keys['step_size']
-    if 'n' in dict_o_keys:
-      dict_o_keys['name'] = str(dict_o_keys['name']) + '-' + dict_o_keys['n']
-      del dict_o_keys['n']
-    if 'num_flips' in dict_o_keys:
-      dict_o_keys['name'] = (
-          str(dict_o_keys['name']) + '-' + dict_o_keys['num_flips']
-      )
-      del dict_o_keys['num_flips']
-
-  if 'balancing_fn_type' in dict_o_keys:
-    if 'name' in dict_o_keys:
-      if dict_o_keys['balancing_fn_type'] == 'SQRT':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(s)'
-      elif dict_o_keys['balancing_fn_type'] == 'RATIO':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(r)'
-      elif dict_o_keys['balancing_fn_type'] == 'MIN':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(min)'
-      elif dict_o_keys['balancing_fn_type'] == 'MAX':
-        dict_o_keys['name'] = str(dict_o_keys['name']) + '(max)'
-      del dict_o_keys['balancing_fn_type']
-  return dict_o_keys
 
 
 def organize_experiments(
@@ -565,7 +500,7 @@ def main(argv) -> None:
   for folder in folders:
     subfolderpath = os.path.join(FLAGS.gcs_results_path, folder)
     res_dic = get_experiment_config(folder)
-    res_dic = process_keys(res_dic)
+    res_dic = utils.process_keys(res_dic)
     if 'save_samples' in res_dic:
       del res_dic['save_samples']
     print(res_dic)
