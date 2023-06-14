@@ -119,12 +119,12 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
       values = res_cluster[sampler][res_key]
       c = utils.get_color(sampler)
 
-      if sampler[-3:] == '(r)':
-        label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
-      elif sampler[-3:] == '(s)':
-        label_sampler = sampler[0:-3] + '$\\sqrt{t}$'
-      else:
-        label_sampler = sampler
+      # if sampler[-3:] == '(r)':
+      #   label_sampler = sampler[0:-3] + '$\\frac{t}{t+1}$'
+      # elif sampler[-3:] == '(s)':
+      #   label_sampler = sampler[0:-3] + '$\\sqrt{t}$'
+      # else:
+      label_sampler = sampler
 
       if xticks[0] != 'samplers':
         assert len(x_poses) == len(xticks)
@@ -299,14 +299,14 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
 
     if key_diff in ['name', 'balancing function type']:
       plt.legend(
-          loc='upper left',
           fontsize=14,
           fancybox=True,
           framealpha=0.2,
+          loc='center left', bbox_to_anchor=(1, 0.5),
       )
     else:
       plt.legend(
-          loc='upper right',
+          loc='center left', bbox_to_anchor=(1, 0.5),
           fontsize=14,
           fancybox=True,
           framealpha=0.2,
@@ -322,20 +322,20 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         if split.startswith('cfg_str'):
           val = str.split(split, '=')[1][-4:]
           if val == '0.05':
-            plt.ylim(95, 115)
+            plt.ylim(97, 105.5)
             plt.axhline(y=98.59, color='black', linestyle='--')
           elif val == '0.10':
-            plt.ylim(55, 70)
+            plt.ylim(56, 63)
             plt.axhline(y=57.4, color='black', linestyle='--')
           elif val == '0.20':
-            plt.ylim(30, 40)
+            plt.ylim(31, 35)
             plt.axhline(y=31.56, color='black', linestyle='--')
           elif val == '0.25':
-            plt.ylim(24, 33)
+            plt.ylim(26, 28.8)
             plt.axhline(y=26.25, color='black', linestyle='--')
-          elif val == '800':
-            plt.axhline(y=44.87, color='black', linestyle='--')
-            plt.ylim(85, 100)
+          elif val == '-800':
+            plt.axhline(y=41.38, color='black', linestyle='--')
+            plt.ylim(41, 45)
 
       # else:
       #   plt.ylabel('Ratio \u03B1', fontsize=16)
@@ -566,18 +566,18 @@ def main(argv) -> None:
   all_mapped_names = sort_based_on_samplers(all_mapped_names)
   if FLAGS.key == 'name' and key_diff != 'balancing_fn_type':
     x_ticks = ['samplers']
-  elif key_diff == 'balancing_fn_type':
-    x_ticks_new = []
-    for i, tick in enumerate(x_ticks):
-      if tick == "'SQRT'":
-        x_ticks_new.append('$\\sqrt{t}$')
-      elif tick == "'RATIO'":
-        x_ticks_new.append('$\\frac{t}{t+1}$')
-      elif tick == "'MIN'":
-        x_ticks_new.append('1 \u2227 t')
-      elif tick == "'MAX'":
-        x_ticks_new.append('1 \u2228 t')
-    x_ticks = x_ticks_new
+  # elif key_diff == 'balancing_fn_type':
+  #   x_ticks_new = []
+  #   for i, tick in enumerate(x_ticks):
+  #     if tick == "'SQRT'":
+  #       x_ticks_new.append('$\\sqrt{t}$')
+  #     elif tick == "'RATIO'":
+  #       x_ticks_new.append('$\\frac{t}{t+1}$')
+  #     elif tick == "'MIN'":
+  #       x_ticks_new.append('1 \u2227 t')
+  #     elif tick == "'MAX'":
+  #       x_ticks_new.append('1 \u2228 t')
+  #   x_ticks = x_ticks_new
 
   print('xtickssssss: ', x_ticks)
   # if FLAGS.evaluation_type == 'ess':
