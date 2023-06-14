@@ -16,8 +16,9 @@ def get_config():
       experiment=dict(
           name='Sampling_Experiment',
           evaluator='ess_eval',
+          num_models=1,
           batch_size=100,
-          chain_length=100000,
+          chain_length=100,
           ess_ratio=0.5,
           run_parallel=True,
           get_additional_metrics=False,

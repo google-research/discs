@@ -28,11 +28,14 @@ def get_save_dir(config):
 
 def get_main_config():
   """Merge experiment, model and sampler config."""
-  # get common configs
   config = common_configs.get_config()
+  if (
+      'graph_type' not in _MODEL_CONFIG.value
+      and 'bert_model' not in _MODEL_CONFIG.value
+  ):
+    config.update(_EXPERIMENT_CONFIG.value)
   config.sampler.update(_SAMPLER_CONFIG.value)
   config.model.update(_MODEL_CONFIG.value)
-  # co models
   if config.model.get('graph_type', None):
     graph_config = importlib.import_module(
         'discs.models.configs.%s.%s'
@@ -43,7 +46,11 @@ def get_main_config():
         'discs.experiment.configs.co_experiment'
     )
     config.experiment.update(co_exp_default_config.get_co_default_config())
-  config.update(_EXPERIMENT_CONFIG.value)
+    config.update(_EXPERIMENT_CONFIG.value)
+
+  if config.model.get('bert_model', None):
+    config.update(_EXPERIMENT_CONFIG.value)
+
   return config
 
 
