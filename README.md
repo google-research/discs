@@ -46,7 +46,7 @@ List of Models
     * resnet
     * text_infilling (language model)
 
-Note that, for running energy-based models and combinotorial optimization problems, `data_root` in the model config should be set correctly. For the text infilling, additionally `bert_model` model config should point to the bert model. Further information on the data will be found in the following sections.
+Note that, for running energy-based models, `data_path` and for combinotorial optimization problems, `data_root`, in the model config should be set. For the text infilling model, additional path of `bert_model` should be set. Further information on the data will be found in the following sections.
 
     ### Run an experiment locally 
 
@@ -80,7 +80,7 @@ Note that, for running energy-based models and combinotorial optimization proble
 The data used in this package could be found [here](https://drive.google.com/drive/u/1/folders/1nEppxuUJj8bsV9Prc946LN_buo30AnDx).
 The data contains the following components:
 * Graph data of combinatorial optimization problems for different graph types under `/DISCS-DATA/sco/`.
-* Model parameters for energy-based models found at 'DISCS-DATA/BINARY_EBM' and 'DISCS-DATA/RBM_DATA'. Binray ebm is trained on MNIST, Omniglot, and Caltech dataset and binary and categorical RBM are trained on MNIST and Fashion-MNIST dataset. For the launguage model, you could download the model parameters from [here](https://huggingface.co/bert-base-uncased).
+* Model parameters for energy-based models found at `DISCS-DATA/BINARY_EBM` and `DISCS-DATA/RBM_DATA`. Binray ebm is trained on MNIST, Omniglot, and Caltech dataset and binary and categorical RBM are trained on MNIST and Fashion-MNIST dataset. For the launguage model, you could download the model parameters from [here](https://huggingface.co/bert-base-uncased).
 * Text infilling data generated from WT103 and TBC found at `/DISCS-DATA/text_infilling_data/`.
 
 
