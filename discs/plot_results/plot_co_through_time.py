@@ -101,14 +101,14 @@ def plot_graph_cluster(num, key, dict_results, indeces):
       key_value = dict_results[index][key]
       result = dict_results[index]
       traj_mean = result['results']['traj_mean']
-      traj_var = result['results']['traj_var']
+      traj_std = result['results']['traj_std']
       x = 1 + (
           np.arange(len(traj_mean))
           * int(dict_results[index]['results']['log_every_steps'])
       )
       idx = 0
       traj_mean = traj_mean[idx:]
-      traj_var = 0 * traj_var[idx:]
+      traj_std = traj_std[idx:]
 
       if x_label != 'Steps':
         x = np.arange(0, 1, (1 / len(x))) * float(
@@ -125,8 +125,8 @@ def plot_graph_cluster(num, key, dict_results, indeces):
       label_to_last_val[key_value] = traj_mean[-1]
       plt.fill_between(
           x,
-          traj_mean - traj_var,
-          traj_mean + traj_var,
+          traj_mean - traj_std,
+          traj_mean + traj_std,
           alpha=0.25,
           color=utils.get_color(key_value),
       )
@@ -179,7 +179,7 @@ def plot_graph_cluster(num, key, dict_results, indeces):
             plt.ylim(-100, 35)
             plt.axhline(y=26.25, color='black', linestyle='--')
           elif val == '800':
-            plt.axhline(y=44.87, color='black', linestyle='--')
+            plt.axhline(y=41.68, color='black', linestyle='--')
             plt.ylim(-500, 100)
           elif val == '10k':
             plt.axhline(y=381.31, color='black', linestyle='--')
@@ -275,9 +275,10 @@ def main(argv) -> None:
       experiment_result['results']['traj_mean'] = np.mean(
           results['trajectory'], axis=-1
       )
-      experiment_result['results']['traj_var'] = np.sqrt(
-          np.var(results['trajectory'], axis=-1)
+      experiment_result['results']['traj_std'] = np.std(
+          results['trajectory'], axis=-1
       )
+
       if 'log_every_steps' not in experiment_result:
         experiment_result['results']['log_every_steps'] = '1000'
       else:
