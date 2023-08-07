@@ -69,7 +69,6 @@ class Saver:
       else:
         results['sampler'] = results['sampler'] + '(sqrt)'
 
-    metrcis = jnp.array(metrcis)
     results['model'] = self.config.model.name
     results['num_categories'] = self.config.model.num_categories
     results['shape'] = self.config.model.shape

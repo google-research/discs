@@ -5,7 +5,6 @@ import jax.numpy as jnp
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-
 class ESSevaluator(abstractevaluator.AbstractEvaluator):
   """ESS evaluator class."""
 
@@ -29,13 +28,7 @@ class ESSevaluator(abstractevaluator.AbstractEvaluator):
     )
     ess_over_time = self._eval_over_time(eval_val, running_time)
     ess_over_ll_calls = self._eval_over_num_ll_calls(eval_val, num_ll_calls)
-    return (
-        eval_val[0],
-        eval_val[1],
-        ess_over_mh_steps,
-        ess_over_time,
-        ess_over_ll_calls,
-    )
+    return (eval_val, ess_over_mh_steps, ess_over_time, ess_over_ll_calls)
 
   def _get_ess(self, rnd_ess, mapped_samples):
     """Computes the mean ESS over the chains."""
@@ -47,7 +40,7 @@ class ESSevaluator(abstractevaluator.AbstractEvaluator):
     ess_of_chains = jnp.nan_to_num(ess_of_chains, nan=1.0)
     mean_ess = jnp.mean(ess_of_chains)
     std_ess = jnp.std(ess_of_chains)
-    return [mean_ess, std_ess]
+    return jnp.array([mean_ess, std_ess])
 
   def evaluate(self, samples, rnd):
     return self._get_ess(rnd, samples)
