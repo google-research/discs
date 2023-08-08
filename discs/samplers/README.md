@@ -1,11 +1,12 @@
 ## Extending Samplers 
 This directory contains the implementation of different discrete space samplers.
 Each sampler extends the `AbstractSampler` class defined in `abstractsampler.py`.
-More specifically, each sampler overrides the abstract methods of:
-* `make_init_state`: 
-* `update_sampler_state`:
-* `step`:
-To add a new sampler, the a new python for for the new sampler should be created, "sapler_name".py that overrides the above methods.
+More specifically, each sampler overrides the following methods:
+* `make_init_state`: intialized the state/parameters of the sampler.
+* `update_sampler_state`: updated the state/parameters of the sampling algorithm.
+* `step`: performs the mh step. It returns the next sample and the updated state of the sampling algorithm. 
+
+To add a new sampler, the a new python file for the new sampler should be created, "sapler_name".py that overrides the above methods.
 
 In the configs folder, you can find the parameters specific to each sampling approach.
 The config file name for each specific sampler should follow "sampler_name"_config.py and the should follow the below structure.
@@ -16,9 +17,7 @@ from ml_collections import config_dict
 def get_config():
   sampler_config = dict(
       name='gibbs',
-      .
-      .
-      .
+      ...
   )
   return config_dict.ConfigDict(sampler_config)
 """
