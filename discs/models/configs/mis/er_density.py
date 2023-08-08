@@ -10,6 +10,7 @@ def get_model_config(cfg_str):
   rand_type = extra_cfg['r']
   num_nodes = num_edges = num_instances = 0
   model_config = dict(
+      num_models=32,
       max_num_nodes=num_nodes,
       max_num_edges=num_edges,
       num_instances=num_instances,

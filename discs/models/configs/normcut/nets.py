@@ -8,6 +8,7 @@ def get_model_config(cfg_str):
 
   extra_cfg = utils.parse_cfg_str(cfg_str)
   model_config = dict(
+      num_models=1,
       max_num_nodes=0,
       max_num_edges=0,
       num_instances=0,

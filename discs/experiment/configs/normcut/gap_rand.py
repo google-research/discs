@@ -7,7 +7,6 @@ def get_config():
   """Get config for er benchmark graphs."""
   exp_config = dict(
       experiment=dict(
-          num_models=5,
           batch_size=8,
           t_schedule='exp_decay',
           chain_length=500000,
