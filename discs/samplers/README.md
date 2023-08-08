@@ -2,12 +2,11 @@
 This directory contains the implementation of different discrete space samplers.
 Each sampler extends the `AbstractSampler` class defined in `abstractsampler.py`.
 More specifically, each sampler overrides the following methods:
-* `make_init_state`: intialized the state/parameters of the sampler.
+* `make_init_state`: initialized the state/parameters of the sampler.
 * `update_sampler_state`: updated the state/parameters of the sampling algorithm.
 * `step`: performs the mh step. It returns the next sample and the updated state of the sampling algorithm. 
 
-To add a new sampler, the a new python file for the new sampler should be created, "sapler_name".py that overrides the above methods.
-
+To add a new sampler, a new python file for the new sampler should be created, with the name structure of "sampler_name".py which implements the above methods and extends the `AbstractSampler` class.
 In the configs folder, you can find the parameters specific to each sampling approach.
 The config file name for each specific sampler should follow "sampler_name"_config.py and the should follow the below structure.
 """Config for Gibbs sampler.
@@ -38,7 +37,7 @@ More specifically the config passed to the sampler should have the following str
       ),
   )
 ```
-We provide the code snippet below as an example on how to instantiate the gwg sampler for the purpose of using out of this package pipeline.
+We provide the code snippet below as an example on how to instantiate the 'gwg' sampler for the purpose of using out of this package pipeline.
 Note that the sample shape and number of categories are manually set in the below example. In `DISCS` pipeline, they are set based on the model (target distribution).
 Also, to see an example on how the `ml_collections` is used to setup the configs when running an scripts, you can refer to `discs/experiment/run_sampling_local.sh' and `discs/experiment/main_sampling.py' with `config_flags.DEFINE_config_file` usecase.
 ```
