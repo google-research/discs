@@ -8,11 +8,13 @@ matplotlib
 absl-py
 numpy
 tqdm
+orbax==0.1.0
+flax==0.6.3
 clu
-flax
 optax
 networkx
 python-sat
 tensorboard
 pickle5
 nltk
+

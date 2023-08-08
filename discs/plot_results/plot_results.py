@@ -64,6 +64,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
   for res_key in result_keys:
     if res_key in ['running_time']:
       continue
+    if res_key.endswith('std'):
+      continue
     f = plt.figure()
     f.set_figwidth(12)
     f.set_figheight(8)
@@ -115,8 +117,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               3.725,
               3.875,
           ]
-
       values = res_cluster[sampler][res_key]
+      if res_key+'_std' in res_cluster[sampler]:
+        error = res_cluster[sampler][res_key+'_std']
       c = utils.get_color(sampler)
 
       if sampler[-3:] == '(r)':
@@ -150,8 +153,18 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               color=c,
               alpha=alpha,
           )
+                    
+          plt.errorbar(
+              x_poses + local_pos[i] * bar_width,
+              values,
+              error,
+              fmt='.',
+              color='Black',
+              elinewidth=2,capthick=10,errorevery=1, ms=4,
+          )
         else:
           len(x_poses)
+          
           plt.bar(
               x_poses[i],
               values,
@@ -159,6 +172,15 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               label=label_sampler,
               color=c,
               alpha=alphas[i],
+          )
+                    
+          plt.errorbar(
+              x_poses[i],
+              values,
+              error,
+              fmt='.',
+              color='Black',
+              elinewidth=4,capthick=10,errorevery=1, ms=4,
           )
       else:
         if FLAGS.evaluation_type != 'lm':
@@ -520,13 +542,20 @@ def main(argv) -> None:
       results = {}
       for col in file:
         if FLAGS.evaluation_type == 'ess':
+          gap = str.find(col['ESS_EE'], ' ')
           if 'chain_length' not in res_dic:
-            results['ess_ee'] = float(col['ESS_EE']) * 50000
+            results['ess_ee'] = float(col['ESS_EE'][2:gap]) * 50000
+            results['ess_ee_std'] = float(col['ESS_EE'][gap+1:-2]) * 50000
           else:
-            results['ess_ee'] = float(col['ESS_EE']) * int(
+            results['ess_ee'] = float(col['ESS_EE'][2:gap]) * int(
                 float(res_dic['chain_length']) // 2
             )
-          results['ess_clock'] = float(col['ESS_T'])
+            results['ess_ee_std'] = float(col['ESS_EE'][gap+1:-2]) * int(
+                float(res_dic['chain_length']) // 2
+            )
+          gap_t = str.find(col['ESS_T'], ' ')
+          results['ess_clock'] = float(col['ESS_T'][2:gap_t])
+          results['ess_clock_std'] = float(col['ESS_T'][gap_t+1:-2])
         elif FLAGS.evaluation_type == 'co':
           results['best_ratio_mean'] = col['best_ratio_mean']
         if FLAGS.evaluation_type == 'co':
