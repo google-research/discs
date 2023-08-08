@@ -1,4 +1,4 @@
-## Extending Samplers 
+## Extending the samplers 
 This directory contains the implementation of different discrete space samplers.
 Each sampler extends the `AbstractSampler` class defined in `abstractsampler.py`.
 More specifically, each sampler overrides the following methods:
@@ -8,7 +8,7 @@ More specifically, each sampler overrides the following methods:
 
 To add a new sampler, a new python file for the new sampler should be created, with the name structure of "sampler_name".py which implements the above methods and extends the `AbstractSampler` class.
 In the configs folder, you can find the parameters specific to each sampling approach.
-The config file name for each specific sampler should follow "sampler_name"_config.py and the should follow the below structure.
+The config file name for each specific sampler should follow "sampler_name"_config.py and the below structure.
 """Config for Gibbs sampler.
 from ml_collections import config_dict
 
@@ -22,9 +22,9 @@ def get_config():
 """
 
 
-## Using the Samplers out of this package
-The samplers need to have access to the shape (a tuple file) and the number of categories (int).
-To instantiate a sampler, a genaral config is needed which contains both the sampler specific parameters and the sample features which is model dependent.
+## Using the samplers out of this package
+The sampling algorithms need to have access to the shape (a tuple) and the number of categories (int) of the sample.
+To instantiate a sampler, a general config is needed which contains both the sampler specific parameters and the sample features which is model dependent.
 More specifically the config passed to the sampler should have the following structure:
 ```
   general_config = dict(
@@ -37,9 +37,9 @@ More specifically the config passed to the sampler should have the following str
       ),
   )
 ```
-We provide the code snippet below as an example on how to instantiate the 'gwg' sampler for the purpose of using out of this package pipeline.
+We provide the code snippet below as an example of how to instantiate the 'gwg' sampler for the purpose of using out of this package pipeline.
 Note that the sample shape and number of categories are manually set in the below example. In `DISCS` pipeline, they are set based on the model (target distribution).
-Also, to see an example on how the `ml_collections` is used to setup the configs when running an scripts, you can refer to `discs/experiment/run_sampling_local.sh' and `discs/experiment/main_sampling.py' with `config_flags.DEFINE_config_file` usecase.
+Also, to see an example of how the `ml_collections` is used to set up the configs when running a script, you can refer to `discs/experiment/run_sampling_local.sh' and `discs/experiment/main_sampling.py' with `config_flags.DEFINE_config_file` use-case.
 ```
 import importlib
 from ml_collections import config_dict
