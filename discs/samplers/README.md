@@ -28,7 +28,7 @@ def get_config():
 The samplers need to have access to the shape (a tuple file) and the number of categories (int).
 To instantiate a sampler, a genaral config is needed which contains both the sampler specific parameters and the sample features which is model dependent.
 More specifically the config passed to the sampler should have the following structure:
-'''
+```
   general_config = dict(
       model=dict(
         shape=,
@@ -38,10 +38,10 @@ More specifically the config passed to the sampler should have the following str
           name='',
       ),
   )
-'''
+```
 We provide the code snippet below as an example on how to instantiate the samplers to be used out of this package.
 Note that the sample shape and dimension are manually set in the below example. In DISCS pipeline, they are set based on the model (target distribution).
-'''
+```
 import importlib
 from ml_collections import config_dict
 from ml_collections import config_flags
@@ -68,4 +68,4 @@ config.sampler.update(gwg_config.get_config())
 # sampler
 sampler_mod = importlib.import_module('discs.samplers.%s' % config.sampler.name)
 sampler = sampler_mod.build_sampler(config)
-'''
+```
