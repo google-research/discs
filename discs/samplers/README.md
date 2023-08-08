@@ -41,7 +41,7 @@ More specifically the config passed to the sampler should have the following str
 ```
 We provide the code snippet below as an example on how to instantiate the gwg sampler for the purpose of using out of this package pipeline.
 Note that the sample shape and number of categories are manually set in the below example. In `DISCS` pipeline, they are set based on the model (target distribution).
-Also, to see an example on how to pass the `config_flags.DEFINE_config_file` based on the ml collection library through running a script, you can refer to the setup in `discs/experiment/main_sampling.py'
+Also, to see an example on how the `ml_collections` is used to setup the configs when running an scripts, you can refer to `discs/experiment/run_sampling_local.sh' and `discs/experiment/main_sampling.py' with `config_flags.DEFINE_config_file` usecase.
 ```
 import importlib
 from ml_collections import config_dict
