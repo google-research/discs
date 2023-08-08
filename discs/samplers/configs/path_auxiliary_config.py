@@ -1,10 +1,10 @@
-"""Config for GWG sampler."""
+"""Config for Path Auxiliary sampler."""
 
 from ml_collections import config_dict
 
 
 def get_config():
-  model_config = dict(
+  sampler_config = dict(
       name='path_auxiliary',
       use_fast_path=True,
       num_flips=1,
@@ -13,4 +13,4 @@ def get_config():
       balancing_fn_type='SQRT',
       approx_with_grad=True,
   )
-  return config_dict.ConfigDict(model_config)
+  return config_dict.ConfigDict(sampler_config)

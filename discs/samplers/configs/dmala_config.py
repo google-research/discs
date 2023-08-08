@@ -1,10 +1,9 @@
 """Config for DMALA sampler."""
-
 from ml_collections import config_dict
 
 
 def get_config():
-  model_config = dict(
+  sampler_config = dict(
       name='dmala',
       adaptive=True,
       target_acceptance_rate=0.574,
@@ -13,4 +12,4 @@ def get_config():
       reset_z_est=20,
       step_size=0.2,
   )
-  return config_dict.ConfigDict(model_config)
+  return config_dict.ConfigDict(sampler_config)
