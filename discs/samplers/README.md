@@ -32,7 +32,7 @@ More specifically, each sampler overrides the following methods:
 To add a new sampler, a new python file for the new sampler should be created, with the name structure of "sampler_name".py which implements the above methods and extends the `AbstractSampler` class.
 In the configs folder, you can find the parameters specific to each sampling approach.
 The config file name for each specific sampler should follow "sampler_name"_config.py and the below structure.
-"""
+```
 from ml_collections import config_dict
 
 
@@ -42,7 +42,7 @@ def get_config():
       # sampling algorithm config values
   )
   return config_dict.ConfigDict(sampler_config)
-"""
+```
 
 
 ## Using the samplers out of this package
