@@ -4,11 +4,11 @@
 TLDR; to add your new discrete sampler, extend the `AbstractSampler` class defined in `abstractsampler.py` (${sampler_name}.py) and add its corresponding config file (${sampler_name}_config.py) in the configs folder here. 
 
 To run the sampler locally, as an example on the bernoulli model, you can follow:
-'''
+```
    model=bernoulli sampler=${sampler_name} ./discs/experiment/run_sampling_local.sh
-'''
+```
 To add your sampler to the predefined xmanager experiments at `discs/run_configs`, simply add its name and any of the sampler configs you want to sweep over following the structure below:
-'''
+```
     {
         'sampler_config.name': [
             '${sampler_name}',
@@ -17,7 +17,7 @@ To add your sampler to the predefined xmanager experiments at `discs/run_configs
           "..."
         ],
     },
-'''
+```
 Note that, when adding your new sampler to predefined xmanager configs, make sure you follow the same model and experiment setup as the other samplers.
 
 More Details below:
