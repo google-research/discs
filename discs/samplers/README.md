@@ -67,7 +67,6 @@ Also, to see an example of how the `ml_collections` is used to set up the config
 ```
 import importlib
 from ml_collections import config_dict
-from ml_collections import config_flags
 from discs.samplers.configs import gwg_config
 
 
