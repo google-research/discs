@@ -1,6 +1,6 @@
 
 
-## Extending the samplers
+## How to add new samplers
 To add your new discrete sampler, extend the `AbstractSampler` class defined in `abstractsampler.py` (${sampler_name}.py) and add its corresponding config file (${sampler_name}_config.py) in the configs folder here. 
 
 To run the sampler locally, as an example on the bernoulli model, you can follow:
@@ -45,7 +45,7 @@ def get_config():
 ```
 
 
-## Using the samplers out of this package
+## How to use the samplers out of this package
 In addition to the config values defined in the config folder for each sampler, the sampling algorithms need to have access to the sample shape (a tuple) and its number of categories (int).
 To instantiate the sampler, a general config value with the below structure should be used.
 ```
