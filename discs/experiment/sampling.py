@@ -310,7 +310,7 @@ class Sampling_Experiment(Experiment):
           'rbm',
           'resnet',
       ]:
-        saver.dump_samples(samples, visualize=True)
+        saver.dump_samples(samples, visualize=False)
       elif (
           self.config.get_estimation_error
           and self.config_model.name == 'bernoulli'

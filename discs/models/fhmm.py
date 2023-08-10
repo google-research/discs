@@ -20,6 +20,7 @@ class FHMM(abstractmodel.AbstractModel):
     self.alpha = config.alpha
     self.beta = config.beta
 
+
   def get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
@@ -36,6 +37,7 @@ class BinaryFHMM(FHMM):
   """FHMM Distribution."""
 
   def make_init_params(self, rnd):
+    rnd = rnd.reshape(-1)
     rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
     x = self.sample_X(rng1)
     w = jax.random.normal(rng2, (self.k, 1))
@@ -112,6 +114,7 @@ class CategFHMM(FHMM):
     return x0
 
   def make_init_params(self, rnd):
+    rnd = rnd.reshape(-1)
     rng1, rng2, rng3, rng4 = jax.random.split(rnd, 4)
     alpha = jax.random.uniform(rng1, [self.num_categories])
     alpha = alpha.at[0].set(1 - self.alpha)
