@@ -1,7 +1,7 @@
 
 
 ## How to add new samplers
-To add your new discrete sampler, extend the `AbstractSampler` class defined in `abstractsampler.py` by adding your ${sampler_name}.py file and its corresponding config file, ${sampler_name}_config.py, in the configs folder.
+To add your new discrete sampler, extend the `AbstractSampler` class defined in `abstractsampler.py` by adding your `${sampler_name}.py` file and its corresponding config file, `${sampler_name}_config.py`, in the configs folder.
 The sampler config file should follow the structure below:
 ```
 from ml_collections import config_dict
