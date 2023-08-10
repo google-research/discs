@@ -60,7 +60,7 @@ In the general config above, the 'model' should contain the sample shape and the
 In `DISCS` pipeline, the sample shape and number of categories are set based on the model (the target distribution) we are sampling from.
 
 
-We provide the code snippet below as an example of how to instantiate the 'gwg' sampler to use out of this package pipeline.
+We provide the code snippet below as an example of how to instantiate the `gwg` sampler to use out of this package pipeline.
 We show how the setting up the general config happens.
 Note that the sample shape and number of categories are manually set in the below example. In `DISCS` pipeline, they are set based on the model (target distribution).
 Also, to see an example of how the `ml_collections` is used to set up the configs when running a script, you can check the `config_flags.DEFINE_config_file` use case in `discs/experiment/run_sampling_local.sh` and `discs/experiment/main_sampling.py`.
