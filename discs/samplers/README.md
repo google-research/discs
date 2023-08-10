@@ -1,7 +1,7 @@
 
 
 ## Extending the samplers
-TLDR; to add your new discrete sampler, extend the `AbstractSampler` class defined in `abstractsampler.py` (${sampler_name}.py) and add its corresponding config file (${sampler_name}_config.py) in the configs folder here. 
+To add your new discrete sampler, extend the `AbstractSampler` class defined in `abstractsampler.py` (${sampler_name}.py) and add its corresponding config file (${sampler_name}_config.py) in the configs folder here. 
 
 To run the sampler locally, as an example on the bernoulli model, you can follow:
 ```
@@ -21,6 +21,7 @@ To add your sampler to the predefined xmanager experiments at `discs/run_configs
 Note that, when adding your new sampler to predefined xmanager configs, make sure you follow the same model and experiment setup as the other samplers.
 
 More Details below:
+
 This directory contains the implementation of different discrete space samplers.
 Each sampler extends the `AbstractSampler` class defined in `abstractsampler.py`.
 More specifically, each sampler overrides the following methods:
