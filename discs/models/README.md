@@ -1,14 +1,14 @@
-## Extending the models 
+## How to add new models
 This directory contains the implementation of different models/tasks.
 Each model extends the `AbstractModel` class defined in `abstractmodel.py`.
 More specifically, each model overrides the following abstract methods:
-* `make_init_params`: Loads or randomly samples the model parameters..
-* `get_init_samples`: returns the initial samples for the start of chain generation.
+* `make_init_params`: loads or randomly samples the model parameters.
+* `get_init_samples`: returns a batch of initial samples for the start of chain generation.
 * `forward`: computes the energy of batch of samples.
 
-To add a new model, a new python file for the new model should be created, with the name structure of "model_name".py which implements the above methods and extends the `AbstractModel` class.
+To add a new model, a new python file for the new model should be created, with the name structure of `${model_name}.py` which implements the above methods and extends the `AbstractModel` class.
 In the configs folder, you can find the parameters specific to each model.
-The config file name for each specific model should follow "model_name"_config.py and the below structure.
+The config file name for each specific model should follow `${model_name}_config.py` and the below structure.
 """
 def get_config():
   model_config = dict(
@@ -20,7 +20,7 @@ def get_config():
 """
 Note that for CO and EBM, the shape and number of categories are set based on the loaded information of the graph.
 
-## Using the models out of this package
+## How to use the models out of this package
 The config passed to the model for instantiation should have the following structure:
 ```
   general_config = dict(

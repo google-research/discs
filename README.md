@@ -60,14 +60,50 @@ For combinatorial optimization problems you further need to set the graph type:
     model=maxcut graph_type=ba sampler=path_auxiliary ./discs/experiment/run_sampling_local.sh
 
    
-### Running an experiment on Xmanager
+### Run an experiment on Xmanager
 To run an experiment on xmanager, under the root folder `./discs/`, run:
 
     config=./discs/run_configs/co/maxclique/rb_sampler_sweep.py ./discs/run_xmanager.sh
 
 Note that under the `./discs/run_configs/` you can find predefined experiment configs for all model types which are used to study the performance of different samplers and effect of different config values of models, samples and the experiment. The provided example above will run all the samplers on all the `maxclique` problems with graph type of `rb`. 
 
+### Define your own Xmanager experiment
 
+For defining your own Xamanger script to sweep over any of the experiment, sampler or model configs, you should follow the below structure.
+```
+from ml_collections import config_dict
+
+
+def get_config():
+  """Get config."""
+
+  config = config_dict.ConfigDict(
+      dict(
+          model='categorical',
+          ## default sampler 
+          sampler='path_auxiliary',
+          sweep=[
+              {
+                  'config.experiment.chain_length': [100000, 200000],
+                  'model_config.num_categories': [4, 8],
+                  'sampler_config.name': [
+                      'dmala',
+                      'path_auxiliary',
+                      'gwg',
+                  ],
+                  'sampler_config.balancing_fn_type': [
+                      'SQRT',
+                      'RATIO',
+                      'MAX',
+                      'MIN',
+                  ],
+              },
+          ],
+      )
+  )
+  return config
+```
+In the above example, `sampler_config.name` is used to sweep over samplers, since all of them are locally balanced function based, `sampler_config.balancing_fn_type` sweeps over the types. `config.experiment.${any experiment config you want to sweep over}` is used to sweep over experiment config, which is the chain length in above example. `model_config.${any model config you want to sweep over}` is used to sweep over any model related config values.
 
 ### Metric, Results and Plotting
 Depending on the type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
