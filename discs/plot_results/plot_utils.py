@@ -1,6 +1,6 @@
 
 color_map = {}
-color_map['rmw'] = 'green'
+color_map['rwm'] = 'green'
 color_map['fdl'] = 'gray'
 color_map['pas'] = 'saddlebrown'
 color_map['gwg'] = 'red'
@@ -24,7 +24,7 @@ def process_keys(dict_o_keys):
   elif dict_o_keys['name'] == 'blockgibbs':
     dict_o_keys['name'] = 'bg-2'
   elif dict_o_keys['name'] == 'randomwalk':
-    dict_o_keys['name'] = 'rmw'
+    dict_o_keys['name'] = 'rwm'
   elif dict_o_keys['name'] == 'path_auxiliary':
     dict_o_keys['name'] = 'pas'
 

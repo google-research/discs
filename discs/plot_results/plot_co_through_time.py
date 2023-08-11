@@ -114,7 +114,11 @@ def plot_graph_cluster(num, key, dict_results, indeces):
         x = np.arange(0, 1, (1 / len(x))) * float(
             result['results']['running_time']
         )
-      # plt.xscale('log')
+        
+      if GRAPHTYPE.value == 'maxcut':
+        plt.xscale('log')
+
+      # plt.yscale('log')
       plt.plot(
           x,
           traj_mean,
@@ -127,7 +131,7 @@ def plot_graph_cluster(num, key, dict_results, indeces):
           x,
           traj_mean - traj_std,
           traj_mean + traj_std,
-          alpha=0.25,
+          alpha=0.1,
           color=utils.get_color(key_value),
       )
     sorted_label_bo_value = {
@@ -272,11 +276,13 @@ def main(argv) -> None:
     experiment_result['results'] = {}
     if os.path.exists(results_path):
       results = pickle.load(open(results_path, 'rb'))
+      traj = np.array(results['trajectory'])
       experiment_result['results']['traj_mean'] = np.mean(
-          results['trajectory'], axis=-1
+          traj, axis=-1
       )
+      # pdb.set_trace()
       experiment_result['results']['traj_std'] = np.std(
-          results['trajectory'], axis=-1
+          np.clip(traj, a_min=0, a_max=None) , axis=-1
       )
 
       if 'log_every_steps' not in experiment_result:
