@@ -9,7 +9,7 @@ Then navigate to the root of the project folder `./discs/` and run
 
     pip install -e .
 
-## Sampling Experiment
+## DISCS Experiment 
 To run a sampling experiment, we need to set up the model we want to sample from, set up the sampler we want to use and also define the experimental setup (number of chains, chain length, etc.). To achieve that three main components are required to run an experiment in this package:
 * Model configs which are defined under `./discs/models/configs/`. For each model, its corresponding config contains the shape and the number of categories of the sample and also model parameters.
 * Sampler config which are defined under `./discs/samplers/configs/`. For each sampler, its corresponding config contains the parameters required to set up the sampler.
