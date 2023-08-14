@@ -133,6 +133,9 @@ The data contains the following components:
 * Text infilling data generated from WT103 and TBC found at `/DISCS-DATA/text_infilling_data/`.
 
 
+## How to add your own model, sampler and evaluator
+For more details on how to plug in your sampler, model and evaluator please check the explanations under `samplers`, `models` and `evaluator` folders.
+
 ## Test
 
 You can simply run `pytest` under the root folder to test everything.
