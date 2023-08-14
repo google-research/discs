@@ -1,10 +1,9 @@
 """Config for DLMC sampler."""
-
 from ml_collections import config_dict
 
 
 def get_config():
-  model_config = dict(
+  sampler_config = dict(
       name='dlmc',
       adaptive=True,
       target_acceptance_rate=0.574,
@@ -14,4 +13,4 @@ def get_config():
       solver='interpolate',
       n=3.0,
   )
-  return config_dict.ConfigDict(model_config)
+  return config_dict.ConfigDict(sampler_config)

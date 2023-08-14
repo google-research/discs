@@ -6,7 +6,6 @@ def get_config():
   """Get config."""
   exp_config = dict(
       experiment=dict(
-          num_models=128,
           batch_size=16,
           t_schedule='linear',
           chain_length=10000,
