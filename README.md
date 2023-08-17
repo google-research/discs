@@ -126,6 +126,7 @@ Depending on type of the model we are running the sampling on, different metrics
 
 * For `combinatorial optimization`, the objective function is being evaluated throughout the chain generation and stored in a `pickle` file. Note that for `normcut` problem, the best sample is also being stored in the `pickle` for further post processing to get the `edge cut ratio` and `balanceness`.
 <img width="1687" alt="fig4" src="https://github.com/google-research/discs/assets/43680795/ed51d8fb-91de-4843-9f0e-094c248db4bb">
+<img width="908" alt="table8" src="https://github.com/google-research/discs/assets/43680795/11d8e385-1cad-4e83-9126-d0d360380ba9">
 
 * For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, `self-bleu` and `unique-ngrams` are being stored in a pickle file. 
 * For energy based models, the image of selected samples are also further saved through the chain generation.
