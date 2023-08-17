@@ -131,7 +131,7 @@ def plot_graph_cluster(num, key, dict_results, indeces):
           x,
           traj_mean - traj_std,
           traj_mean + traj_std,
-          alpha=0.1,
+          alpha=0.2,
           color=utils.get_color(key_value),
       )
     sorted_label_bo_value = {
@@ -210,6 +210,17 @@ def plot_graph_cluster(num, key, dict_results, indeces):
           val = str.split(split, '=')[1]
           if val == 'b':
             plt.ylim(bottom=0.8)
+          if val[0:2] == 'er':
+            continue
+          plt.legend(
+              lines,
+              labels,
+              loc='upper left',
+              fontsize=16,
+              fancybox=True,
+              framealpha=0.4,
+          )
+            
 
     if GRAPHTYPE.value == 'maxcut':
       plt.ylabel('Ratio \u03B1', fontsize=16)
