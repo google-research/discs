@@ -1,4 +1,4 @@
-"""Discrete Langevin Monte Carlo."""
+"""DLMC Sampler."""
 
 from discs.common import math_util as math
 from discs.samplers import locallybalanced
@@ -12,7 +12,6 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
   """DLMC sampler."""
 
   def update_sampler_state(self, state, acc, local_stats):
-    # pdb.set_trace()
     cur_step = state['steps']
     state['num_ll_calls'] += 4
     if self.co_opt_prob or not self.adaptive:
@@ -23,7 +22,6 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
       )
     else:
       log_z = jnp.where(cur_step == 1, local_stats['log_z'], state['log_z'])
-    # TODO: add scheduling of logz_ema
     logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
     log_z = (logs_ema * log_z) + ((1 - logs_ema) * local_stats['log_z'])
 
@@ -90,7 +88,11 @@ class DLMCSampler(locallybalanced.LocallyBalancedSampler):
 
       log_tau = jnp.where(self.co_opt_prob, local_stats['log_tau'], log_tau)
     else:
-      state['log_tau'] = jnp.where(state['steps']==0,  self.reset_stats(log_rate_x['weights'])['log_tau'], state['log_tau'])
+      state['log_tau'] = jnp.where(
+          state['steps'] == 0,
+          self.reset_stats(log_rate_x['weights'])['log_tau'],
+          state['log_tau'],
+      )
       log_tau = state['log_tau']
       local_stats = None
 

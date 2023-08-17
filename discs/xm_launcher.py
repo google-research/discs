@@ -1,8 +1,7 @@
+"""Script used to launch Xmanager."""
 import copy
-from copy import deepcopy
 import getpass
 import itertools
-import pdb
 from absl import app
 from absl import flags
 from ml_collections import config_flags
@@ -23,14 +22,6 @@ config_flags.DEFINE_config_file(
     ),
     lock_config=True,
 )
-
-_EXP_NAME = flags.DEFINE_string(
-    'experiment_name',
-    'Sampling_Experiment',
-    'Name of the experiment.',
-    short_name='n',
-)
-
 flags.DEFINE_string(
     'save_folder_pattern',
     '/gcs/xcloud-shared/{user}/results/discs/{exp_name}_{exp_id}',
@@ -48,7 +39,6 @@ _LAUNCH_LOCALLY = flags.DEFINE_bool(
 )
 
 _NUM_GPUS = flags.DEFINE_integer('num_gpus', 8, 'Number of GPUs')
-
 _USE_BATCH = flags.DEFINE_bool(
     'use_batch', False, 'Enables batch service tier.'
 )
@@ -68,12 +58,14 @@ def main(argv) -> None:
   job_config = FLAGS.config
   num_gpus = _NUM_GPUS.value
   executable_args = {}
+  # setting model, sampler and experiment config
   executable_args['model_config'] = (
       f'/workdir/discs/models/configs/{job_config.model}_config.py'
   )
   executable_args['sampler_config'] = (
       f'/workdir/discs/samplers/configs/{job_config.sampler}_config.py'
   )
+  # co problems
   if job_config.get('graph_type', None):
     executable_args['config'] = (
         f'/workdir/discs/experiment/configs/{job_config.model}/{job_config.graph_type}.py'
@@ -82,6 +74,7 @@ def main(argv) -> None:
     executable_args['model_config.data_root'] = (
         '/gcs/xcloud-shared/hadai/data/sco'
     )
+  # language model
   elif job_config.get('model') == 'text_infilling':
     executable_args['config'] = (
         '/workdir/discs/experiment/configs/lm_experiment.py'
@@ -89,8 +82,11 @@ def main(argv) -> None:
   else:
     executable_args['config'] = '/workdir/discs/common/configs.py'
     num_gpus = 4
-    
-  if job_config.get('model') == 'maxcut' and job_config.get('graph_type') == 'optsicom':
+
+  if (
+      job_config.get('model') == 'maxcut'
+      and job_config.get('graph_type') == 'optsicom'
+  ):
     num_gpus = 2
   executable_args.update(
       {
@@ -99,7 +95,6 @@ def main(argv) -> None:
           if name.startswith('config.')
       }
   )
-
   create_experiment = (
       xm_local.create_experiment
       if _LAUNCH_LOCALLY.value
@@ -127,7 +122,6 @@ def main(argv) -> None:
     save_dir = FLAGS.save_folder_pattern.format(
         user=uname, exp_name=exp_name, exp_id=experiment.experiment_id
     )
-    print('Saving Dir is: ', save_dir)
     executable_args['config.experiment.save_root'] = save_dir
     module = 'discs.experiment.main_sampling'
     (executable,) = experiment.package(
@@ -146,7 +140,7 @@ def main(argv) -> None:
     )
 
     async def make_job(work_unit, **kwargs):
-      args = deepcopy(executable_args)
+      args = copy.deepcopy(executable_args)
       args.update(kwargs)
       if 'sampler_config.name' in args.keys():
         args['sampler_config'] = (
@@ -180,7 +174,7 @@ def main(argv) -> None:
     for sweep_dict in list_of_sweep_dicts:
       sweeps = get_sweeps(sweep_dict)
       all_sweeps_configs.append(sweeps)
-
+      
     all_sweeps_configs = np.hstack(all_sweeps_configs)
     for sweep_args in all_sweeps_configs:
       experiment.add(make_job, args=sweep_args)

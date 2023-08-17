@@ -1,3 +1,4 @@
+"""Config file for text infilling model."""
 from ml_collections import config_dict
 
 
@@ -13,5 +14,5 @@ def get_config():
       min_sentence_len=15,
       max_sentence_len=25,
   )
-  model_config['save_dir_name'] = 'text_infilling_'+str(model_config['num_categories'])  
+  model_config['save_dir_name'] = 'text_infilling'
   return config_dict.ConfigDict(model_config)

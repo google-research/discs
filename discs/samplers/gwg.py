@@ -1,11 +1,11 @@
 """Gibbs with gradient."""
 
+import pdb
 from discs.common import math_util as math
 from discs.samplers import locallybalanced
 import jax
 import jax.numpy as jnp
 import ml_collections
-import pdb
 
 
 class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
@@ -14,26 +14,13 @@ class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
   def select_sample(
       self, rng, log_acc, current_sample, new_sample, sampler_state
   ):
-    y, new_state = super().select_sample(
-        rng, log_acc, current_sample, new_sample, sampler_state)
+    y, sampler_state = super().select_sample(
+        rng, log_acc, current_sample, new_sample, sampler_state
+    )
     sampler_state['num_ll_calls'] += 4
     return y, sampler_state
 
   def step(self, model, rng, x, model_param, state, x_mask=None):
-    """Given the current sample, returns the next sample of the chain.
-
-    Args:
-      model: target distribution.
-      rng: random key generator for JAX.
-      x: current sample.
-      model_param: target distribution parameters used for loglikelihood
-        calulation.
-      state: the state of the sampler.
-      x_mask: (optional) broadcast to x, masking out certain dimensions.
-
-    Returns:
-      New sample.
-    """
     if self.num_categories != 2:
       x = jax.nn.one_hot(x, self.num_categories, dtype=jnp.float32)
     rng_new_sample, rng_acceptance = jax.random.split(rng)
@@ -47,7 +34,7 @@ class GibbsWithGradSampler(locallybalanced.LocallyBalancedSampler):
     ll_y2x = self.get_ll_onestep(dist_y, aux=aux, src_to_dst='y2x')
     log_acc = ll_y + ll_y2x - ll_x - ll_x2y
     new_x, new_state = self.select_sample(rng_acceptance, log_acc, x, y, state)
-    
+
     acc = jnp.mean(jnp.clip(jnp.exp(log_acc), a_max=1))
     return new_x, new_state, acc
 

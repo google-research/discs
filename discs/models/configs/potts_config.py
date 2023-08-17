@@ -1,3 +1,4 @@
+"""Config file for bernoulli potts."""
 from ml_collections import config_dict
 
 

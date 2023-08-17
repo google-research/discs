@@ -1,7 +1,6 @@
 """Max Clique model."""
 
 from discs.models import comb_ebm
-import jax
 import jax.numpy as jnp
 import ml_collections
 
@@ -40,13 +39,6 @@ class MaxClique(comb_ebm.BinaryNodeCombEBM):
     _ = params
     x = x * params['mask']
     return jnp.sum(x, axis=1)
-
-  def logratio_in_neighborhood(self, params, x):
-    edge_from = params['bidir_edge_from']
-    edge_to = params['bidir_edge_to']
-
-    gather2dst = x[:, edge_to]
-    diff_penalty = self.penalty_coeff * gather2dst
 
 
 def build_model(config):

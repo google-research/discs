@@ -2,7 +2,6 @@
 
 import copy
 from itertools import product
-import pdb
 from discs.common import math_util as math
 from discs.samplers import abstractsampler
 import jax
@@ -12,7 +11,7 @@ import ml_collections
 
 
 class HammingBallSampler(abstractsampler.AbstractSampler):
-  """Random Walk Sampler Base Class."""
+  """Hamming Ball Sampler with hamming dist of 1."""
 
   def __init__(self, config: ml_collections.ConfigDict):
     self.sample_shape = config.model.shape

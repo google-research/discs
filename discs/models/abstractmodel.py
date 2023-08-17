@@ -12,6 +12,7 @@ class AbstractModel(abc.ABC):
 
   @abc.abstractmethod
   def make_init_params(self, rng):
+    """Loads or randomly samples the model parameters."""
     pass
 
   @abc.abstractmethod
@@ -29,6 +30,7 @@ class AbstractModel(abc.ABC):
 
   @abc.abstractmethod
   def forward(self, params, x):
+    """Get the energy of batch of samples."""
     pass
 
   def get_value_and_grad(self, params, x):

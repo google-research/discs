@@ -1,6 +1,5 @@
-"""Discrete Langevin Monte Carlo."""
+"""DMALA Sampler."""
 
-import pdb
 from discs.common import math_util as math
 from discs.samplers import locallybalanced
 import jax
@@ -23,7 +22,6 @@ class DMALASampler(locallybalanced.LocallyBalancedSampler):
       )
     else:
       log_z = jnp.where(cur_step == 1, local_stats['log_z'], state['log_z'])
-    # TODO: add scheduling of logz_ema
     logs_ema = jnp.where(cur_step < self.schedule_step, 0, 1)
     log_z = (logs_ema * log_z) + ((1 - logs_ema) * local_stats['log_z'])
 
