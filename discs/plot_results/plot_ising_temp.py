@@ -19,7 +19,7 @@ import numpy as np
 
 flags.DEFINE_string(
     'gcs_results_path',
-    './discs-ising-lamdasweep_bigger_57937100',
+    './discs-ising-lamdasweep_small_62715141',
     'where results are being saved',
 )
 flags.DEFINE_string('key', 'name', 'what key to plot against')
@@ -105,13 +105,24 @@ def plot_graph(all_mapped_names):
       else:
         label_sampler = sampler
       print(all_mapped_names[sampler]['x'])
+      
+      vals = np.array(all_mapped_names[sampler][res_key])
+      std = np.array(all_mapped_names[sampler][res_key+'_std'])
       plt.plot(
           all_mapped_names[sampler]['x'],
-          all_mapped_names[sampler][res_key],
+          vals,
           label=label_sampler,
           c=get_color(sampler),
           alpha=alpha,
           linestyle=line_style, marker='o'
+      )
+      
+      plt.fill_between(
+          all_mapped_names[sampler]['x'],
+          vals - std,
+          vals + std,
+          alpha=0.25*alpha,
+          color=get_color(sampler),
       )
 
     plt.legend(
@@ -353,7 +364,9 @@ def prepare_for_ising(all_mapped_names):
       continue
     res[sampler] = {}
     res[sampler]['ess_ee'] = [all_mapped_names[0][sampler]['ess_ee'][0]]
+    res[sampler]['ess_ee_std'] = [all_mapped_names[0][sampler]['ess_ee_std'][0]] 
     res[sampler]['ess_clock'] = [all_mapped_names[0][sampler]['ess_clock'][0]]
+    res[sampler]['ess_clock_std'] = [all_mapped_names[0][sampler]['ess_clock_std'][0]]
     res[sampler]['x'] = [0.1607]
     for temp in range(1, len(all_mapped_names)):
       x_val = map_temp(all_mapped_names[temp]['save_title'])
@@ -363,6 +376,12 @@ def prepare_for_ising(all_mapped_names):
       )
       res[sampler]['ess_clock'].append(
           all_mapped_names[temp][sampler]['ess_clock'][0]
+      )
+      res[sampler]['ess_ee_std'].append(
+          all_mapped_names[temp][sampler]['ess_ee_std'][0]
+      )
+      res[sampler]['ess_clock_std'].append(
+          all_mapped_names[temp][sampler]['ess_clock_std'][0]
       )
 
   return res
@@ -403,15 +422,22 @@ def main(argv) -> None:
       print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
       continue
     file = csv.DictReader(filename)
-    results = {}
+    results = {}        
     for col in file:
+      gap = str.find(col['ESS_EE'], ' ')
       if 'chain_length' not in res_dic:
-        results['ess_ee'] = float(col['ESS_EE']) * 50000
+        results['ess_ee'] = float(col['ESS_EE'][2:gap]) * 50000
+        results['ess_ee_std'] = float(col['ESS_EE'][gap+1:-2])/10 * 50000
       else:
-        results['ess_ee'] = float(col['ESS_EE']) * int(
+        results['ess_ee'] = float(col['ESS_EE'][2:gap]) * int(
             float(res_dic['chain_length']) // 2
         )
-      results['ess_clock'] = float(col['ESS_T'])
+        results['ess_ee_std'] = float(col['ESS_EE'][gap+1:-2])/10 * int(
+            float(res_dic['chain_length']) // 2
+        )      
+      gap_t = str.find(col['ESS_T'], ' ')
+      results['ess_clock'] = float(col['ESS_T'][2:gap_t])
+      results['ess_clock_std'] = float(col['ESS_T'][gap_t+1:-2])
 
     res_dic['results'] = results
     experiments_results.append(res_dic)

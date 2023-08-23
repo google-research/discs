@@ -5,6 +5,7 @@ import os
 import pdb
 import pickle
 from discs.evaluators import bernoulli_eval as b_eval
+from matplotlib import cm
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import ml_collections
@@ -69,7 +70,6 @@ class Saver:
       else:
         results['sampler'] = results['sampler'] + '(sqrt)'
 
-    metrcis = jnp.array(metrcis)
     results['model'] = self.config.model.name
     results['num_categories'] = self.config.model.num_categories
     results['shape'] = self.config.model.shape
