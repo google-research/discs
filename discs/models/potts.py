@@ -16,6 +16,8 @@ class Potts(abstractmodel.AbstractModel):
     self.shape = self.sample_shape + (self.num_categories,)
     self.mu = config.mu
     self.init_sigma = config.init_sigma
+    self.top_k = config.top_k
+    self.k = config.k
 
   def inner_or_outter(self, n, shape):
     if (n[0] / shape - 0.5) ** 2 + (n[1] / shape - 0.5) ** 2 < 0.5 / jnp.pi:
@@ -79,6 +81,9 @@ class Potts(abstractmodel.AbstractModel):
     w_b = params[2]
     loglikelihood = loglikelihood / 2 + w_b
     loglike = x * loglikelihood
+    if self.top_k:
+      vals, index = jax.lax.top_k(loglike, self.k)
+      loglike = loglike.at[index].set(1e-10)
     loglike = loglike.reshape(x.shape[0], -1)
     return -jnp.sum(loglike, axis=-1)
   
