@@ -299,7 +299,7 @@ class Sampling_Experiment(Experiment):
       num_ll_calls = int(state['num_ll_calls'][0])
     else:
       num_ll_calls = int(state['num_ll_calls'])
-    ess = float(obj_fn(samples=chain, rnd=rng).reshape(-1))
+    ess = obj_fn(samples=chain, rnd=rng)
     metrics = eval_metric(ess, running_time, num_ll_calls)
     saver.save_results(acc_ratios, hops, metrics, running_time)
     if self.config.save_samples or self.config.get_estimation_error:
@@ -307,7 +307,7 @@ class Sampling_Experiment(Experiment):
           'rbm',
           'resnet',
       ]:
-        saver.dump_samples(samples, visualize=True)
+        saver.dump_samples(samples, visualize=False)
       elif (
           self.config.get_estimation_error
           and self.config_model.name == 'bernoulli'

@@ -7,7 +7,7 @@ from absl import flags
 import matplotlib.pyplot as plt
 import numpy as np
 import plot_utils as utils
-
+import re
 
 flags.DEFINE_string(
     'gcs_results_path',
@@ -64,6 +64,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
   for res_key in result_keys:
     if res_key in ['running_time']:
       continue
+    if res_key.endswith('std'):
+      continue
     f = plt.figure()
     f.set_figwidth(12)
     f.set_figheight(8)
@@ -115,8 +117,9 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               3.725,
               3.875,
           ]
-
       values = res_cluster[sampler][res_key]
+      if res_key+'_std' in res_cluster[sampler]:
+        error = res_cluster[sampler][res_key+'_std']
       c = utils.get_color(sampler)
 
       if sampler[-3:] == '(r)':
@@ -132,6 +135,8 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           print('Gonna be Appending 0')
         while len(values) < len(x_poses):
           values.append(0)
+          error.append(0)
+          
 
       if FLAGS.evaluation_type == 'ess':
         plt.yscale('log')
@@ -139,7 +144,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           plt.ylabel('ESS w.r.t Energy Evaluation', fontsize=16)
         else:
           plt.ylabel('ESS w.r.t Clock', fontsize=16)
-
+        
         if xticks[0] != 'samplers':
           alpha = 1
           plt.bar(
@@ -149,9 +154,13 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               label=label_sampler,
               color=c,
               alpha=alpha,
+              yerr=error,
+              linewidth=10,
           )
+                    
         else:
           len(x_poses)
+          
           plt.bar(
               x_poses[i],
               values,
@@ -159,7 +168,10 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
               label=label_sampler,
               color=c,
               alpha=alphas[i],
+              yerr=error,
+              linewidth=10,
           )
+               
       else:
         if FLAGS.evaluation_type != 'lm':
           threshold = 0.00025
@@ -483,7 +495,17 @@ def save_result_as_csv(all_mapped_names, dir_name):
         data['sampler'] = sampler
         writer.writerow(data)
 
-
+def extract_floats(string_of_numbers):
+  
+  string_of_numbers = string_of_numbers[2:-2].strip()
+  
+  gap = string_of_numbers.find(' ')
+  
+  f1 = float(string_of_numbers[0:gap])
+  f2 = float(string_of_numbers[gap+1:])
+  return [f1, f2]
+  
+  
 def main(argv) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
@@ -504,7 +526,6 @@ def main(argv) -> None:
     if 'save_samples' in res_dic:
       del res_dic['save_samples']
     print(res_dic)
-    print('******************')
 
     if FLAGS.evaluation_type == 'lm':
       filename = os.path.join(subfolderpath, 'results_topk.pkl')
@@ -519,18 +540,36 @@ def main(argv) -> None:
       file = csv.DictReader(filename)
       results = {}
       for col in file:
-        if FLAGS.evaluation_type == 'ess':
+        if FLAGS.evaluation_type == 'ess':  
+          # pdb.set_trace()        
+          ESS = extract_floats(col['ESS_EE'])
           if 'chain_length' not in res_dic:
-            results['ess_ee'] = float(col['ESS_EE']) * 50000
+            results['ess_ee'] = ESS[0] * 50000
+            results['ess_ee_std'] = ESS[1] * 50000
           else:
-            results['ess_ee'] = float(col['ESS_EE']) * int(
+            results['ess_ee'] = ESS[0] * int(
                 float(res_dic['chain_length']) // 2
             )
-          results['ess_clock'] = float(col['ESS_T'])
-        elif FLAGS.evaluation_type == 'co':
+            results['ess_ee_std'] = float(ESS[1]) * int(
+                float(res_dic['chain_length']) // 2
+            )
+          # print(col['ESS_EE'])
+          # print(results['ess_ee'], results['ess_ee_std'])
+          TIME = extract_floats(col['ESS_T'])
+          
+          # pdb.set_trace()
+          print("time = ", col['ESS_T'])
+          results['ess_clock'] = TIME[0]
+          results['ess_clock_std'] = TIME[1]
+  
+        elif FLAGS.evaluation_type == 'co':          
+          filename = os.path.join(subfolderpath, 'results.pkl')
+          results_pkl = pickle.load(open(filename, 'rb'))
           results['best_ratio_mean'] = col['best_ratio_mean']
-        if FLAGS.evaluation_type == 'co':
           results['running_time'] = 2 * float(col['running_time'])
+          results['best_ratio_std'] = np.std(results_pkl['trajectory'][-1])
+    print('******************')
+          
     res_dic['results'] = results
     experiments_results.append(res_dic)
   results_index_cluster = get_clusters_key_based(FLAGS.key, experiments_results)
