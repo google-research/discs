@@ -4,7 +4,7 @@ from discs.models import abstractmodel
 import jax
 import jax.numpy as jnp
 import ml_collections
-
+import pdb
 
 class Potts(abstractmodel.AbstractModel):
   """Potts Distribution (2D cyclic ising model with one-hot representation)."""
@@ -83,14 +83,17 @@ class Potts(abstractmodel.AbstractModel):
     if self.top_k:
       loglike_flatten = loglike.reshape([-1, loglike.shape[-1]])
       vals, index = jax.lax.top_k(loglike_flatten, self.k)
-
+      vals = vals.reshape(-1)
       index_zero = jnp.repeat(jnp.arange(index.shape[0]), self.k)
       index = index.reshape(-1)
-      coef = (jnp.ones_like(loglike_flatten).at[index_zero, index].set(0)) * (
-          -1e18
-      )
-      loglike_flatten += coef
-      loglike = loglike_flatten.reshape(loglike.shape)
+      #coef = (jnp.zeros_like(loglike_flatten).at[index_zero, index].set(vals))
+      #loglike_flatten += coef
+      #loglike = loglike_flatten.reshape(loglike.shape)
+      #pdb.set_trace()
+      loglike_zero = jnp.zeros_like(loglike_flatten).at[index_zero, index].set(vals)
+      loglike = loglike_zero.reshape(loglike.shape)
+      #jax.debug.print("loglike: {}", loglike)
+
 
     loglike = loglike.reshape(x.shape[0], -1)
     return -jnp.sum(loglike, axis=-1)
