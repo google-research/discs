@@ -47,7 +47,6 @@ class Potts(abstractmodel.AbstractModel):
     params['params'] = jnp.array([params_weight_h, params_weight_v, params_b])
     return params
 
-
   def get_init_samples(self, rnd, num_samples: int):
     x0 = jax.random.randint(
         rnd,
@@ -82,11 +81,20 @@ class Potts(abstractmodel.AbstractModel):
     loglikelihood = loglikelihood / 2 + w_b
     loglike = x * loglikelihood
     if self.top_k:
-      vals, index = jax.lax.top_k(loglike, self.k)
-      loglike = loglike.at[index].set(1e-10)
+      loglike_flatten = loglike.reshape([-1, loglike.shape[-1]])
+      vals, index = jax.lax.top_k(loglike_flatten, self.k)
+
+      index_zero = jnp.repeat(jnp.arange(index.shape[0]), self.k)
+      index = index.reshape(-1)
+      coef = (jnp.ones_like(loglike_flatten).at[index_zero, index].set(0)) * (
+          -1e18
+      )
+      loglike_flatten += coef
+      loglike = loglike_flatten.reshape(loglike.shape)
+
     loglike = loglike.reshape(x.shape[0], -1)
     return -jnp.sum(loglike, axis=-1)
-  
+
   def get_value_and_grad(self, params, x):
     x = x.astype(jnp.float32)  # int tensor is not differentiable
 
