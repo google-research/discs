@@ -17,13 +17,11 @@ _SAMPLER_CONFIG = config_flags.DEFINE_config_file('sampler_config')
 _RUN_LOCAL = flags.DEFINE_boolean('run_local', False, 'if runnng local')
 
 
-def get_save_dir(config):
+def update_save_dir(config):
   if _RUN_LOCAL.value:
     save_folder = config.model.get('save_dir_name', config.model.name)
     save_root = './discs/results/' + save_folder
-  else:
-    save_root = config.experiment.save_root
-  return save_root
+    config.experiment.save_root = save_root
 
 
 def get_main_config():
@@ -56,6 +54,7 @@ def get_main_config():
 
 def main(_):
   config = get_main_config()
+  update_save_dir(config)
   utils.setup_logging(config)
 
   # model
@@ -82,7 +81,7 @@ def main(_):
   evaluator = evaluator_mod.build_evaluator(config)
 
   # saver
-  saver = saver_mod.build_saver(get_save_dir(config), config)
+  saver = saver_mod.build_saver(config)
 
   # chain generation
   experiment.get_results(model, sampler, evaluator, saver)
