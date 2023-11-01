@@ -47,6 +47,7 @@ def get_main_config():
     )
     config.experiment.update(co_exp_default_config.get_co_default_config())
     config.update(_EXPERIMENT_CONFIG.value)
+    config.experiment.num_models = config.model.num_models
 
   if config.model.get('bert_model', None):
     config.update(_EXPERIMENT_CONFIG.value)
