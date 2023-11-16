@@ -6,7 +6,7 @@ from absl import app
 from absl import flags
 import matplotlib.pyplot as plt
 import numpy as np
-import plot_utils as utils
+import discs.plot_results.plot_utils as utils
 
 flags.DEFINE_string(
     'gcs_results_path',

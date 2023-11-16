@@ -27,9 +27,9 @@ key=name
 graphtype=mis
 
 
-data_path="./${experiment_folder}"
+data_path="./discs/plot_results/${experiment_folder}"
 
-python -m plot_results \
+python -m discs.plot_results.plot_results \
   --gcs_results_path=$data_path \
   --evaluation_type=$evaluation_type \
   --key=$key \
