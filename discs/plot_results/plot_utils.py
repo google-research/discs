@@ -1,8 +1,5 @@
-import pdb
-
 color_map = {}
 color_map['rwm'] = 'green'
-color_map['fdl'] = 'gray'
 color_map['pas'] = 'saddlebrown'
 color_map['gwg'] = 'red'
 color_map['bg-'] = 'orange'
@@ -21,7 +18,8 @@ def get_color(sampler):
 
 def process_keys(dict_o_keys):
   """Getting the name of the sampler based on its config.
-     NEW_SAMPLER = In case of adding new sampler update this.
+
+  NEW_SAMPLER = In case of adding new sampler update this.
   """
   if dict_o_keys['name'] == 'hammingball':
     dict_o_keys['name'] = 'hb-10-1'
@@ -36,7 +34,7 @@ def process_keys(dict_o_keys):
     if dict_o_keys['solver'] == 'euler_forward':
       dict_o_keys['name'] = str(dict_o_keys['name']) + 'f'
     del dict_o_keys['solver']
-    
+
   if 'approx_with_grad' in dict_o_keys:
     del dict_o_keys['approx_with_grad']
 
@@ -95,6 +93,7 @@ def get_experiment_config(exp_config):
 
   return dict(zip(keys, values))
 
+
 def get_clusters_key_based(key, results_dict_list):
   """Clusters the experiments that are only different based on the key.
 
@@ -121,6 +120,7 @@ def get_clusters_key_based(key, results_dict_list):
 
   return results_index_cluster
 
+
 def process_ticks(x_ticks):
   x_ticks_new = []
   for i, tick in enumerate(x_ticks):
@@ -133,6 +133,7 @@ def process_ticks(x_ticks):
     elif tick == "'MAX'":
       x_ticks_new.append('1 \u2228 t')
   return x_ticks_new
+
 
 def sort_based_on_samplers(all_mapped_names):
   """NEW_SAMPLER = In case of adding new sampler, update this."""
@@ -181,7 +182,9 @@ def sort_based_on_samplers(all_mapped_names):
 
   return all_mapped_names
 
+
 def get_diff_key(key_diff, dict1, dict2):
+  """If dict1 and dict2 are only different in terms of key_diff."""
   for key in dict1.keys():
     if key in ['results', 'name']:
       continue
@@ -190,20 +193,3 @@ def get_diff_key(key_diff, dict1, dict2):
     if dict1[key] != dict2[key] and key != key_diff:
       return None
   return True
-
-# def get_diff_key(key_diff, dict1, dict2):
-#   """True if dict1 and dict2 are different based on key_diff."""
-#   # pdb.set_trace()
-#   if key_diff in dict1 and key_diff in dict2:
-#     if dict1[key_diff] == dict2[key_diff]:
-#       return False
-#   else:
-#     return False
-#   for key in dict1.keys():
-#     if key in ['results']:
-#       continue
-#     if key not in dict2:
-#       return False
-#     if dict1[key] != dict2[key] and key != key_diff:
-#       return False
-#   return True

@@ -12,23 +12,12 @@ import numpy as np
 flags.DEFINE_string(
     'gcs_results_path',
     './discs-maxcut-ba_sampler_sweep_56579701',
-    'where results are being saved',
+    'where to load the experiment results from',
 )
-flags.DEFINE_string('evaluation_type', 'co', 'where results are being saved')
+flags.DEFINE_string('evaluation_type', 'co', 'depending on the task select from co/ess/lm')
 flags.DEFINE_string('key', 'name', 'what key to plot against')
 
 FLAGS = flags.FLAGS
-
-
-# def get_diff_key(key_diff, dict1, dict2):
-#   for key in dict1.keys():
-#     if key in ['results', 'name']:
-#       continue
-#     if key not in dict2:
-#       return False
-#     if dict1[key] != dict2[key] and key != key_diff:
-#       return False
-#   return True
 
 
 def plot_results(all_mapped_names, key_diff, xticks):
@@ -65,7 +54,7 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
         if xticks[0] != 'samplers':
           local_pos = np.arange(num_samplers) - (num_samplers / 2) + 1.5
         else:
-          # NEW_SAMPLER = Add the position and alpha of your plot.
+          # NEW_SAMPLER: Add the position, alpha and bar width of your plot.
           alphas = [1, 1, 1, 1, 0.5, 1, 0.5, 1, 0.5, 1, 0.5, 1, 0.5]
           bar_widths = [
               0.3,
@@ -333,8 +322,8 @@ def organize_experiments(
 
 
 def get_ticks_and_sorted_experiments(folders, key_diff):
-  """Get the plot ticks and sorts the folders based on ticks.
-     Ticks are the different values of the key_diff.
+  """Returns the plot ticks based on the provided key_diff and sorts the folders based on ticks.
+     Ticks are the different values of the key_diff in the experiment.
   """
   keydiff_vals = []
   for folder in folders:
@@ -380,12 +369,9 @@ def save_result_as_csv(all_mapped_names, dir_name):
         data['sampler'] = sampler
         writer.writerow(data)
 
-
 def extract_floats(string_of_numbers):
   string_of_numbers = string_of_numbers[2:-2].strip()
-
   gap = string_of_numbers.find(' ')
-
   f1 = float(string_of_numbers[0:gap])
   f2 = float(string_of_numbers[gap + 1 :])
   return [f1, f2]
@@ -464,7 +450,7 @@ def main(argv) -> None:
   elif key_diff == 'balancing_fn_type':
     x_ticks = utils.process_ticks(x_ticks)
 
-  print('xtickssssss: ', x_ticks)
+  print('xticks: ', x_ticks)
   if FLAGS.evaluation_type == 'ess':
     plot_results(all_mapped_names, key_diff, x_ticks)
   if FLAGS.evaluation_type == 'lm':

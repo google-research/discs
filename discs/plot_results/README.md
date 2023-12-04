@@ -12,4 +12,13 @@ To reproduce the CO figures, you need to run `run_plor_co_through_time.sh`. You 
 
 
 # Adding new sampler:
-To add your new sampler, you need to update a few things.
+To add your new sampler, you need to update a few things as below:
+
+Updates to `./discs/plot_results/plot_utils.py`:
+* In `process_keys` function, add the name of your sampler as you want it in the plots and tables.
+* Update `color_map` dictionary and `get_color` function and assign the color of your new sampler.
+* Update `sort_based_on_samplers` and add your sampler to the end of `sampler_list`. Note that in case of locally balanced sampler, you need to follow the similar structure of the provided example of locally balanced samplers.
+
+Updates to `./discs/plot_results/plot_results.py`:
+* In `plot_graph_cluster` function, update the `alphas`, `bar_widths`, and `x_poses` to add your new sampler to the plot.
+
