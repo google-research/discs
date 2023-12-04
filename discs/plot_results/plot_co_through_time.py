@@ -20,7 +20,7 @@ FLAGS = flags.FLAGS
 
 def plot_results_keybased(key, results_dict_list):
   """Clusters the experiments and plots the clusters."""
-  results_index_cluster = util.get_clusters_key_based(key, results_dict_list)
+  results_index_cluster = utils.get_clusters_key_based(key, results_dict_list)
   if not results_index_cluster:
     results_index_cluster = [np.arange(len(results_dict_list))]
   print('Clustered experiments IDs: ', results_index_cluster)
@@ -104,16 +104,16 @@ def plot_graph_cluster(key, dict_results, indeces):
     )
 
     # configing plot
-    plt.xscale('log')
-    # plt.yscale('log')
     plt.grid()
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
     plt.xlabel(x_label, fontsize=16)
     if GRAPHTYPE.value == 'mis':
       splits = str.split(graph_save, ',')
+      has_cfg_str = False
       for split in splits:
         if split.startswith('cfg_str'):
+          has_cfg_str = True
           val = str.split(split, '=')[1]
           if val == '0.05':
             plt.ylim(-100, 115)
@@ -133,14 +133,15 @@ def plot_graph_cluster(key, dict_results, indeces):
           elif val == '10k':
             plt.axhline(y=381.31, color='black', linestyle='--')
             plt.ylim(-1000, 500)
-          elif val == 'dlmc(s)':
-            plt.axhline(y=425.96, color='black', linestyle='--')
-            plt.ylim(300, 450)
           break
+      if not has_cfg_str:
+        plt.axhline(y=425.96, color='black', linestyle='--')
+        plt.ylim(300, 450)
       plt.ylabel('Size of Independent Set', fontsize=16)
     elif GRAPHTYPE.value == 'maxclique':
       plt.ylabel('Ratio \u03B1', fontsize=16)
-      plt.axhline(y=0.789, color='black', linestyle='--')
+      if graph_save:
+        plt.axhline(y=0.789, color='black', linestyle='--')
       plt.ylim(bottom=0, top=1.1)
     elif GRAPHTYPE.value == 'maxcut':
       splits = str.split(graph_save, ',')
