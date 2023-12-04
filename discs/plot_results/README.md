@@ -1,0 +1,1 @@
+To generate the plots two main scripts were used
