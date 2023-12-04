@@ -122,18 +122,13 @@ In the above example, `sampler_config.name` is used to sweep over samplers, sinc
 ### Metric, Results and Plotting
 Depending on type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
 * For the `classical model`, the ESS is computed over the chains after the burn-in phase. The ESS is normalized over running time and number of energy evaluations and stored as a `csv` file.
-<img width="1549" alt="fig1" src="https://github.com/google-research/discs/assets/43680795/06fceb4d-403c-4391-94b0-6e37d1b11f24">
-<img width="1676" alt="fig2" src="https://github.com/google-research/discs/assets/43680795/89ead257-09c5-43fa-b124-c4e34dd97ae1">
-<img width="1555" alt="fig3" src="https://github.com/google-research/discs/assets/43680795/1ecdb24a-5f66-4db2-8867-936526a6d8a9">
 
 * For `combinatorial optimization`, the objective function is being evaluated throughout the chain generation and stored in a `pickle` file. Note that for `normcut` problem, the best sample is also being stored in the `pickle` for further post processing to get the `edge cut ratio` and `balanceness`.
-<img width="1687" alt="fig4" src="https://github.com/google-research/discs/assets/43680795/ed51d8fb-91de-4843-9f0e-094c248db4bb">
-<img width="908" alt="table8" src="https://github.com/google-research/discs/assets/43680795/11d8e385-1cad-4e83-9126-d0d360380ba9">
+
 
 * For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, `self-bleu` and `unique-ngrams` are being stored in a pickle file. 
 * For energy based models, the image of selected samples are also further saved through the chain generation.
 To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
-<img width="1685" alt="fig6" src="https://github.com/google-research/discs/assets/43680795/1ccb7e0e-b75e-4650-8ef8-6a56ae8488a8">
 
 ## Data
 The data used in this package could be found [here](https://drive.google.com/drive/u/1/folders/1nEppxuUJj8bsV9Prc946LN_buo30AnDx).
