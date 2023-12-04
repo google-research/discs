@@ -10,13 +10,13 @@ Then navigate to the root of the project folder `./discs/` and run
 
     pip install -e .
 
-## DISCS Experiment 
-To run a sampling experiment, we need to set up the model we want to sample from, set up the sampler we want to use and also define the experimental setup (number of chains, chain length, etc.). To achieve this, three main components are required to run an experiment in this package:
-* **Model configs** which are defined under `./discs/models/configs/`. For each model, its corresponding config contains the shape and the number of categories of the sample and also additional model config values to setup the model parameters.
+## DISCS Package Structure 
+To run a sampling experiment, we need to set up three main components. 1) The model we want to sample from (target distribution), 2) the sampler we want to use and 3) MCMC experimental configuration (number of chains, chain length, etc.). To achieve this, these three main components are being structured in DISCS package as below:
+* **Model configs** which are defined under `./discs/models/configs/`. For each model, its corresponding config contains the shape and the number of categories of the sample and also additional model config values to set up the model parameters.
 * **Sampler config** which are defined under `./discs/samplers/configs/`. For each sampler, its corresponding config contains the values required to set up the sampler.
 * **Experiment config** which are defined under `./discs/experiment/configs/`. Note that the experimental setup varries depending on the type of the model we wish to run. For all the experiments, we first load the common general experiment configs defined at `./discs/common/configs.py` and then update the values depending on the task type. `./discs/experiment/configs/lm_experiment.py` contains the experiment setup for the `text_infilling` problem. `./discs/experiment/configs/co_experiment.py` contains the common configs of the combinatorial optimization problem which depending on the problem type additional configs of the graph type are defined under their different folder in `./discs/experiment/configs/`.
 
-**Note**: to learn how to add your sampler or model to the packages, you can refer to the explanations provided in `./discs/samplers/` and `./discs/models/`.
+**Note**: For adding new samplers, models and experiments the above configs needs to get updtaed. To learn how to add your sampler or model to the packages, you can refer to the explanations provided in `./discs/samplers/` and `./discs/models/`.
   
 Under the `./discs/samplers/` directory, you can see the list of all the samplers with their corresponding configuration under `./discs/samplers/configs/`.
 List of the samplers:
@@ -50,7 +50,7 @@ List of Models
     * resnet
     * text_infilling (language model)
 
-Note that, for running energy-based models, `data_path` and for combinotorial optimization problems, `data_root`, in the model config should be set. For the text infilling model, additional path of `bert_model` should be set. Further information on the data will be found in the following sections.
+**Note**: For running energy-based models, `data_path` and for combinotorial optimization problems, `data_root`, in the model config should be set. For the text infilling model, additional path of `bert_model` should be set. Further information on the `data` and how to access it can be found `data` sections below.
 
 
 ## Running sampling experiments
@@ -67,10 +67,11 @@ For combinatorial optimization problems you further need to set the graph type:
     model=maxcut graph_type=ba sampler=path_auxiliary ./discs/experiment/run_sampling_local.sh
 
 Note that for the experiments above the default config value of the sampler, model and the experiments are used.
-To define your own set up, you can modify the corresponding config value as defined above.
+To define your own experiment set up, you can modify the corresponding config values.
 
 
 ### Run an experiment on Xmanager
+
 
 Under the `./discs/run_configs/` you can find predefined experiment configs for all model types which are used to study the performance of different samplers and effect of different config values of models, samplers and the experiment. To define your own exeperiment config please check below section.
 To run an experiment on xmanager, under the root folder `./discs/`, run:
@@ -143,7 +144,7 @@ The data contains the following components:
 
 
 ## How to add your own model, sampler and evaluator
-For more details on how to plug in your sampler, model and evaluator please check the explanations under `samplers`, `models` and `evaluator` folders.
+For more details on how to plug in your sampler, model and evaluator please check the explanations under `./discs/samplers`, `./discs/models` and `./discs/evaluator` folders.
 
 ## Test
 
