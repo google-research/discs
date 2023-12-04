@@ -14,12 +14,8 @@ flags.DEFINE_string(
     'where results are being saved',
 )
 GRAPHTYPE = flags.DEFINE_string('graphtype', 'mis', 'graph type')
-GRAPHLABEL = flags.DEFINE_string('graphlabel', 'sampler', 'title of the graph')
 
 FLAGS = flags.FLAGS
-
-
-
 
 
 def plot_results_keybased(key, results_dict_list):
@@ -50,8 +46,7 @@ def plot_graph_cluster(key, dict_results, indeces):
             graph_save += str(key_dict) + '=' + str(val_dict) + ','
         save_title_set = True
 
-      graph_label = GRAPHLABEL.value
-
+      graph_label = 'sampler'
       # plot x and y values
       key_value = dict_results[index][key]
       result = dict_results[index]

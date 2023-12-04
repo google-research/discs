@@ -16,7 +16,6 @@ flags.DEFINE_string(
 )
 flags.DEFINE_string('evaluation_type', 'co', 'where results are being saved')
 flags.DEFINE_string('key', 'name', 'what key to plot against')
-GRAPHTYPE = flags.DEFINE_string('graphtype', 'mis', 'graph type')
 
 FLAGS = flags.FLAGS
 
@@ -281,15 +280,6 @@ def plot_graph_cluster(num, res_cluster, key_diff, xticks):
           framealpha=0.2,
       )
 
-    if GRAPHTYPE.value == 'mis':
-      if values[-1] > 100:
-        plt.ylabel('Size of Independent Set', fontsize=16)
-      else:
-        plt.ylabel('Ratio \u03B1', fontsize=16)
-    elif GRAPHTYPE.value == 'maxclique':
-      plt.ylabel('Ratio \u03B1', fontsize=16)
-      # plt.ylim(0.5, 1.1)
-
     plt.grid(axis='y')
     plt.show()
 
@@ -405,7 +395,6 @@ def main(argv) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
-  pdb.set_trace()
   key_diff = FLAGS.key
   """We process the sampler name and lbf is part of the name."""
   if FLAGS.key == 'balancing_fn_type':
@@ -433,7 +422,8 @@ def main(argv) -> None:
     elif FLAGS.evaluation_type == 'co':
       filename = os.path.join(subfolderpath, 'results.pkl')
       results_pkl = pickle.load(open(filename, 'rb'))
-      results['best_ratio_mean'] = results_pkl['best_ratio_mean']
+      results = {}
+      results['best_ratio_mean'] = np.mean(results_pkl['best_ratio'])
       results['running_time'] = 2 * float(results_pkl['running_time'])
       results['best_ratio_std'] = np.std(results_pkl['trajectory'][-1])
     else:

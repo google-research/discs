@@ -1,3 +1,4 @@
+import pdb
 
 color_map = {}
 color_map['rwm'] = 'green'
@@ -180,19 +181,29 @@ def sort_based_on_samplers(all_mapped_names):
 
   return all_mapped_names
 
-
 def get_diff_key(key_diff, dict1, dict2):
-  """True if dict1 and dict2 are different based on key_diff."""
-  if key_diff in dict1 and key_diff in dict2:
-    if dict1[key_diff] == dict2[key_diff]:
-      return False
-  else:
-    return False
   for key in dict1.keys():
-    if key in ['results']:
+    if key in ['results', 'name']:
       continue
     if key not in dict2:
       return False
     if dict1[key] != dict2[key] and key != key_diff:
-      return False
+      return None
   return True
+
+# def get_diff_key(key_diff, dict1, dict2):
+#   """True if dict1 and dict2 are different based on key_diff."""
+#   # pdb.set_trace()
+#   if key_diff in dict1 and key_diff in dict2:
+#     if dict1[key_diff] == dict2[key_diff]:
+#       return False
+#   else:
+#     return False
+#   for key in dict1.keys():
+#     if key in ['results']:
+#       continue
+#     if key not in dict2:
+#       return False
+#     if dict1[key] != dict2[key] and key != key_diff:
+#       return False
+#   return True
