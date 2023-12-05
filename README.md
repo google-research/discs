@@ -120,8 +120,6 @@ def get_config():
 In the above example, `sampler_config.name` is used to sweep over samplers, since all of them are locally balanced function based, `sampler_config.balancing_fn_type` sweeps over the types. `config.experiment.${any experiment config you want to sweep over}` is used to sweep over experiment config, which is the chain length in the above example. `model_config.${any model config you want to sweep over}` is used to sweep over any model related config values.
 
 ### Metric, Results and Plotting
-For detailed explanation on the metrics used and the way that they are being calculated please refer to DISCS [paper](https://openreview.net/pdf?id=9LoW5l6r4z).
-**Note**: For reproducing the tables and figures in the paper, please refer to the explanation provided in `./discs/plot_results/` and `./discs/models/`.
 Depending on type of the model we are running the sampling on, different metrics are being calculated and the results are being stored in different forms. 
 * For the `classical model`, the ESS is computed over the chains after the burn-in phase. The ESS is normalized over running time and number of energy evaluations and stored as a `csv` file.
 
@@ -131,6 +129,10 @@ Depending on type of the model we are running the sampling on, different metrics
 * For the `text_infilling` task, the generated sentences and their evaluated metrics including `bleu`, `self-bleu` and `unique-ngrams` are being stored in a pickle file. 
 * For energy based models, the image of selected samples are also further saved through the chain generation.
 To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
+
+
+**Note**: For detailed explanation on the metrics used and the way that they are being calculated please refer to DISCS [paper](https://openreview.net/pdf?id=9LoW5l6r4z).
+**Note**: For reproducing the tables and figures in the paper, please refer to the explanation provided in `./discs/plot_results/` and `./discs/models/`.
 
 ## Data
 The data used in this package could be found [here](https://drive.google.com/drive/u/1/folders/1nEppxuUJj8bsV9Prc946LN_buo30AnDx).
