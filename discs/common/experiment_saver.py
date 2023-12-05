@@ -126,8 +126,6 @@ class Saver:
     results['best_ratio_mean'] = np.mean(np.array(best_ratio))
     if len(best_samples) != 0:
       results['best_samples'] = np.array(best_samples)
-    with open(path, 'wb') as file:
-      pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
     self._dump_dict(results, 'results')
 
   def dump_params(self, params):
