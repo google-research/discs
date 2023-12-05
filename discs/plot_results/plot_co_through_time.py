@@ -226,12 +226,8 @@ def main(argv) -> None:
           )
       # New structure of the code.
       else:
-        experiment_result['results']['best_ratio_mean'] = experiment_result[
-            'best_ratio_mean'
-        ]
-        experiment_result['results']['running_time'] = 2 * float(
-            experiment_result['running_time']
-        )
+        experiment_result['results']['best_ratio_mean'] = results['best_ratio_mean']
+        experiment_result['results']['running_time'] = 2 * float(results['running_time'])
       experiments_results.append(experiment_result)
 
   # plot the results by clustering similar experiments with just different samplers(name).
