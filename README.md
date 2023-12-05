@@ -131,8 +131,7 @@ Depending on type of the model we are running the sampling on, different metrics
 To get the plots and arrange the results two main scripts `run_plot_results.sh` and `run_co_through_time.sh` are used that could be found at `./discs/plot_results/`.
 
 
-**Note**: For detailed explanation on the metrics used and the way that they are being calculated please refer to DISCS [paper](https://openreview.net/pdf?id=9LoW5l6r4z).
-**Note**: For reproducing the tables and figures in the paper, please refer to the explanation provided in `./discs/plot_results/` and `./discs/models/`.
+**Note**: For detailed explanation on the metrics used and the way that they are being calculated please refer to DISCS [paper](https://openreview.net/pdf?id=9LoW5l6r4z). For reproducing the tables and figures in the paper, please refer to the explanation provided in `./discs/plot_results/` and `./discs/models/`.
 
 ## Data
 The data used in this package could be found [here](https://drive.google.com/drive/u/1/folders/1nEppxuUJj8bsV9Prc946LN_buo30AnDx).
