@@ -10,6 +10,8 @@ Then navigate to the root of the project folder `./discs/` and run
 
     pip install -e .
 
+If you wish to run the experiments on Xmanager, please follow the steps described in https://github.com/google-deepmind/xmanager to setup your Xmanager.
+
 ## DISCS Package Structure 
 To run a sampling experiment, we need to set up three main components. 1) The model we want to sample from (target distribution), 2) the sampler we want to use and 3) MCMC experimental configuration (number of chains, chain length, etc.). To achieve this, these three main components are being structured in DISCS package as below:
 * **Model configs** which are defined under `./discs/models/configs/`. For each model, its corresponding config contains the shape and the number of categories of the sample and also additional model config values to set up the model parameters.
