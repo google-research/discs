@@ -4,35 +4,36 @@
 # evaluation_type=ess
 # key=chain_length
 
-# experiment_folder=discs-potts-shape_sweep_57372547
+# experiment_folder=discs-bernoulli-shape_sweep_62671971
 # evaluation_type=ess
 # key=shape
 
-# experiment_folder=discs-potts-lbf_sweep_57372892
+# experiment_folder=discs-bernoulli-lbf_sweep_62672009
 # evaluation_type=ess
 # key=balancing_fn_type
 
-# experiment_folder=discs-potts-num_categories_sweep_57372863
+# experiment_folder=discs-categorical-num_categories_sweep_62668345
 # evaluation_type=ess
 # key=num_categories
 
-
-# experiment_folder=discs-ising-model_config_sweep_extended_57873057
+# experiment_folder=discs-fhmm-categ_sweep_62701406
 # evaluation_type=ess
 # key=name
 
-experiment_folder=discs-mis-er_010_lambda_58250366
-evaluation_type=co
-key=name
-graphtype=mis
+# # Example of the CO experiment
+# experiment_folder=discs-maxclique-rb_sampler_sweep_57644072
+# evaluation_type=co
+# key=name
 
 
-data_path="./${experiment_folder}"
+# # Example of the LM experiment
+# experiment_folder=discs-lm-base_bert_sampler_sweep_57902239
+# evaluation_type=lm
+# key=name
 
-python -m plot_results \
+data_path="./discs/plot_results/${experiment_folder}"
+
+python -m discs.plot_results.plot_results \
   --gcs_results_path=$data_path \
   --evaluation_type=$evaluation_type \
   --key=$key \
-  --graphtype=$graphtype \
-
-

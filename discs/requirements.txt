@@ -15,5 +15,5 @@ optax==0.1.4
 networkx==2.6.3
 python-sat==0.1.7.dev23
 tensorboard==2.11.0
-pickle5==0.0.12
 nltk==3.8.1
+pickle5
