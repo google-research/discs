@@ -1,5 +1,5 @@
 # DISCS
-DISCS: A Benchmark for Discrete Sampling: [paper](https://openreview.net/pdf?id=9LoW5l6r4z)
+DISCS: A Benchmark for Discrete Sampling: [paper](https://openreview.net/pdf?id=oi1MUMk5NF)
 
 ## Installation
 
